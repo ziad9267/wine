@@ -3528,6 +3528,7 @@ NTSTATUS send_hardware_message( HWND hwnd, const INPUT *input, const RAWINPUT *r
             req->input.mouse.flags = input->mi.dwFlags;
             req->input.mouse.time  = input->mi.time;
             req->input.mouse.info  = input->mi.dwExtraInfo;
+            req->flags |= SEND_HWMSG_RAWINPUT;
             affects_key_state = !!(input->mi.dwFlags & (MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP |
                                                         MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP |
                                                         MOUSEEVENTF_MIDDLEDOWN | MOUSEEVENTF_MIDDLEUP |
@@ -3539,6 +3540,7 @@ NTSTATUS send_hardware_message( HWND hwnd, const INPUT *input, const RAWINPUT *r
             req->input.kbd.flags = input->ki.dwFlags;
             req->input.kbd.time  = input->ki.time;
             req->input.kbd.info  = input->ki.dwExtraInfo;
+            req->flags |= SEND_HWMSG_RAWINPUT;
             affects_key_state = TRUE;
             break;
         case INPUT_HARDWARE:
