@@ -1452,6 +1452,7 @@ static void* try_map_free_area( void *base, void *end, ptrdiff_t step,
             step == 0)
             break;
         start = (char *)start + step;
+        step *= 2;
     }
 
     return NULL;
