@@ -256,6 +256,8 @@ BOOL adjust_window_rect( RECT *rect, DWORD style, BOOL menu, DWORD ex_style, UIN
     NONCLIENTMETRICSW ncm = {.cbSize = sizeof(ncm)};
     int adjust = 0;
 
+    if (user_driver->pHasWindowManager( "steamcompmgr" ) && !((style & WS_POPUP) && (ex_style & WS_EX_TOOLWINDOW))) return TRUE;
+
     NtUserSystemParametersInfoForDpi( SPI_GETNONCLIENTMETRICS, 0, &ncm, 0, dpi );
 
     if ((ex_style & (WS_EX_STATICEDGE|WS_EX_DLGMODALFRAME)) == WS_EX_STATICEDGE)
@@ -1862,6 +1864,9 @@ static void handle_nc_calc_size( HWND hwnd, WPARAM wparam, RECT *win_rect )
     LONG ex_style = get_window_long( hwnd, GWL_EXSTYLE );
 
     if (!win_rect) return;
+
+    if (user_driver->pHasWindowManager( "steamcompmgr" ) && !((style & WS_POPUP) && (ex_style & WS_EX_TOOLWINDOW)))
+        return;
 
     if (!(style & WS_MINIMIZE))
     {
