@@ -31,6 +31,7 @@
 #include "ole2.h"
 #include "msxml.h"
 #include "msxml2.h"
+#include "msxml6.h"
 #include "xmlparser.h"
 
 /* undef the #define in msxml2 so that we can access the v.2 version
@@ -42,8 +43,6 @@
 #include "msxml_private.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(msxml);
-
-extern GUID CLSID_XMLSchemaCache60;
 
 typedef HRESULT (*ClassFactoryCreateInstanceFunc)(void**);
 typedef HRESULT (*DOMFactoryCreateInstanceFunc)(MSXML_VERSION, void**);
