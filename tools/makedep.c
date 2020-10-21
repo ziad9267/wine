@@ -210,6 +210,7 @@ struct makefile
     int             data_only;
     int             is_win16;
     int             is_exe;
+    int             has_cxx;
     int             is_external;
     int             disabled[MAX_ARCHS];
 
@@ -1214,6 +1215,7 @@ static const struct
 } parse_functions[] =
 {
     { ".c",   parse_c_file },
+    { ".cpp", parse_c_file },
     { ".h",   parse_c_file },
     { ".inl", parse_c_file },
     { ".l",   parse_c_file },
@@ -2430,9 +2432,11 @@ static const char *cmd_prefix( const char *cmd )
 /*******************************************************************
  *         output_winegcc_command
  */
-static void output_winegcc_command( struct makefile *make, unsigned int arch )
+static void output_winegcc_command( struct makefile *make, unsigned int arch, int is_cxx )
 {
-    output( "\t%s%s -o $@", cmd_prefix( "CCLD" ), tools_path( make, "winegcc" ) );
+    const char *tool = tools_path( make, "winegcc" );
+    if (is_cxx) strcpy( strrchr( tool, 'w' ), "wineg++" );
+    output( "\t%s%s -o $@", cmd_prefix( "CCLD" ), tool );
     output_filename( strmake( "--wine-objdir %s", root_obj_dir_path( "." ) ) );
     if (tools_dir)
     {
@@ -3152,7 +3156,7 @@ static void output_source_testdll( struct makefile *make, struct incl_file *sour
         output_filename( tools_path( make, "winebuild" ));
         output_filename( tools_path( make, "winegcc" ));
         output( "\n" );
-        output_winegcc_command( make, link_arch );
+        output_winegcc_command( make, link_arch, 0 );
         output_filename( "-s" );
         output_filenames( dll_flags );
         if (link_arch) output_filenames( get_expanded_arch_var_array( make, "EXTRADLLFLAGS", link_arch ));
@@ -3192,10 +3196,12 @@ static void output_source_one_arch( struct makefile *make, struct incl_file *sou
                                     struct strarray defines, struct strarray *targets,
                                     unsigned int arch )
 {
-    const char *obj_name, *var_cc, *var_cflags;
+    const char *obj_name, *var_cc, *var_cxx, *var_cflags, *var_cxxflags;
     struct strarray arch_cflags = empty_strarray;
+    const int is_cxx = strendswith( source->name, ".cpp" );
 
     if (make->disabled[arch] && !(source->file->flags & FLAG_C_IMPLIB)) return;
+    make->has_cxx |= is_cxx;
 
     if (arch)
     {
@@ -3226,20 +3232,27 @@ static void output_source_one_arch( struct makefile *make, struct incl_file *sou
 
     if ((source->file->flags & FLAG_ARM64EC_X64) && !strcmp( archs.str[arch], "arm64ec" ))
     {
-        var_cc     = "$(x86_64_CC)";
-        var_cflags = "$(x86_64_CFLAGS)";
+        struct strarray x64_extra_cflags = get_expanded_make_var_array( top_makefile, "x86_64_EXTRACFLAGS" );
+        struct strarray x64_extra_cflags_extlib = remove_warning_flags( x64_extra_cflags );
+        var_cc       = "$(x86_64_CC)";
+        var_cxx      = "$(x86_64_CXX)";
+        var_cflags   = "$(x86_64_CFLAGS)";
+        var_cxxflags = "$(x86_64_CXXFLAGS)";
         strarray_add( &arch_cflags, "-D__arm64ec_x64__" );
-        strarray_addall( &arch_cflags, get_expanded_make_var_array( top_makefile, "x86_64_EXTRACFLAGS" ));
+        strarray_addall( &arch_cflags, (make->extlib || is_cxx) ? x64_extra_cflags_extlib : x64_extra_cflags );
     }
     else
     {
-        var_cc     = arch_make_variable( "CC", arch );
-        var_cflags = arch_make_variable( "CFLAGS", arch );
-        strarray_addall( &arch_cflags, make->extlib ? extra_cflags_extlib[arch] : extra_cflags[arch] );
+        var_cc       = arch_make_variable( "CC", arch );
+        var_cxx      = arch_make_variable( "CXX", arch );
+        var_cflags   = arch_make_variable( "CFLAGS", arch );
+        var_cxxflags = arch_make_variable( "CXXFLAGS", arch );
+        strarray_addall( &arch_cflags, (make->extlib || is_cxx) ? extra_cflags_extlib[arch] : extra_cflags[arch] );
     }
 
     output( "%s: %s\n", obj_dir_path( make, obj_name ), source->filename );
-    output( "\t%s%s -c -o $@ %s", cmd_prefix( "CC" ), var_cc, source->filename );
+    if (is_cxx) output( "\t%s%s -c -o $@ %s", cmd_prefix( "CXX" ), var_cxx, source->filename );
+    else output( "\t%s%s -c -o $@ %s", cmd_prefix( "CC" ), var_cc, source->filename );
     output_filenames( defines );
     if ((!make->use_msvcrt && !make->module) || (source->file->flags & FLAG_C_UNIX))
         output_filenames( make->unix_cflags );
@@ -3266,7 +3279,8 @@ static void output_source_one_arch( struct makefile *make, struct incl_file *sou
         if (make->module && is_crt_module( make->module )) output_filename( "-fno-builtin" );
     }
 
-    output_filename( var_cflags );
+    if (is_cxx) output_filename( var_cxxflags );
+    else output_filename( var_cflags );
     output( "\n" );
 
     if (make->testdll && strendswith( source->name, ".c" ) &&
@@ -3372,7 +3386,7 @@ static void output_fake_module( struct makefile *make, const char *spec_file )
     output_filename( tools_path( make, "winebuild" ));
     output_filename( tools_path( make, "winegcc" ));
     output( "\n" );
-    output_winegcc_command( make, arch );
+    output_winegcc_command( make, arch, 0 );
     output_filename( "-Wb,--fake-module" );
     if (!make->is_exe) output_filename( "-shared" );
     if (spec_file) output_filename( spec_file );
@@ -3393,7 +3407,7 @@ static void output_module( struct makefile *make, unsigned int arch )
     struct strarray imports = make->imports;
     const char *module_name;
     const char *debug_file;
-    char *spec_file = NULL;
+    char *tool, *spec_file = NULL;
     unsigned int i, link_arch;
 
     if (!make->is_exe)
@@ -3460,9 +3474,15 @@ static void output_module( struct makefile *make, unsigned int arch )
     output_filenames_obj_dir( make, make->res_files[arch] );
     output_filenames( dep_libs );
     output_filename( tools_path( make, "winebuild" ));
-    output_filename( tools_path( make, "winegcc" ));
+    tool = tools_path( make, "winegcc" );
+    output_filename( tool );
+    if (make->has_cxx)
+    {
+        strcpy( strrchr( tool, 'w' ), "wineg++" );
+        output_filename( tool );
+    }
     output( "\n" );
-    output_winegcc_command( make, link_arch );
+    output_winegcc_command( make, link_arch, make->has_cxx );
     if (arch) output_filename( "-Wl,--wine-builtin" );
     if (!make->is_exe) output_filename( "-shared" );
     if (spec_file) output_filename( spec_file );
@@ -3537,7 +3557,8 @@ static void output_unix_lib( struct makefile *make )
     output_filenames_obj_dir( make, make->unixobj_files );
     output_filenames( unix_deps );
     output( "\n" );
-    output( "\t%s$(CC) -o $@", cmd_prefix( "CCLD" ));
+    if (make->has_cxx) output( "\t%s$(CXX) -o $@", cmd_prefix( "CCLD" ));
+    else output( "\t%s$(CC) -o $@", cmd_prefix( "CCLD" ));
     output_filenames( get_expanded_make_var_array( make, "UNIXLDFLAGS" ));
     output_filenames_obj_dir( make, make->unixobj_files );
     output_filenames( unix_libs );
@@ -3597,7 +3618,7 @@ static void output_test_module( struct makefile *make, unsigned int arch )
     strarray_add( &make->all_targets[arch], testmodule );
     strarray_add( &make->clean_files, stripped );
     output( "%s:\n", obj_dir_path( make, testmodule ));
-    output_winegcc_command( make, link_arch );
+    output_winegcc_command( make, link_arch, 0 );
     output_filenames( make->extradllflags );
     output_filenames_obj_dir( make, make->object_files[arch] );
     if (link_arch != arch) output_filenames_obj_dir( make, make->object_files[link_arch] );
@@ -3608,7 +3629,7 @@ static void output_test_module( struct makefile *make, unsigned int arch )
     output_filename( arch_make_variable( "LDFLAGS", link_arch ));
     output( "\n" );
     output( "%s:\n", obj_dir_path( make, stripped ));
-    output_winegcc_command( make, link_arch );
+    output_winegcc_command( make, link_arch, 0 );
     output_filename( "-s" );
     output_filename( strmake( "-Wb,-F,%s_test.exe", basemodule ));
     output_filenames( make->extradllflags );
