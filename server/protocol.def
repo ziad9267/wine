@@ -966,6 +966,12 @@ union udp_endpoint
 /****************************************************************/
 /* shared session mapping structures */
 
+struct cpu_topology_override
+{
+    unsigned int cpu_count;
+    unsigned char host_cpu_id[64];
+};
+
 struct shared_cursor
 {
     int                  x;                /* cursor position */
@@ -1091,6 +1097,7 @@ struct obj_locator
     client_ptr_t teb;          /* TEB of new thread (in process address space) */
     client_ptr_t peb;          /* PEB of new process (in process address space) */
     client_ptr_t ldt_copy;     /* address of LDT copy (in process address space) */
+    VARARG(cpu_override,cpu_topology_override); /* Overridden CPUs to host CPUs mapping. */
 @REPLY
     int          suspend;      /* is process suspended? */
 @END
