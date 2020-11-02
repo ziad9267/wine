@@ -369,6 +369,7 @@ extern void file_complete_async( HANDLE handle, unsigned int options, HANDLE eve
                                  IO_STATUS_BLOCK *io, NTSTATUS status, ULONG_PTR information );
 extern void set_async_direct_result( HANDLE *async_handle, unsigned int options, IO_STATUS_BLOCK *io,
                                      NTSTATUS status, ULONG_PTR information, BOOL mark_pending );
+extern struct cpu_topology_override *get_cpu_topology_override(void);
 
 extern NTSTATUS unixcall_wine_dbg_write( void *args );
 extern NTSTATUS unixcall_wine_server_call( void *args );
