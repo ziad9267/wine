@@ -907,6 +907,12 @@ typedef struct
     lparam_t info;
 } cursor_pos_t;
 
+struct cpu_topology_override
+{
+    unsigned int cpu_count;
+    unsigned char host_cpu_id[64];
+};
+
 struct shared_cursor
 {
     int                  x;                /* cursor position */
@@ -1022,6 +1028,7 @@ typedef volatile struct input_shared_memory input_shm_t;
     client_ptr_t peb;          /* PEB of new process (in process address space) */
     client_ptr_t ldt_copy;     /* address of LDT copy (in process address space) */
 @REPLY
+    VARARG(cpu_override,cpu_topology_override); /* Overridden CPUs to host CPUs mapping. */
     int          suspend;      /* is process suspended? */
 @END
 
