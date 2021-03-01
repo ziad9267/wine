@@ -811,7 +811,6 @@ SHORT WINAPI NtUserGetAsyncKeyState( INT key )
     struct object_lock lock = OBJECT_LOCK_INIT;
     NTSTATUS status;
     BYTE state = 0;
-    SHORT ret = 0;
 
     if (key < 0 || key >= 256) return 0;
 
@@ -821,22 +820,7 @@ SHORT WINAPI NtUserGetAsyncKeyState( INT key )
         state = desktop_shm->keystate[key];
 
     if (status) return 0;
-    if (!(state & 0x40)) return (state & 0x80) << 8;
-
-    /* Need to make a server call to reset the last pressed bit */
-    SERVER_START_REQ( get_key_state )
-    {
-        req->async = 1;
-        req->key = key;
-        if (!wine_server_call( req ))
-        {
-            if (reply->state & 0x40) ret |= 0x0001;
-            if (reply->state & 0x80) ret |= 0x8000;
-        }
-    }
-    SERVER_END_REQ;
-
-    return ret;
+    return (state & 0x80) << 8;
 }
 
 /***********************************************************************
