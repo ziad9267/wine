@@ -546,7 +546,11 @@ void ungrab_clipping_window(void)
 
     TRACE( "no longer clipping\n" );
     XUnmapWindow( data->display, clip_window );
-    if (clipping_cursor) XUngrabPointer( data->display, CurrentTime );
+    if (clipping_cursor)
+    {
+        XUngrabPointer( data->display, CurrentTime );
+        XFlush( data->display );
+    }
     clipping_cursor = FALSE;
     data->clipping_cursor = FALSE;
     x11drv_xinput2_disable( data->display, DefaultRootWindow( data->display ) );
