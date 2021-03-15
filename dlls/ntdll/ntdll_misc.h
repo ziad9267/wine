@@ -53,6 +53,8 @@ static const UINT_PTR page_size = 0x1000;
 extern UINT_PTR page_size;
 #endif
 
+extern BOOL delay_heap_free;
+
 /* exceptions */
 extern NTSTATUS call_seh_handlers( EXCEPTION_RECORD *rec, CONTEXT *context );
 extern NTSTATUS WINAPI dispatch_exception( EXCEPTION_RECORD *rec, CONTEXT *context );
