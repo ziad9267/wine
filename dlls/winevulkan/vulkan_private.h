@@ -224,9 +224,18 @@ struct wine_device_memory
     VkDeviceMemory host_memory;
     VkDeviceSize size;
     void *vm_map;
+    VkExternalMemoryHandleTypeFlagBits handle_types;
+    BOOL inherit;
+    DWORD access;
+    HANDLE handle;
 
     struct wine_vk_mapping mapping;
 };
+
+static inline VkDeviceMemory wine_device_memory_to_handle(struct wine_device_memory *device_memory)
+{
+    return (VkDeviceMemory)(uintptr_t)device_memory;
+}
 
 static inline struct wine_device_memory *wine_device_memory_from_handle(VkDeviceMemory handle)
 {
