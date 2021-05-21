@@ -70,6 +70,8 @@
 # include <mach/mach_vm.h>
 #endif
 
+#include <sys/uio.h>
+
 #include <linux/userfaultfd.h>
 #include <sys/ioctl.h>
 #include "uffd_tmp_defs.h"
@@ -6544,7 +6546,58 @@ NTSTATUS WINAPI NtReadVirtualMemory( HANDLE process, const void *addr, void *buf
                                      SIZE_T size, SIZE_T *bytes_read )
 {
     unsigned int status;
+#ifdef linux
+    struct iovec local, remote;
+    int unix_pid;
+    ssize_t ret;
 
+    if (process == NtCurrentProcess())
+    {
+        unix_pid = getpid();
+        status = STATUS_SUCCESS;
+    }
+    else
+    {
+        SERVER_START_REQ( read_process_memory )
+        {
+            req->handle = wine_server_obj_handle( process );
+            status = wine_server_call( req );
+            unix_pid = reply->unix_pid;
+        }
+        SERVER_END_REQ;
+    }
+
+    if (status)
+    {
+        WARN( "Could not get unix_pid for process %p, status %#x.\n", process, status );
+        size = 0;
+        goto done;
+    }
+
+    local.iov_base = buffer;
+    local.iov_len = size;
+
+    remote.iov_base = (void *)addr;
+    remote.iov_len = size;
+
+    if ((ret = process_vm_readv( unix_pid, &local, 1, &remote, 1, 0 )) != size)
+    {
+        WARN( "Error reading memory from process %p, addr %p, size %p, buffer %p, ret %p, errno %d.\n",
+              process, addr, (void *)size, buffer, (void *)ret, errno );
+
+        if (ret == -1)
+        {
+            status = errno == ESRCH ? STATUS_PARTIAL_COPY : errno_to_status( errno );
+            size = 0;
+        }
+        else
+        {
+            status = STATUS_PARTIAL_COPY;
+            size = ret;
+        }
+    }
+done:
+#else
     if (!virtual_check_buffer_for_write( buffer, size ))
     {
         status = STATUS_ACCESS_VIOLATION;
@@ -6575,6 +6628,7 @@ NTSTATUS WINAPI NtReadVirtualMemory( HANDLE process, const void *addr, void *buf
         }
         SERVER_END_REQ;
     }
+#endif
     if (bytes_read) *bytes_read = size;
     return status;
 }
