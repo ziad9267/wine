@@ -122,6 +122,7 @@ static struct xinput_controller controllers[XUSER_MAX_COUNT] =
 static HMODULE xinput_instance;
 static HANDLE start_event;
 static HANDLE update_event;
+static HANDLE steam_overlay_event;
 
 static void check_value_caps(struct xinput_controller *controller, USHORT usage, HIDP_VALUE_CAPS *caps)
 {
@@ -750,6 +751,8 @@ static BOOL WINAPI start_update_thread_once( INIT_ONCE *once, void *param, void 
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (void*)hid_update_thread_proc, &module))
         WARN("Failed to increase module's reference count, error: %lu\n", GetLastError());
 
+    steam_overlay_event = CreateEventA(NULL, TRUE, FALSE, "__wine_steamclient_GameOverlayActivated");
+
     start_event = CreateEventA(NULL, FALSE, FALSE, NULL);
     if (!start_event) ERR("failed to create start event, error %lu\n", GetLastError());
 
@@ -836,7 +839,8 @@ DWORD WINAPI DECLSPEC_HOTPATCH XInputSetState(DWORD index, XINPUT_VIBRATION *vib
     if (index >= XUSER_MAX_COUNT) return ERROR_BAD_ARGUMENTS;
     if (!controller_lock(&controllers[index])) return ERROR_DEVICE_NOT_CONNECTED;
 
-    ret = HID_set_state(&controllers[index], vibration);
+    if (WaitForSingleObject(steam_overlay_event, 0) == WAIT_OBJECT_0) ret = ERROR_SUCCESS;
+    else ret = HID_set_state(&controllers[index], vibration);
 
     controller_unlock(&controllers[index]);
 
@@ -854,7 +858,9 @@ static DWORD xinput_get_state(DWORD index, XINPUT_STATE *state)
     if (index >= XUSER_MAX_COUNT) return ERROR_BAD_ARGUMENTS;
     if (!controller_lock(&controllers[index])) return ERROR_DEVICE_NOT_CONNECTED;
 
-    *state = controllers[index].state;
+    if (WaitForSingleObject(steam_overlay_event, 0) == WAIT_OBJECT_0) memset(state, 0, sizeof(*state));
+    else *state = controllers[index].state;
+
     controller_unlock(&controllers[index]);
 
     return ERROR_SUCCESS;
