@@ -1275,12 +1275,45 @@ static void handle_net_supporting_wm_check_notify( XPropertyEvent *event )
     if (event->state == PropertyNewValue) net_supporting_wm_check_init( data );
 }
 
+static int handle_gamescope_focused_app_error( Display *dpy, XErrorEvent *event, void *arg )
+{
+    WARN( "Failed to read GAMESCOPE_FOCUSED_APP property, ignoring.\n" );
+    return 1;
+}
+
+static void handle_gamescope_focused_app( XPropertyEvent *event )
+{
+    static const char *sgi = NULL;
+
+    unsigned long count, remaining, *property;
+    int format, app_id, focused_app_id;
+    Atom type;
+
+    if (!sgi && !(sgi = getenv( "SteamGameId" ))) return;
+    app_id = atoi( sgi );
+
+    X11DRV_expect_error( event->display, handle_gamescope_focused_app_error, NULL );
+    XGetWindowProperty( event->display, DefaultRootWindow( event->display ), x11drv_atom( GAMESCOPE_FOCUSED_APP ),
+                        0, ~0UL, False, XA_CARDINAL, &type, &format, &count, &remaining, (unsigned char **)&property );
+    if (X11DRV_check_error()) focused_app_id = app_id;
+    else
+    {
+        if (!property) focused_app_id = app_id;
+        else focused_app_id = *property;
+        XFree( property );
+    }
+
+    TRACE( "Got app id %u, focused app %u\n", app_id, focused_app_id );
+}
+
 /***********************************************************************
  *           X11DRV_PropertyNotify
  */
 static BOOL X11DRV_PropertyNotify( HWND hwnd, XEvent *xev )
 {
     XPropertyEvent *event = &xev->xproperty;
+
+    if (event->atom == x11drv_atom(GAMESCOPE_FOCUSED_APP)) handle_gamescope_focused_app( event );
 
     if (!hwnd) return FALSE;
     if (event->atom == x11drv_atom(WM_STATE)) handle_wm_state_notify( hwnd, event );
