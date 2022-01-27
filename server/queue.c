@@ -3844,7 +3844,11 @@ DECL_HANDLER(set_focus_window)
 /* set the current thread active window */
 DECL_HANDLER(set_active_window)
 {
+    struct message *msg, *next;
     struct msg_queue *queue = get_current_queue();
+    struct desktop *desktop;
+
+    if (!(desktop = get_thread_desktop( current, 0 ))) return;
 
     reply->previous = 0;
     if (queue && check_queue_input_window( queue, req->handle ))
@@ -3852,15 +3856,24 @@ DECL_HANDLER(set_active_window)
         if (!req->handle || make_window_active( req->handle ))
         {
             const input_shm_t *input_shm = queue->input->shared;
+
             SHARED_WRITE_BEGIN( input_shm, input_shm_t )
             {
                 reply->previous = shared->active;
                 shared->active = get_user_full_handle( req->handle );
             }
             SHARED_WRITE_END;
+
+            if (desktop->foreground_input == queue->input && req->handle != reply->previous)
+            {
+                LIST_FOR_EACH_ENTRY_SAFE( msg, next, &queue->msg_list[POST_MESSAGE], struct message, entry )
+                    if (msg->msg == req->internal_msg) remove_queue_message( queue, msg, POST_MESSAGE );
+            }
         }
         else set_error( STATUS_INVALID_HANDLE );
     }
+
+    release_object( desktop );
 }
 
 
