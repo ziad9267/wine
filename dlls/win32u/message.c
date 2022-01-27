@@ -2101,7 +2101,7 @@ static LRESULT handle_internal_message( HWND hwnd, UINT msg, WPARAM wparam, LPAR
     {
         HWND prev;
 
-        if (!wparam && NtUserGetForegroundWindow() == hwnd) return 0;
+        if (!wparam && NtUserGetWindowThread( NtUserGetForegroundWindow(), NULL ) == GetCurrentThreadId()) return 0;
         if (!set_active_window( (HWND)wparam, &prev, FALSE, TRUE, lparam )) return 0;
         return (LRESULT)prev;
     }
