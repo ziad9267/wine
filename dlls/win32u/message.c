@@ -2134,7 +2134,7 @@ static LRESULT handle_internal_message( HWND hwnd, UINT msg, WPARAM wparam, LPAR
         if (!user_driver->pGetWindowStateUpdates( hwnd, &state_cmd, &config_cmd, &window_rect )) return 0;
         if (state_cmd)
         {
-            if (LOWORD(state_cmd) == SC_RESTORE && HIWORD(state_cmd)) NtUserSetActiveWindow( hwnd );
+            if (LOWORD(state_cmd) == SC_RESTORE && HIWORD(state_cmd)) NtUserSetForegroundWindow( hwnd );
             send_message( hwnd, WM_SYSCOMMAND, LOWORD(state_cmd), 0 );
 
             /* state change might have changed the window config already, check again */
