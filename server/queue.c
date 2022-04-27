@@ -1388,6 +1388,7 @@ static void msg_queue_destroy( struct object *obj )
     if (queue->fd) release_object( queue->fd );
     if (queue->shared) free_shared_object( queue->shared );
     if (do_esync()) close( queue->esync_fd );
+    if (queue->fsync_idx) fsync_free_shm_idx( queue->fsync_idx );
 }
 
 static void msg_queue_poll_event( struct fd *fd, int event )
