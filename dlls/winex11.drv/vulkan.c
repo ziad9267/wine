@@ -70,6 +70,7 @@ struct x11drv_vulkan_surface
     BOOL offscreen;
     HDC hdc_src;
     HDC hdc_dst;
+    BOOL other_process;
 };
 
 static void vulkan_surface_destroy( HWND hwnd, struct x11drv_vulkan_surface *surface )
@@ -108,6 +109,7 @@ static VkResult X11DRV_vulkan_surface_create( HWND hwnd, VkInstance instance, Vk
     };
     struct x11drv_vulkan_surface *surface;
     BOOL enable_fshack = enable_fullscreen_hack( hwnd, FALSE );
+    DWORD hwnd_pid, hwnd_thread_id;
 
     TRACE( "%p %p %p %p\n", hwnd, instance, handle, private );
 
@@ -118,7 +120,33 @@ static VkResult X11DRV_vulkan_surface_create( HWND hwnd, VkInstance instance, Vk
     }
     surface->rect = get_client_rect( hwnd, enable_fshack );
 
-    if (!(surface->window = create_client_window( hwnd, surface->rect, &default_visual, default_colormap )))
+    hwnd_thread_id = NtUserGetWindowThread(hwnd, &hwnd_pid);
+    if (hwnd_thread_id && hwnd_pid != GetCurrentProcessId())
+    {
+        XSetWindowAttributes attr;
+        RECT rect = surface->rect;
+        unsigned int width, height;
+
+        WARN("Other process window %p.\n", hwnd);
+
+        width = max( rect.right - rect.left, 1 );
+        height = max( rect.bottom - rect.top, 1 );
+        attr.colormap = default_colormap;
+        attr.bit_gravity = NorthWestGravity;
+        attr.win_gravity = NorthWestGravity;
+        attr.backing_store = NotUseful;
+        attr.border_pixel = 0;
+        surface->window = XCreateWindow( gdi_display, get_dummy_parent(), 0, 0, width, height, 0, default_visual.depth, InputOutput,
+                                         default_visual.visual, CWBitGravity | CWWinGravity | CWBackingStore | CWColormap | CWBorderPixel, &attr );
+        if (surface->window)
+        {
+            XMapWindow( gdi_display, surface->window );
+            XSync( gdi_display, False );
+            surface->other_process = TRUE;
+        }
+    }
+
+    if (!surface->window && !(surface->window = create_client_window( hwnd, surface->rect, &default_visual, default_colormap )))
     {
         ERR("Failed to allocate client window for hwnd=%p\n", hwnd);
         free( surface );
@@ -183,6 +211,7 @@ static void vulkan_surface_update_offscreen( HWND hwnd, struct x11drv_vulkan_sur
     BOOL offscreen = needs_offscreen_rendering( hwnd, FALSE, FALSE );
     struct x11drv_win_data *data;
 
+    if (surface->other_process) offscreen = TRUE;
     if (offscreen == surface->offscreen) return;
     surface->offscreen = offscreen;
 
