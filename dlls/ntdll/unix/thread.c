@@ -164,6 +164,26 @@ void fpu_to_fpux( XMM_SAVE_AREA32 *fpux, const I386_FLOATING_SAVE_AREA *fpu )
 }
 
 
+#if defined(__i386__) || defined(__x86_64__)
+
+/***********************************************************************
+ *           validate_context_xstate
+ */
+BOOL validate_context_xstate( CONTEXT *context )
+{
+    CONTEXT_EX *context_ex;
+
+    context_ex = (CONTEXT_EX *)(context + 1);
+
+    if (context_ex->XState.Length < sizeof(XSAVE_AREA_HEADER) ||
+        context_ex->XState.Length > sizeof(XSAVE_AREA_HEADER) + xstate_features_size)
+        return FALSE;
+
+    return TRUE;
+}
+
+#endif
+
 /***********************************************************************
  *           get_server_context_flags
  */
