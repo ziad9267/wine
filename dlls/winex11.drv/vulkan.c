@@ -27,6 +27,7 @@
 #include "config.h"
 
 #include <stdarg.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <dlfcn.h>
 
@@ -100,6 +101,18 @@ static RECT get_client_rect( HWND hwnd, BOOL raw )
     return rect;
 }
 
+static BOOL disable_opwr(void)
+{
+    static int disable = -1;
+
+    if (disable == -1)
+    {
+        const char *e = getenv( "WINE_DISABLE_VULKAN_OPWR" );
+        disable = e && atoi( e );
+    }
+    return disable;
+}
+
 static VkResult X11DRV_vulkan_surface_create( HWND hwnd, VkInstance instance, VkSurfaceKHR *handle, void **private )
 {
     VkXlibSurfaceCreateInfoKHR info =
@@ -128,6 +141,13 @@ static VkResult X11DRV_vulkan_surface_create( HWND hwnd, VkInstance instance, Vk
         unsigned int width, height;
 
         WARN("Other process window %p.\n", hwnd);
+
+        if (disable_opwr() && hwnd != NtUserGetDesktopWindow())
+        {
+            ERR( "HACK: Failing surface creation for other process window %p.\n", hwnd );
+            free( surface );
+            return VK_ERROR_OUT_OF_HOST_MEMORY;
+        }
 
         width = max( rect.right - rect.left, 1 );
         height = max( rect.bottom - rect.top, 1 );
