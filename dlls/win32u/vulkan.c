@@ -1028,6 +1028,7 @@ static BOOL extents_equals( const VkExtent2D *extents, const RECT *rect )
 static VkResult win32u_vkAcquireNextImage2KHR( VkDevice client_device, const VkAcquireNextImageInfoKHR *acquire_info,
                                                uint32_t *image_index )
 {
+    struct vulkan_semaphore *semaphore = vulkan_semaphore_from_handle( acquire_info->semaphore );
     struct swapchain *swapchain = swapchain_from_handle( acquire_info->swapchain );
     struct vulkan_device *device = vulkan_device_from_handle( client_device );
     VkAcquireNextImageInfoKHR acquire_info_host = *acquire_info;
@@ -1036,6 +1037,7 @@ static VkResult win32u_vkAcquireNextImage2KHR( VkDevice client_device, const VkA
     VkResult res;
 
     acquire_info_host.swapchain = swapchain->obj.host.swapchain;
+    acquire_info_host.semaphore = semaphore ? semaphore->host.semaphore : 0;
 
     res = device->p_vkAcquireNextImage2KHR( device->host.device, &acquire_info_host, image_index );
 
@@ -1058,16 +1060,17 @@ static VkResult win32u_vkAcquireNextImage2KHR( VkDevice client_device, const VkA
 }
 
 static VkResult win32u_vkAcquireNextImageKHR( VkDevice client_device, VkSwapchainKHR client_swapchain, uint64_t timeout,
-                                              VkSemaphore semaphore, VkFence fence, uint32_t *image_index )
+                                              VkSemaphore client_semaphore, VkFence fence, uint32_t *image_index )
 {
     struct swapchain *swapchain = swapchain_from_handle( client_swapchain );
     struct vulkan_device *device = vulkan_device_from_handle( client_device );
     struct surface *surface = swapchain->surface;
+    struct vulkan_semaphore *semaphore = vulkan_semaphore_from_handle( client_semaphore );
     RECT client_rect;
     VkResult res;
 
     res = device->p_vkAcquireNextImageKHR( device->host.device, swapchain->obj.host.swapchain, timeout,
-                                              semaphore, fence, image_index );
+                                           semaphore ? semaphore->host.semaphore : 0, fence, image_index );
 
     if (!res && (driver_funcs->p_vulkan_surface_enable_fshack( surface->hwnd, surface->driver_private ) != swapchain->fs_hack_enabled
         || (swapchain->fs_hack_enabled && swapchain->raw_monitor_dpi != NtUserGetWinMonitorDpi( surface->hwnd, MDT_RAW_DPI ))))
@@ -1262,7 +1265,9 @@ static VkResult win32u_vkQueuePresentKHR( VkQueue client_queue, const VkPresentI
     VkSwapchainKHR swapchains_buffer[16], *swapchains = swapchains_buffer;
     VkPresentInfoKHR present_info_host = *present_info;
     struct vulkan_device *device = queue->device;
+    struct vulkan_semaphore *semaphore;
     VkCommandBuffer *blit_cmds = NULL;
+    VkSemaphore *semaphores = NULL;
     VkSubmitInfo submitInfo = {0};
     VkSemaphore blit_sema;
     UINT i, n_hacks = 0;
@@ -1271,9 +1276,30 @@ static VkResult win32u_vkQueuePresentKHR( VkQueue client_queue, const VkPresentI
 
     TRACE( "queue %p, present_info %p\n", queue, present_info );
 
+    if (present_info->waitSemaphoreCount)
+    {
+        semaphores = malloc( present_info->waitSemaphoreCount * sizeof(*semaphores) );
+        for (i = 0; i < present_info->waitSemaphoreCount; ++i)
+        {
+            semaphore = vulkan_semaphore_from_handle(present_info->pWaitSemaphores[i]);
+
+            if (semaphore->d3d12_fence)
+            {
+                FIXME("Waiting on D3D12-Fence compatible timeline semaphore not supported.\n");
+                free( semaphores );
+                return VK_ERROR_OUT_OF_HOST_MEMORY;
+            }
+            semaphores[i] = semaphore->host.semaphore;
+        }
+        present_info_host.pWaitSemaphores = semaphores;
+    }
+
     if (present_info->swapchainCount > ARRAY_SIZE(swapchains_buffer) &&
         !(swapchains = malloc( present_info->swapchainCount * sizeof(*swapchains) )))
+    {
+        free( semaphores );
         return VK_ERROR_OUT_OF_HOST_MEMORY;
+    }
 
     for (i = 0; i < present_info->swapchainCount; i++)
     {
@@ -1309,6 +1335,7 @@ static VkResult win32u_vkQueuePresentKHR( VkQueue client_queue, const VkPresentI
                 if (!hack->cmd)
                 {
                     free( blit_cmds );
+                    free( semaphores );
                     return VK_ERROR_DEVICE_LOST;
                 }
 
@@ -1326,6 +1353,7 @@ static VkResult win32u_vkQueuePresentKHR( VkQueue client_queue, const VkPresentI
                                                     1, &hack->cmd );
                     hack->cmd = NULL;
                     free( blit_cmds );
+                    free( semaphores );
                     return res;
                 }
             }
@@ -1407,6 +1435,7 @@ static VkResult win32u_vkQueuePresentKHR( VkQueue client_queue, const VkPresentI
     }
 
     if (swapchains != swapchains_buffer) free( swapchains );
+    free( semaphores );
 
     if (TRACE_ON( fps ))
     {

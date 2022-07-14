@@ -170,6 +170,24 @@ static inline void free_conversion_context(struct conversion_context *pool)
         free(entry);
 }
 
+struct wine_semaphore
+{
+    struct vulkan_semaphore obj;
+    VkSemaphore semaphore;
+    VkSemaphore fence_timeline_semaphore;
+
+    VkExternalSemaphoreHandleTypeFlagBits export_types;
+
+    /* mutable members */
+    VkExternalSemaphoreHandleTypeFlagBits handle_type;
+    HANDLE handle;
+    struct
+    {
+        pthread_mutex_t mutex;
+        uint64_t virtual_value;
+    } *d3d12_fence_shm;
+};
+
 static inline void *conversion_context_alloc(struct conversion_context *pool, size_t size)
 {
     if (pool->used + size <= sizeof(pool->buffer))
@@ -246,5 +264,8 @@ static inline void init_unicode_string( UNICODE_STRING *str, const WCHAR *data )
     str->MaximumLength = str->Length + sizeof(WCHAR);
     str->Buffer = (WCHAR *)data;
 }
+
+#define MEMDUP(ctx, dst, src, count) dst = conversion_context_alloc((ctx), sizeof(*(dst)) * (count)); \
+    memcpy((void *)(dst), (src), sizeof(*(dst)) * (count));
 
 #endif /* __WINE_VULKAN_PRIVATE_H */
