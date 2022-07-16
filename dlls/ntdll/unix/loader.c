@@ -2073,6 +2073,7 @@ BOOL ac_odyssey;
 BOOL fsync_simulate_sched_quantum;
 BOOL alert_simulate_sched_quantum;
 BOOL fsync_yield_to_waiters;
+BOOL localsystem_sid;
 
 static void hacks_init(void)
 {
@@ -2131,6 +2132,13 @@ static void hacks_init(void)
     env_str = getenv("WINE_UNIX_PC_AS_NTDLL");
     if (env_str)  report_native_pc_as_ntdll = atoi(env_str);
     else if (sgi) report_native_pc_as_ntdll = !strcmp(sgi, "700330");
+
+    if (main_argc > 1 && strstr(main_argv[1], "MicrosoftEdgeUpdate.exe"))
+    {
+        ERR("HACK: reporting LocalSystem account SID.\n");
+        localsystem_sid = TRUE;
+        return;
+    }
 
     if (sgi && (0
         || !strcmp(sgi, "1364780") || !strcmp(sgi, "1952120") || !strcmp(sgi, "2154900") /* Street Fighter 6 */
