@@ -1196,6 +1196,21 @@ static NTSTATUS steamclient_setup_trampolines( void *args )
     return STATUS_SUCCESS;
 }
 
+static BOOL report_native_pc_as_ntdll;
+
+static NTSTATUS is_pc_in_native_so(void *pc)
+{
+    Dl_info info;
+
+    if (!report_native_pc_as_ntdll || !dladdr( pc, &info )) return FALSE;
+
+    TRACE( "pc %p, module %s.\n", pc, debugstr_a(info.dli_fname) );
+
+    if (strstr( info.dli_fname, ".dll.so")) return FALSE;
+
+    return TRUE;
+}
+
 static const unixlib_entry_t unix_call_funcs[] =
 {
     load_so_dll,
@@ -1207,6 +1222,7 @@ static const unixlib_entry_t unix_call_funcs[] =
     unixcall_wine_spawnvp,
     system_time_precise,
     steamclient_setup_trampolines,
+    is_pc_in_native_so,
 };
 
 
@@ -1239,6 +1255,7 @@ const unixlib_entry_t unix_call_wow64_funcs[] =
     wow64_wine_spawnvp,
     system_time_precise,
     wow64_steamclient_setup_trampolines,
+    is_pc_in_native_so,
 };
 
 #endif  /* _WIN64 */
@@ -2110,6 +2127,10 @@ static void hacks_init(void)
         setenv( "WINESTEAMNOEXEC", "1", 0 );
         break;
     }
+
+    env_str = getenv("WINE_UNIX_PC_AS_NTDLL");
+    if (env_str)  report_native_pc_as_ntdll = atoi(env_str);
+    else if (sgi) report_native_pc_as_ntdll = !strcmp(sgi, "700330");
 
     if (sgi && (0
         || !strcmp(sgi, "1364780") || !strcmp(sgi, "1952120") || !strcmp(sgi, "2154900") /* Street Fighter 6 */
