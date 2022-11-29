@@ -94,11 +94,10 @@ __ASM_GLOBAL_FUNC( "EXP+#KiUserExceptionDispatcher",
 WINE_DEFAULT_DEBUG_CHANNEL(seh);
 WINE_DECLARE_DEBUG_CHANNEL(relay);
 
-
 /***********************************************************************
  *           virtual_unwind
  */
-static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEXT *context )
+static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEXT *context, BOOL dump_backtrace )
 {
     LDR_DATA_TABLE_ENTRY *module;
     NTSTATUS status;
@@ -108,10 +107,10 @@ static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEX
     dispatch->ControlPc = context->Rip;
     dispatch->FunctionEntry = RtlLookupFunctionEntry( context->Rip, &dispatch->ImageBase,
                                                       dispatch->HistoryTable );
+    LdrFindEntryForAddress( (void *)context->Rip, &module );
 
     /* look for host system exception information */
-    if (!dispatch->FunctionEntry &&
-        (LdrFindEntryForAddress( (void *)context->Rip, &module ) || (module->Flags & LDR_WINE_INTERNAL)))
+    if (!dispatch->FunctionEntry && (!module || module->Flags & LDR_WINE_INTERNAL))
     {
         struct unwind_builtin_dll_params params = { type, dispatch, context };
 
@@ -122,6 +121,15 @@ static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEX
             dispatch->LanguageHandler = NULL;
         }
         if (status != STATUS_UNSUCCESSFUL) return status;
+    }
+
+    if (dump_backtrace)
+    {
+        if (module)
+            WINE_BACKTRACE_LOG( "%p: %s + %p.\n", (void *)context->Rip, debugstr_w(module->BaseDllName.Buffer),
+                                (void *)((char *)context->Rip - (char *)dispatch->ImageBase) );
+        else
+            WINE_BACKTRACE_LOG( "%p: unknown module.\n", (void *)context->Rip );
     }
 
     return RtlVirtualUnwind2( type, dispatch->ImageBase, context->Rip, dispatch->FunctionEntry,
@@ -223,7 +231,7 @@ NTSTATUS call_seh_handlers( EXCEPTION_RECORD *rec, CONTEXT *orig_context )
     dispatch.HistoryTable  = &table;
     for (;;)
     {
-        status = virtual_unwind( UNW_FLAG_EHANDLER, &dispatch, &context );
+        status = virtual_unwind( UNW_FLAG_EHANDLER, &dispatch, &context, need_backtrace( rec->ExceptionCode ) );
         if (status != STATUS_SUCCESS) return status;
 
     unwind_done:
@@ -706,7 +714,7 @@ void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec
 
     for (;;)
     {
-        status = virtual_unwind( UNW_FLAG_UHANDLER, &dispatch, &new_context );
+        status = virtual_unwind( UNW_FLAG_UHANDLER, &dispatch, &new_context, FALSE );
         if (status != STATUS_SUCCESS) raise_status( status, rec );
 
     unwind_done:
