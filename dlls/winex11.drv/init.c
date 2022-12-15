@@ -217,9 +217,11 @@ static BOOL needs_client_window_clipping( HWND hwnd )
     return ret > 0;
 }
 
-BOOL needs_offscreen_rendering( HWND hwnd, BOOL known_child )
+BOOL needs_offscreen_rendering( HWND hwnd, BOOL known_child, BOOL check_gamma )
 {
-    if (NtUserGetDpiForWindow( hwnd ) != NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI )) return TRUE; /* needs DPI scaling */
+    if (NtUserGetDpiForWindow( hwnd ) != NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI )
+        && !enable_fullscreen_hack( hwnd, check_gamma ))
+        return TRUE; /* needs DPI scaling */
     if (NtUserGetAncestor( hwnd, GA_PARENT ) != NtUserGetDesktopWindow()) return TRUE; /* child window, needs compositing */
     if (NtUserGetWindowRelative( hwnd, GW_CHILD ) || known_child) return needs_client_window_clipping( hwnd ); /* window has children, needs compositing */
     return FALSE;
@@ -392,7 +394,7 @@ static const struct user_driver_funcs x11drv_funcs =
     .dc_funcs.pExtFloodFill = X11DRV_ExtFloodFill,
     .dc_funcs.pFillPath = X11DRV_FillPath,
     .dc_funcs.pGetDeviceCaps = X11DRV_GetDeviceCaps,
-    .dc_funcs.pGetDeviceGammaRamp = X11DRV_GetDeviceGammaRamp,
+    .dc_funcs.pGetDeviceGammaRamp = fs_hack_get_gamma_ramp,
     .dc_funcs.pGetICMProfile = X11DRV_GetICMProfile,
     .dc_funcs.pGetImage = X11DRV_GetImage,
     .dc_funcs.pGetNearestColor = X11DRV_GetNearestColor,
@@ -416,7 +418,7 @@ static const struct user_driver_funcs x11drv_funcs =
     .dc_funcs.pSetDCBrushColor = X11DRV_SetDCBrushColor,
     .dc_funcs.pSetDCPenColor = X11DRV_SetDCPenColor,
     .dc_funcs.pSetDeviceClipping = X11DRV_SetDeviceClipping,
-    .dc_funcs.pSetDeviceGammaRamp = X11DRV_SetDeviceGammaRamp,
+    .dc_funcs.pSetDeviceGammaRamp = fs_hack_set_gamma_ramp,
     .dc_funcs.pSetPixel = X11DRV_SetPixel,
     .dc_funcs.pStretchBlt = X11DRV_StretchBlt,
     .dc_funcs.pStrokeAndFillPath = X11DRV_StrokeAndFillPath,

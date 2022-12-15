@@ -159,7 +159,7 @@ static void vulkan_surface_update_size( HWND hwnd, struct x11drv_vulkan_surface 
 
 static void vulkan_surface_update_offscreen( HWND hwnd, struct x11drv_vulkan_surface *surface )
 {
-    BOOL offscreen = needs_offscreen_rendering( hwnd, FALSE );
+    BOOL offscreen = needs_offscreen_rendering( hwnd, FALSE, FALSE );
     struct x11drv_win_data *data;
 
     if (offscreen == surface->offscreen) return;
