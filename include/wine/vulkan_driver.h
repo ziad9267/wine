@@ -82,6 +82,7 @@ struct vulkan_instance
 #undef USE_VK_FUNC
     void (*p_insert_object)( struct vulkan_instance *instance, struct vulkan_object *obj );
     void (*p_remove_object)( struct vulkan_instance *instance, struct vulkan_object *obj );
+    uint32_t api_version;
 };
 
 static inline struct vulkan_instance *vulkan_instance_from_handle( VkInstance handle )
@@ -94,6 +95,7 @@ struct vulkan_physical_device
 {
     VULKAN_OBJECT_HEADER( VkPhysicalDevice, physical_device );
     struct vulkan_instance *instance;
+    uint32_t api_version;
 };
 
 static inline struct vulkan_physical_device *vulkan_physical_device_from_handle( VkPhysicalDevice handle )

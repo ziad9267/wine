@@ -361,6 +361,7 @@ static VkResult wine_vk_physical_device_init(struct wine_phys_dev *object, VkPhy
     BOOL have_memory_placed = FALSE, have_map_memory2 = FALSE;
     uint32_t num_host_properties, num_properties = 0;
     VkExtensionProperties *host_properties = NULL;
+    VkPhysicalDeviceProperties physdev_properties;
     BOOL have_external_memory_host = FALSE;
     VkResult res;
     unsigned int i, j;
@@ -369,6 +370,9 @@ static VkResult wine_vk_physical_device_init(struct wine_phys_dev *object, VkPhy
     object->obj.instance = instance;
 
     instance->p_vkGetPhysicalDeviceMemoryProperties(host_physical_device, &object->memory_properties);
+
+    instance->p_vkGetPhysicalDeviceProperties(host_physical_device, &physdev_properties);
+    object->obj.api_version = physdev_properties.apiVersion;
 
     res = instance->p_vkEnumerateDeviceExtensionProperties(host_physical_device,
             NULL, &num_host_properties, NULL);
@@ -671,7 +675,8 @@ static VkResult wine_vk_device_convert_create_info(VkPhysicalDevice client_physi
         remove_extensions[remove_count++] = "VK_KHR_external_semaphore_win32";
     }
 
-    if (!find_extension(extensions, extensions_count, "VK_KHR_timeline_semaphore"))
+    if ((phys_dev->obj.api_version < VK_API_VERSION_1_2 || phys_dev->obj.instance->api_version < VK_API_VERSION_1_2)
+                && !find_extension(extensions, extensions_count, "VK_KHR_timeline_semaphore"))
         extra_extensions[extra_count++] = "VK_KHR_timeline_semaphore";
 
     if (phys_dev->map_placed_align)
@@ -1189,6 +1194,8 @@ VkResult wine_vkCreateInstance(const VkInstanceCreateInfo *create_info,
         TRACE("Engine name %s, engine version %#x.\n", debugstr_a(app_info->pEngineName),
                 app_info->engineVersion);
         TRACE("API version %#x.\n", app_info->apiVersion);
+
+        instance->obj.api_version = app_info->apiVersion;
 
         if (app_info->pEngineName && !strcmp(app_info->pEngineName, "idTech"))
             instance->quirks |= WINEVULKAN_QUIRK_GET_DEVICE_PROC_ADDR;
@@ -1920,6 +1927,25 @@ static void wine_vk_get_physical_device_external_semaphore_properties(struct win
             break;
         case VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT:
         {
+            unsigned int i;
+
+            if (phys_dev->obj.api_version < VK_API_VERSION_1_2 ||
+                phys_dev->obj.instance->api_version < VK_API_VERSION_1_2)
+            {
+                for (i = 0; i < phys_dev->extension_count; i++)
+                {
+                    if (!strcmp(phys_dev->extensions[i].extensionName, "VK_KHR_timeline_semaphore"))
+                        break;
+                }
+                if (i == phys_dev->extension_count)
+                {
+                    properties->exportFromImportedHandleTypes = 0;
+                    properties->compatibleHandleTypes = 0;
+                    properties->externalSemaphoreFeatures = 0;
+                    return;
+                }
+            }
+
             if ((p_semaphore_type_info = find_next_struct(&semaphore_info_dup, VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO)))
             {
                 p_semaphore_type_info->semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
