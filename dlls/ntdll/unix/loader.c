@@ -2124,6 +2124,7 @@ BOOL fsync_simulate_sched_quantum;
 BOOL alert_simulate_sched_quantum;
 BOOL fsync_yield_to_waiters;
 BOOL localsystem_sid;
+BOOL simulate_writecopy;
 
 static void hacks_init(void)
 {
@@ -2182,6 +2183,10 @@ static void hacks_init(void)
     env_str = getenv("WINE_UNIX_PC_AS_NTDLL");
     if (env_str)  report_native_pc_as_ntdll = atoi(env_str);
     else if (sgi) report_native_pc_as_ntdll = !strcmp(sgi, "700330");
+
+    env_str = getenv("WINE_SIMULATE_WRITECOPY");
+    if (env_str) simulate_writecopy = atoi(env_str);
+    else if (sgi) simulate_writecopy = !strcmp(sgi, "1608730");
 
     if (main_argc > 1 && strstr(main_argv[1], "MicrosoftEdgeUpdate.exe"))
     {
