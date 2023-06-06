@@ -2938,3 +2938,4 @@ HKLM,Software\Wow6432Node\lucasarts entertainment company llc\Star Wars: Episode
 HKLM,Software\Wow6432Node\lucasarts entertainment company llc\Star Wars: Episode I Racer\v1.0,"Display Width",0x10001,640
 ;;Other app-specific overrides
 HKCU,Software\Wine\AppDefaults\Pentiment.exe\DllOverrides,"SpeechSynthesisWrapper",,"disabled"
+HKCU,Software\Wine\AppDefaults\Maine-Win64-Shipping.exe\DllOverrides,"SpeechSynthWrapper",0x2,"disabled"
