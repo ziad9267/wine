@@ -4229,9 +4229,10 @@ void WINAPI LdrInitializeThunk( CONTEXT *context, ULONG_PTR unknown2, ULONG_PTR 
 
         build_ntdll_module( meminfo.AllocationBase );
 
-        if (NtCurrentTeb()->WowTebOffset) init_wow64( context );
+        actctx_init();
+        locale_init();
 
-        if ((status = load_dll( NULL, L"kernel32.dll", 0, &kernel32, FALSE )) != STATUS_SUCCESS)
+        if ((status = load_dll( system_dir, L"kernel32.dll", 0, &kernel32, FALSE )) != STATUS_SUCCESS)
         {
             MESSAGE( "wine: could not load kernel32.dll, status %lx\n", status );
             NtTerminateProcess( GetCurrentProcess(), status );
@@ -4245,8 +4246,8 @@ void WINAPI LdrInitializeThunk( CONTEXT *context, ULONG_PTR unknown2, ULONG_PTR 
         }
         LdrGetProcedureAddress( kernel32->ldr.DllBase, &ctrl_routine, 0, (void **)&pCtrlRoutine );
 
-        actctx_init();
-        locale_init();
+        if (NtCurrentTeb()->WowTebOffset) init_wow64( context );
+
         if (wm->ldr.Flags & LDR_COR_ILONLY)
             status = fixup_imports_ilonly( wm, NULL, entry );
         else
