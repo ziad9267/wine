@@ -4293,12 +4293,13 @@ void loader_init( CONTEXT *context, void **entry )
         load_global_options();
         version_init();
 
-        if (NtCurrentTeb()->WowTebOffset) init_wow64( context );
-
         wm = build_main_module();
         build_ntdll_module();
 
-        if ((status = load_dll( NULL, L"kernel32.dll", 0, &kernel32, FALSE )) != STATUS_SUCCESS)
+        actctx_init();
+        locale_init();
+
+        if ((status = load_dll( system_dir, L"kernel32.dll", 0, &kernel32, FALSE )) != STATUS_SUCCESS)
         {
             MESSAGE( "wine: could not load kernel32.dll, status %lx\n", status );
             NtTerminateProcess( GetCurrentProcess(), status );
@@ -4312,9 +4313,8 @@ void loader_init( CONTEXT *context, void **entry )
         }
         LdrGetProcedureAddress( kernel32->ldr.DllBase, &ctrl_routine, 0, (void **)&pCtrlRoutine );
 
-        actctx_init();
-        locale_init();
-        get_env_var( L"WINESYSTEMDLLPATH", 0, &system_dll_path );
+        if (NtCurrentTeb()->WowTebOffset) init_wow64( context );
+
         if (wm->ldr.Flags & LDR_COR_ILONLY)
             status = fixup_imports_ilonly( wm, NULL, entry );
         else
