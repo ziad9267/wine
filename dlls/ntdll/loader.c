@@ -4184,6 +4184,26 @@ static void init_wow64( CONTEXT *context )
         NTSTATUS status;
         static const WCHAR wow64_path[] = L"C:\\windows\\system32\\wow64.dll";
 
+#if defined(_WIN64) && defined(__aarch64__)
+        ANSI_STRING ctrl_routine = RTL_CONSTANT_STRING( "CtrlRoutine" );
+        WINE_MODREF *kernel32;
+
+        build_wow64_main_module();
+        build_ntdll_module();
+
+        actctx_init();
+        locale_init();
+
+        if ((status = load_dll( system_dir, L"kernel32.dll", 0, &kernel32, FALSE )) != STATUS_SUCCESS)
+        {
+            MESSAGE( "wine: could not load kernel32.dll, status %lx\n", status );
+            NtTerminateProcess( GetCurrentProcess(), status );
+        }
+        node_kernel32 = kernel32->ldr.DdagNode;
+        pBaseThreadInitThunk = RtlFindExportedRoutineByName( kernel32->ldr.DllBase, "BaseThreadInitThunk" );
+        LdrGetProcedureAddress( kernel32->ldr.DllBase, &ctrl_routine, 0, (void **)&pCtrlRoutine );
+#endif
+
         build_wow64_main_module();
         build_ntdll_module();
 
@@ -4357,7 +4377,7 @@ void loader_init( CONTEXT *context, void **entry )
     }
     else wm = get_modref( NtCurrentTeb()->Peb->ImageBaseAddress );
 
-#ifdef _WIN64
+#if defined(_WIN64) && !defined(__aarch64__)
     if (NtCurrentTeb()->WowTebOffset) init_wow64( context );
 #endif
 
@@ -4411,6 +4431,10 @@ void loader_init( CONTEXT *context, void **entry )
         thread_attach();
         if (wm->ldr.TlsIndex == -1) call_tls_callbacks( wm->ldr.DllBase, DLL_THREAD_ATTACH );
     }
+
+#if defined(_WIN64) && defined(__aarch64__)
+    if (NtCurrentTeb()->WowTebOffset) init_wow64( context );
+#endif
 
     RtlLeaveCriticalSection( &loader_section );
 }
