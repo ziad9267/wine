@@ -2908,7 +2908,7 @@ static LRESULT message_call_32to64( HWND hwnd, UINT msg, WPARAM wparam, LPARAM l
     {
     case WM_NCCREATE:
     case WM_CREATE:
-        {
+        if (lparam) {
             CREATESTRUCT32 *cs32 = (void *)lparam;
             CREATESTRUCTW cs;
 
@@ -2926,6 +2926,7 @@ static LRESULT message_call_32to64( HWND hwnd, UINT msg, WPARAM wparam, LPARAM l
             cs32->dwExStyle      = cs.dwExStyle;
             return ret;
         }
+        return NtUserMessageCall( hwnd, msg, wparam, lparam, result_info, type, ansi );
 
     case WM_MDICREATE:
         {
