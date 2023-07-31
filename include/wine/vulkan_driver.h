@@ -48,6 +48,7 @@ struct vulkan_client_object
 
 #include "wine/vulkan.h"
 #include "wine/rbtree.h"
+#include "wine/list.h"
 
 /* Wine internal vulkan driver version, needs to be bumped upon vulkan_funcs changes. */
 #define WINE_VULKAN_DRIVER_VERSION 35
@@ -104,6 +105,12 @@ static inline struct vulkan_physical_device *vulkan_physical_device_from_handle(
     return (struct vulkan_physical_device *)(UINT_PTR)client->unix_handle;
 }
 
+struct local_timeline_semaphore
+{
+    VkSemaphore sem;
+    uint64_t value;
+};
+
 struct vulkan_device
 {
     VULKAN_OBJECT_HEADER( VkDevice, device );
@@ -114,6 +121,16 @@ struct vulkan_device
     uint64_t queue_count;
     struct vulkan_queue *queues;
     VkQueueFamilyProperties *queue_props;
+
+    pthread_t signaller_thread;
+    pthread_mutex_t signaller_mutex;
+    BOOL stop;
+    struct list free_fence_ops_list;
+    struct list sem_poll_list;
+    struct local_timeline_semaphore sem_poll_update;
+    pthread_cond_t sem_poll_updated_cond;
+    uint64_t sem_poll_update_value; /* set to sem_poll_update.value by signaller thread once update is processed. */
+    unsigned int allocated_fence_ops_count;
 };
 
 static inline struct vulkan_device *vulkan_device_from_handle( VkDevice handle )

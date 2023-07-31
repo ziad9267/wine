@@ -21,6 +21,7 @@
 #define __WINE_VULKAN_PRIVATE_H
 
 #include <pthread.h>
+#include <stdbool.h>
 
 #include "vulkan_loader.h"
 #include "vulkan_thunks.h"
@@ -40,6 +41,19 @@ static inline struct wine_cmd_buffer *wine_cmd_buffer_from_handle(VkCommandBuffe
     struct vulkan_client_object *client = (struct vulkan_client_object *)handle;
     return (struct wine_cmd_buffer *)(UINT_PTR)client->unix_handle;
 }
+
+struct wine_semaphore;
+
+struct pending_d3d12_fence_op
+{
+    /* Vulkan native local semaphore. */
+    struct local_timeline_semaphore local_sem;
+
+    /* Operation values. */
+    struct list entry;
+    uint64_t virtual_value;
+    struct wine_semaphore *semaphore;
+};
 
 struct wine_debug_utils_messenger;
 
@@ -174,18 +188,23 @@ struct wine_semaphore
 {
     struct vulkan_semaphore obj;
     VkSemaphore semaphore;
-    VkSemaphore fence_timeline_semaphore;
 
     VkExternalSemaphoreHandleTypeFlagBits export_types;
 
     /* mutable members */
     VkExternalSemaphoreHandleTypeFlagBits handle_type;
+    struct list poll_entry;
+    struct list pending_waits;
+    struct list pending_signals;
     HANDLE handle;
     struct
     {
+        /* Shared mem access mutex. The non-shared parts access is guarded with device global signaller_mutex. */
         pthread_mutex_t mutex;
-        uint64_t virtual_value;
+        uint64_t virtual_value, physical_value;
     } *d3d12_fence_shm;
+    /* The Vulkan shared semaphore is only waited or signaled in signaller_worker(). */
+    VkSemaphore fence_timeline_semaphore;
 };
 
 static inline void *conversion_context_alloc(struct conversion_context *pool, size_t size)
