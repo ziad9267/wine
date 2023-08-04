@@ -2939,13 +2939,26 @@ VkResult wine_vkGetMemoryWin32HandleKHR(VkDevice device, const VkMemoryGetWin32H
     }
 }
 
-VkResult wine_vkGetMemoryWin32HandlePropertiesKHR(VkDevice device, VkExternalMemoryHandleTypeFlagBits type, HANDLE handle, VkMemoryWin32HandlePropertiesKHR *properties)
+VkResult wine_vkGetMemoryWin32HandlePropertiesKHR(VkDevice device_handle, VkExternalMemoryHandleTypeFlagBits type, HANDLE handle, VkMemoryWin32HandlePropertiesKHR *properties)
 {
+    struct vulkan_device *device = vulkan_device_from_handle(device_handle);
+    struct wine_phys_dev *physical_device = CONTAINING_RECORD(device->physical_device, struct wine_phys_dev, obj);
+    unsigned int i;
+
     TRACE("%p %u %p %p\n", device, type, handle, properties);
 
-    /* VUID-vkGetMemoryWin32HandlePropertiesKHR-handleType-00666
-       handleType must not be one of the handle types defined as opaque */
-    return VK_ERROR_INVALID_EXTERNAL_HANDLE;
+    if (!(type & wine_vk_handle_over_fd_types))
+    {
+        FIXME("type %#x.\n", type);
+        return VK_ERROR_INVALID_EXTERNAL_HANDLE;
+    }
+
+    properties->memoryTypeBits = 0;
+    for (i = 0; i < physical_device->memory_properties.memoryTypeCount; ++i)
+        if (physical_device->memory_properties.memoryTypes[i].propertyFlags == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+            properties->memoryTypeBits |= 1u << i;
+
+    return VK_SUCCESS;
 }
 
 #define IOCTL_SHARED_GPU_RESOURCE_SET_OBJECT           CTL_CODE(FILE_DEVICE_VIDEO, 6, METHOD_BUFFERED, FILE_WRITE_ACCESS)
