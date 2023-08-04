@@ -101,7 +101,6 @@ UNSUPPORTED_EXTENSIONS = [
     # Relates to external_semaphore and needs type conversions in bitflags.
     "VK_KHR_maintenance7", # Causes infinity recursion in struct convert code
     "VK_KHR_shared_presentable_image", # Needs WSI work.
-    "VK_KHR_win32_keyed_mutex",
     "VK_NV_external_memory_rdma", # Needs shared resources work.
 
     # Extensions for other platforms
@@ -335,8 +334,8 @@ STRUCT_CHAIN_CONVERSIONS = {
     "VkPhysicalDeviceImageFormatInfo2": [],
     "VkPhysicalDeviceExternalSemaphoreInfo": [],
     "VkSemaphoreCreateInfo": [],
-    "VkSubmitInfo": ["VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHR"],
-    "VkSubmitInfo2": [],
+    "VkSubmitInfo": ["VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHR", "VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR"],
+    "VkSubmitInfo2": ["VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR"],
     "VkBindSparseInfo" : [],
 }
 

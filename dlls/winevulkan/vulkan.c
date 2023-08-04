@@ -404,7 +404,7 @@ static VkResult wine_vk_physical_device_init(struct wine_phys_dev *object, VkPhy
     uint32_t num_host_properties, num_properties = 0;
     VkExtensionProperties *host_properties = NULL;
     VkPhysicalDeviceProperties physdev_properties;
-    BOOL have_external_memory_host = FALSE;
+    BOOL have_external_memory_host = FALSE, have_external_memory_fd = FALSE, have_external_semaphore_fd = FALSE;
     VkResult res;
     unsigned int i, j;
 
@@ -451,6 +451,7 @@ static VkResult wine_vk_physical_device_init(struct wine_phys_dev *object, VkPhy
             snprintf(host_properties[i].extensionName, sizeof(host_properties[i].extensionName),
                     VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME);
             host_properties[i].specVersion = VK_KHR_EXTERNAL_MEMORY_WIN32_SPEC_VERSION;
+            have_external_memory_fd = TRUE;
         }
         if (!strcmp(host_properties[i].extensionName, "VK_KHR_external_semaphore_fd"))
         {
@@ -459,6 +460,7 @@ static VkResult wine_vk_physical_device_init(struct wine_phys_dev *object, VkPhy
             snprintf(host_properties[i].extensionName, sizeof(host_properties[i].extensionName),
                     VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);
             host_properties[i].specVersion = VK_KHR_EXTERNAL_SEMAPHORE_WIN32_SPEC_VERSION;
+            have_external_semaphore_fd = TRUE;
         }
 
         if (wine_vk_device_extension_supported(host_properties[i].extensionName))
@@ -478,7 +480,8 @@ static VkResult wine_vk_physical_device_init(struct wine_phys_dev *object, VkPhy
             have_map_memory2 = TRUE;
     }
 
-    TRACE("Host supported extensions %u, Wine supported extensions %u\n", num_host_properties, num_properties);
+    if (have_external_memory_fd && have_external_semaphore_fd)
+        ++num_properties; /* VK_KHR_win32_keyed_mutex */
 
     if (!(object->extensions = calloc(num_properties, sizeof(*object->extensions))))
     {
@@ -494,7 +497,15 @@ static VkResult wine_vk_physical_device_init(struct wine_phys_dev *object, VkPhy
             j++;
         }
     }
+    if (have_external_memory_fd && have_external_semaphore_fd)
+    {
+        strcpy(object->extensions[j].extensionName, VK_KHR_WIN32_KEYED_MUTEX_EXTENSION_NAME);
+        object->extensions[j].specVersion = VK_KHR_WIN32_KEYED_MUTEX_SPEC_VERSION;
+        TRACE("Enabling extension '%s' for physical device %p\n", object->extensions[j].extensionName, object);
+        ++j;
+    }
     object->extension_count = num_properties;
+    TRACE("Host supported extensions %u, Wine supported extensions %u\n", num_host_properties, num_properties);
 
     if (zero_bits && have_memory_placed && have_map_memory2)
     {
@@ -716,6 +727,16 @@ static VkResult wine_vk_device_convert_create_info(VkPhysicalDevice client_physi
         extra_extensions[extra_count++] = "VK_KHR_external_semaphore_fd";
         remove_extensions[remove_count++] = "VK_KHR_external_semaphore_win32";
     }
+
+    if (find_extension(extensions, extensions_count, "VK_KHR_win32_keyed_mutex"))
+    {
+        if (!find_extension(extensions, extensions_count, "VK_KHR_external_memory_win32"))
+            extra_extensions[extra_count++] = "VK_KHR_external_memory_fd";
+        if (!find_extension(extensions, extensions_count, "VK_KHR_external_semaphore_win32"))
+            extra_extensions[extra_count++] = "VK_KHR_external_semaphore_fd";
+        remove_extensions[remove_count++] = "VK_KHR_win32_keyed_mutex";
+    }
+
 
     if ((phys_dev->obj.api_version < VK_API_VERSION_1_2 || phys_dev->obj.instance->api_version < VK_API_VERSION_1_2)
                 && !find_extension(extensions, extensions_count, "VK_KHR_timeline_semaphore"))
