@@ -3423,7 +3423,7 @@ NTSTATUS virtual_alloc_teb( TEB **ret_teb )
             SIZE_T total = 32 * block_size;
 
             if ((status = NtAllocateVirtualMemory( NtCurrentProcess(), &ptr,
-                                                   is_win64 && is_wow64() ? limit_2g - 1 : 0,
+                                                   is_win64 && is_wow64() ? get_wow_limit_mask() : 0,
                                                    &total, MEM_RESERVE, PAGE_READWRITE )))
             {
                 server_leave_uninterrupted_section( &virtual_mutex, &sigset );

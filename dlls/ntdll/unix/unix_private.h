@@ -469,6 +469,11 @@ static inline ULONG_PTR get_zero_bits_limit( ULONG_PTR zero_bits )
     return (~(UINT64)0) >> shift;
 }
 
+static inline ULONG_PTR get_wow_limit_mask(void)
+{
+    if (main_image_info.ImageCharacteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE) return limit_4g - 1;
+    return limit_2g - 1;
+}
 
 enum loadorder
 {
@@ -516,7 +521,7 @@ static inline NTSTATUS map_section( HANDLE mapping, void **ptr, SIZE_T *size, UL
 {
     *ptr = NULL;
     *size = 0;
-    return NtMapViewOfSection( mapping, NtCurrentProcess(), ptr, is_win64 && wow_peb ? limit_2g - 1 : 0,
+    return NtMapViewOfSection( mapping, NtCurrentProcess(), ptr, is_win64 && is_wow64() ? get_wow_limit_mask() : 0,
                                0, NULL, size, ViewShare, 0, protect );
 }
 
