@@ -210,6 +210,10 @@ FUNCTION_OVERRIDES = {
 
     # VK_KHR_synchronization2
     "vkQueueSubmit2KHR" : {"dispatch" : True},
+
+    # Custom functions
+    "wine_vkAcquireKeyedMutex" : {"dispatch": True},
+    "wine_vkReleaseKeyedMutex" : {"dispatch": True},
 }
 
 # functions for which a user driver entry must be generated
@@ -296,6 +300,9 @@ MANUAL_UNIX_THUNKS = {
     "vkSignalSemaphoreKHR",
     "vkWaitSemaphoresKHR",
     "vkQueueSubmit2KHR",
+    # Custom functions
+    "wine_vkAcquireKeyedMutex",
+    "wine_vkReleaseKeyedMutex",
 }
 
 # loader functions which are entirely manually implemented
@@ -3355,6 +3362,10 @@ class VkRegistry(object):
         self.video_copyright = video_root.find('./comment').text
 
         root.extend(video_root)
+
+        tree_custom = ET.parse("vk_custom.xml")
+        root_custom = tree_custom.getroot()
+        root.extend(root_custom)
 
         self._parse_enums(root)
         self._parse_types(root)
