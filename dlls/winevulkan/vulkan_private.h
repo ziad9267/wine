@@ -98,6 +98,7 @@ struct wine_device
     pthread_cond_t sem_poll_updated_cond;
     uint64_t sem_poll_update_value; /* set to sem_poll_update.value by signaller thread once update is processed. */
     unsigned int allocated_fence_ops_count;
+    BOOL keyed_mutexes_enabled;
 };
 
 static inline struct wine_device *wine_device_from_handle(VkDevice handle)
@@ -252,6 +253,16 @@ static inline struct wine_cmd_pool *wine_cmd_pool_from_handle(VkCommandPool hand
     return (struct wine_cmd_pool *)(uintptr_t)client_ptr->unix_handle;
 }
 
+struct keyed_mutex_shm
+{
+    pthread_mutex_t mutex;
+    uint64_t instance_id_counter;
+    uint64_t acquired_to_instance;
+    uint64_t key;
+    uint64_t timeline_value;
+    uint64_t timeline_queued_release;
+};
+
 struct wine_device_memory
 {
     VkDeviceMemory host_memory;
@@ -261,7 +272,9 @@ struct wine_device_memory
     BOOL inherit;
     DWORD access;
     HANDLE handle;
-
+    struct keyed_mutex_shm *keyed_mutex_shm;
+    VkSemaphore keyed_mutex_sem;
+    uint64_t keyed_mutex_instance_id;
     struct wine_vk_mapping mapping;
 };
 
