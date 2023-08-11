@@ -115,6 +115,16 @@ static inline struct wine_cmd_pool *wine_cmd_pool_from_handle(VkCommandPool hand
     return (struct wine_cmd_pool *)(UINT_PTR)client->unix_handle;
 }
 
+struct keyed_mutex_shm
+{
+    pthread_mutex_t mutex;
+    uint64_t instance_id_counter;
+    uint64_t acquired_to_instance;
+    uint64_t key;
+    uint64_t timeline_value;
+    uint64_t timeline_queued_release;
+};
+
 struct wine_device_memory
 {
     VULKAN_OBJECT_HEADER( VkDeviceMemory, device_memory );
@@ -124,6 +134,9 @@ struct wine_device_memory
     BOOL inherit;
     DWORD access;
     HANDLE handle;
+    struct keyed_mutex_shm *keyed_mutex_shm;
+    VkSemaphore keyed_mutex_sem;
+    uint64_t keyed_mutex_instance_id;
 };
 
 static inline struct wine_device_memory *wine_device_memory_from_handle(VkDeviceMemory handle)

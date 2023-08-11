@@ -131,6 +131,8 @@ struct vulkan_device
     pthread_cond_t sem_poll_updated_cond;
     uint64_t sem_poll_update_value; /* set to sem_poll_update.value by signaller thread once update is processed. */
     unsigned int allocated_fence_ops_count;
+
+    BOOL keyed_mutexes_enabled;
 };
 
 static inline struct vulkan_device *vulkan_device_from_handle( VkDevice handle )
