@@ -207,6 +207,7 @@ struct makefile
     int             data_only;
     int             is_win16;
     int             is_exe;
+    int             is_external;
     int             disabled[MAX_ARCHS];
 
     /* values generated at output time */
@@ -1546,7 +1547,7 @@ static struct file *open_include_file( const struct makefile *make, struct incl_
         return file;
     }
 
-    if (make->extlib) return NULL; /* ignore missing files in external libs */
+    if (make->extlib || make->is_external) return NULL; /* ignore missing files in external libs */
 
     fprintf( stderr, "%s:%d: error: ", pFile->included_by->file->name, pFile->included_line );
     perror( pFile->name );
@@ -1664,7 +1665,7 @@ static struct incl_file *add_src_file( struct makefile *make, const char *name )
     memset( file, 0, sizeof(*file) );
     file->name = xstrdup(name);
     file->use_msvcrt = is_using_msvcrt( make );
-    file->is_external = !!make->extlib;
+    file->is_external = !!make->extlib || make->is_external;
     list_add_tail( &make->sources, &file->entry );
     if (make == include_makefile)
     {
@@ -2197,7 +2198,7 @@ static struct strarray add_unix_libraries( const struct makefile *make, struct s
     struct strarray all_libs = empty_strarray;
     unsigned int i, j;
 
-    if (strcmp( make->unixlib, "ntdll.so" )) strarray_add( &all_libs, "-lntdll" );
+    if (strcmp( make->unixlib, "ntdll.so" ) && !make->is_external) strarray_add( &all_libs, "-lntdll" );
     strarray_addall( &all_libs, get_expanded_make_var_array( make, "UNIX_LIBS" ));
 
     for (i = 0; i < all_libs.count; i++)
@@ -4573,7 +4574,7 @@ static unsigned int find_pe_arch( const char *arch )
 int main( int argc, char *argv[] )
 {
     const char *makeflags = getenv( "MAKEFLAGS" );
-    const char *target;
+    const char *target, *tmp;
     unsigned int i, j, arch, ec_arch;
 
     if (makeflags) parse_makeflags( makeflags );
@@ -4689,7 +4690,16 @@ int main( int argc, char *argv[] )
     subdirs = get_expanded_make_var_array( top_makefile, "SUBDIRS" );
     submakes = xmalloc( subdirs.count * sizeof(*submakes) );
 
-    for (i = 0; i < subdirs.count; i++) submakes[i] = parse_makefile( subdirs.str[i] );
+    for (i = 0; i < subdirs.count; i++)
+    {
+        submakes[i] = parse_makefile( subdirs.str[i] );
+        if (*(tmp = subdirs.str[i]) == '/')
+        {
+            tmp = strmake( "dlls%s", strrchr( tmp, '/' ) );
+            submakes[i]->is_external = 1;
+        }
+        submakes[i]->obj_dir = subdirs.str[i] = tmp;
+    }
 
     if (!include_makefile) include_makefile = parse_makefile( root_src_dir_path( "include" ) );
 
