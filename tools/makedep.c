@@ -3583,13 +3583,15 @@ static void output_unix_lib( struct makefile *make )
     struct strarray unix_deps = empty_strarray;
     struct strarray unix_libs = add_unix_libraries( make, &unix_deps );
     unsigned int arch = 0;  /* unix libs are always native */
+    const char *unixlib;
 
     if (make->disabled[arch]) return;
+    if (!(unixlib = get_expanded_make_variable( make, strmake( "%s_%s", archs.str[arch], "UNIXLIB" ) ))) unixlib = make->unixlib;
 
-    strarray_add( &make->all_targets[arch], make->unixlib );
-    add_install_rule( make, make->module, arch, make->unixlib,
-                      strmake( "p%s%s", arch_install_dirs[arch], make->unixlib ));
-    output( "%s:", obj_dir_path( make, make->unixlib ));
+    strarray_add( &make->all_targets[arch], unixlib );
+    add_install_rule( make, make->module, arch, unixlib,
+                      strmake( "p%s%s", arch_install_dirs[arch], unixlib ));
+    output( "%s:", obj_dir_path( make, unixlib ));
     output_filenames_obj_dir( make, make->unixobj_files );
     output_filenames( unix_deps );
     output( "\n" );
