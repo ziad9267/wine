@@ -398,6 +398,19 @@ static void output_relay_debug( DLLSPEC *spec )
     }
 }
 
+static int use_drectve(void)
+{
+    /* ARM64EC exports are more complicated than other platforms. For functions implemented in ARM64EC,
+     * linker generates x86_64 thunk and relevant metadata that allows loader to associate x86_64 thunk
+     * with its ARM64EC implementation (and skip the thunk whenever possible).
+     *
+     * FIXME: This approach is not compatible with Wine relay support. We will most likely need
+     * custom x86_64 thunks at least for syscall thunks. This is currently not possible and will need
+     * linker changes. We should revisit using .drectve for other exports as well once we have
+     * a solution for custom x86_64 thunks. */
+    return target.cpu == CPU_ARM64EC;
+}
+
 /*******************************************************************
  *         output_exports
  *
@@ -414,39 +427,76 @@ void output_exports( DLLSPEC *spec )
 
     if (!nr_exports) return;
 
-    output( "\n/* export table */\n\n" );
-    output( "\t%s\n", get_asm_export_section() );
-    output( "\t.balign 4\n" );
-    output( ".L__wine_spec_exports:\n" );
-
-    /* export directory header */
-
-    output( "\t.long 0\n" );                       /* Characteristics */
-    output( "\t.long %u\n", hash_filename(spec->file_name) ); /* TimeDateStamp */
-    output( "\t.long 0\n" );                       /* MajorVersion/MinorVersion */
-    output_rva( ".L__wine_spec_exp_names" );       /* Name */
-    output( "\t.long %u\n", spec->base );          /* Base */
-    output( "\t.long %u\n", nr_exports );          /* NumberOfFunctions */
-    output( "\t.long %u\n", spec->nb_names );      /* NumberOfNames */
-    output_rva( ".L__wine_spec_exports_funcs " );  /* AddressOfFunctions */
-    if (spec->nb_names)
+    if (!use_drectve())
     {
-        output_rva( ".L__wine_spec_exp_name_ptrs" ); /* AddressOfNames */
-        output_rva( ".L__wine_spec_exp_ordinals" );  /* AddressOfNameOrdinals */
+        output( "\n/* export table */\n\n" );
+        output( "\t%s\n", get_asm_export_section() );
+        output( "\t.balign 4\n" );
+        output( ".L__wine_spec_exports:\n" );
+
+        /* export directory header */
+
+        output( "\t.long 0\n" );                       /* Characteristics */
+        output( "\t.long %u\n", hash_filename(spec->file_name) ); /* TimeDateStamp */
+        output( "\t.long 0\n" );                       /* MajorVersion/MinorVersion */
+        output_rva( ".L__wine_spec_exp_names" );       /* Name */
+        output( "\t.long %u\n", spec->base );          /* Base */
+        output( "\t.long %u\n", nr_exports );          /* NumberOfFunctions */
+        output( "\t.long %u\n", spec->nb_names );      /* NumberOfNames */
+        output_rva( ".L__wine_spec_exports_funcs " );  /* AddressOfFunctions */
+        if (spec->nb_names)
+        {
+            output_rva( ".L__wine_spec_exp_name_ptrs" ); /* AddressOfNames */
+            output_rva( ".L__wine_spec_exp_ordinals" );  /* AddressOfNameOrdinals */
+        }
+        else
+        {
+            output( "\t.long 0\n" );  /* AddressOfNames */
+            output( "\t.long 0\n" );  /* AddressOfNameOrdinals */
+        }
+
+        output( "\n.L__wine_spec_exports_funcs:\n" );
     }
-    else
-    {
-        output( "\t.long 0\n" );  /* AddressOfNames */
-        output( "\t.long 0\n" );  /* AddressOfNameOrdinals */
-    }
+    else output( "\t.section .drectve\n" );
 
     /* output the function pointers */
 
-    output( "\n.L__wine_spec_exports_funcs:\n" );
     for (i = spec->base; i <= spec->limit; i++)
     {
         ORDDEF *odp = spec->ordinals[i];
-        if (!odp) output( "\t%s 0\n", is_pe() ? ".long" : get_asm_ptr_keyword() );
+        if (use_drectve())
+        {
+            const char *symbol;
+
+            if (!odp) continue;
+
+            switch (odp->type)
+            {
+            case TYPE_EXTERN:
+            case TYPE_STDCALL:
+            case TYPE_VARARGS:
+            case TYPE_CDECL:
+                if (odp->flags & FLAG_FORWARD)
+                    symbol = odp->link_name;
+                else if (odp->flags & FLAG_EXT_LINK)
+                    symbol = strmake( "%s_%s", asm_name("__wine_spec_ext_link"), odp->link_name );
+                else
+                    symbol = asm_name( get_link_name( odp ));
+                break;
+            case TYPE_STUB:
+                symbol = asm_name( get_stub_name( odp, spec ));
+                break;
+            default:
+                assert( 0 );
+            }
+
+            output( "\t.ascii \" -export:%s=%s,@%u%s%s\"\n",
+                    odp->name ? odp->name : strmake( "_noname%u", i ),
+                    symbol, i,
+                    odp->name ? "" : ",NONAME",
+                    odp->type == TYPE_EXTERN ? ",DATA" : "" );
+        }
+        else if (!odp) output( "\t%s 0\n", is_pe() ? ".long" : get_asm_ptr_keyword() );
         else switch(odp->type)
         {
         case TYPE_EXTERN:
@@ -481,6 +531,8 @@ void output_exports( DLLSPEC *spec )
             assert(0);
         }
     }
+
+    if (use_drectve()) return;
 
     if (spec->nb_names)
     {
