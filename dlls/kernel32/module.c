@@ -295,7 +295,7 @@ FARPROC get_proc_address( HMODULE hModule, LPCSTR function )
     return fp;
 }
 
-#ifdef __x86_64__
+#if defined(__x86_64__) && !defined(__arm64ec__)
 /*
  * Work around a Delphi bug on x86_64.  When delay loading a symbol,
  * Delphi saves rcx, rdx, r8 and r9 to the stack.  It then calls
