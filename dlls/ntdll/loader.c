@@ -4188,6 +4188,46 @@ static void init_wow64( CONTEXT *context )
     pWow64LdrpInitialize( context );
 }
 
+#ifdef __arm64ec__
+
+/* xtajit64.dll functions */
+static void (WINAPI *pProcessInit)(void);
+static void (WINAPI *pThreadInit)(void);
+static NTSTATUS (WINAPI *pResetToConsistentState)( EXCEPTION_POINTERS * );
+
+static void init_xtajit64(void)
+{
+    HMODULE xtajit64;
+    WINE_MODREF *wm;
+    NTSTATUS status;
+    void (WINAPI *pDispatchJump)(void);
+    void (WINAPI *pExitToX64)(void);
+    void (WINAPI *pRetToEntryThunk)(void);
+
+    if ((status = load_dll( NULL, L"xtajit64.dll", 0, &wm, FALSE )))
+    {
+        ERR( "could not load xtajit64, status %lx\n", status );
+        NtTerminateProcess( GetCurrentProcess(), status );
+    }
+    xtajit64 = wm->ldr.DllBase;
+#define GET_PTR(name) \
+    if (!(p ## name = RtlFindExportedRoutineByName( xtajit64, #name ))) ERR( "failed to load %s\n", #name )
+
+    GET_PTR( DispatchJump );
+    GET_PTR( ExitToX64 );
+    GET_PTR( ProcessInit );
+    GET_PTR( ResetToConsistentState );
+    GET_PTR( RetToEntryThunk );
+    GET_PTR( ThreadInit );
+#undef GET_PTR
+
+    __os_arm64x_dispatch_call_no_redirect = pExitToX64;
+    __os_arm64x_dispatch_fptr = pDispatchJump;
+    __os_arm64x_dispatch_ret = pRetToEntryThunk;
+
+    pProcessInit();
+}
+#endif
 
 #else
 
@@ -4309,6 +4349,10 @@ void loader_init( CONTEXT *context, void **entry )
 
         wm = build_main_module();
         build_ntdll_module();
+#ifdef __arm64ec__
+        init_xtajit64();
+        update_load_config( wm->ldr.DllBase );
+#endif
 
         if ((status = load_dll( NULL, L"kernel32.dll", 0, &kernel32, FALSE )) != STATUS_SUCCESS)
         {
@@ -4339,6 +4383,9 @@ void loader_init( CONTEXT *context, void **entry )
 
 #ifdef _WIN64
     if (NtCurrentTeb()->WowTebOffset) init_wow64( context );
+#endif
+#ifdef __arm64ec__
+    pThreadInit();
 #endif
 
     RtlAcquirePebLock();
