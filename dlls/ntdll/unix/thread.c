@@ -1214,6 +1214,24 @@ NTSTATUS init_thread_stack( TEB *teb, ULONG_PTR limit, SIZE_T reserve_size, SIZE
         wow_teb->DeallocationStack = PtrToUlong( stack.DeallocationStack );
 #endif
     }
+#ifdef __aarch64__
+    else if (main_image_info.Machine == IMAGE_FILE_MACHINE_AMD64)
+    {
+        CHPE_V2_CPU_AREA_INFO *cpu_area;
+        const SIZE_T chpev2_stack_size = 0x40000;
+
+        /* emulator stack */
+        if ((status = virtual_alloc_thread_stack( &stack, limit_4g, 0, chpev2_stack_size, chpev2_stack_size, FALSE )))
+            return status;
+
+        cpu_area = stack.DeallocationStack;
+        cpu_area->ContextAmd64 = (ARM64EC_NT_CONTEXT *)&cpu_area->EmulatorDataInline;
+        cpu_area->EmulatorStackBase = stack.StackBase;
+        cpu_area->EmulatorStackLimit = (char *)stack.StackLimit + page_size;
+        cpu_area->EmulatorData[0] = stack.StackBase;  /* FIXME */
+        teb->ChpeV2CpuAreaInfo = cpu_area;
+    }
+#endif
 
     /* native stack */
     if ((status = virtual_alloc_thread_stack( &stack, 0, limit, reserve_size, commit_size, TRUE )))
