@@ -4349,6 +4349,51 @@ static void init_wow64( CONTEXT *context )
     pWow64LdrpInitialize( context );
 }
 
+#ifdef __arm64ec__
+
+/* xtajit64.dll functions */
+struct arm64ec_callbacks arm64ec_callbacks;
+
+static void init_xtajit64(void)
+{
+    HMODULE xtajit64;
+    WINE_MODREF *wm;
+    NTSTATUS status;
+
+    if ((status = load_dll( NULL, L"xtajit64.dll", 0, &wm, FALSE )))
+    {
+        ERR( "could not load xtajit64, status %lx\n", status );
+        NtTerminateProcess( GetCurrentProcess(), status );
+    }
+    xtajit64 = wm->ldr.DllBase;
+#define GET_PTR(name) \
+    if (!(arm64ec_callbacks.p## name = RtlFindExportedRoutineByName( xtajit64, #name ))) ERR( "failed to load %s\n", #name )
+
+    GET_PTR( DispatchJump );
+    GET_PTR( ExitToX64 );
+    GET_PTR( ProcessInit );
+    GET_PTR( ResetToConsistentState );
+    GET_PTR( RetToEntryThunk );
+    GET_PTR( ThreadInit );
+    GET_PTR( BTCpu64FlushInstructionCache );
+    GET_PTR( FlushInstructionCacheHeavy );
+    GET_PTR( NotifyMapViewOfSection );
+    GET_PTR( NotifyMemoryAlloc );
+    GET_PTR( NotifyMemoryFree );
+    GET_PTR( NotifyMemoryProtect );
+    GET_PTR( NotifyUnmapViewOfSection );
+    GET_PTR( BTCpu64IsProcessorFeaturePresent );
+    GET_PTR( UpdateProcessorInformation );
+    GET_PTR( BeginSimulation );
+    GET_PTR( ThreadTerm );
+#undef GET_PTR
+
+    __os_arm64x_dispatch_call_no_redirect = arm64ec_callbacks.pExitToX64;
+    __os_arm64x_dispatch_fptr = arm64ec_callbacks.pDispatchJump;
+    __os_arm64x_dispatch_ret = arm64ec_callbacks.pRetToEntryThunk;
+    arm64ec_callbacks.pProcessInit();
+}
+#endif
 
 #else
 
@@ -4487,6 +4532,10 @@ void loader_init( CONTEXT *context, void **entry )
 
         wm = build_main_module();
         build_ntdll_module();
+#ifdef __arm64ec__
+        init_xtajit64();
+        update_load_config( wm->ldr.DllBase );
+#endif
 
         if ((status = load_dll( NULL, L"kernel32.dll", 0, &kernel32, FALSE )) != STATUS_SUCCESS)
         {
@@ -4517,6 +4566,9 @@ void loader_init( CONTEXT *context, void **entry )
 
 #ifdef _WIN64
     if (NtCurrentTeb()->WowTebOffset) init_wow64( context );
+#endif
+#ifdef __arm64ec__
+    arm64ec_callbacks.pThreadInit();
 #endif
 
     RtlAcquirePebLock();
