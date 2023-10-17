@@ -3313,7 +3313,7 @@ done:
 
 void do_cpuid( unsigned int ax, int *p )
 {
-#if defined(__i386__) || defined(__x86_64__)
+#if (defined(__i386__) || defined(__x86_64__)) && !defined(__arm64ec__)
     __cpuid( p, ax );
 #else
     FIXME("\n");

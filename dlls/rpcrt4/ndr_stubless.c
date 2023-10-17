@@ -1002,7 +1002,7 @@ LONG_PTR CDECL ndr_client_call( PMIDL_STUB_DESC pStubDesc, PFORMAT_STRING pForma
     return RetVal;
 }
 
-#ifdef __x86_64__
+#if defined( __x86_64__) && !defined(__arm64ec__)
 
 __ASM_GLOBAL_FUNC( NdrClientCall2,
                    "subq $0x28,%rsp\n\t"
@@ -1096,7 +1096,7 @@ __ASM_GLOBAL_FUNC(call_server_func,
     __ASM_CFI(".cfi_def_cfa %esp,4\n\t")
     __ASM_CFI(".cfi_same_value %ebp\n\t")
     "ret" )
-#elif defined __x86_64__
+#elif defined __x86_64__ && !defined __arm64ec__
 LONG_PTR __cdecl call_server_func(SERVER_ROUTINE func, unsigned char * args, unsigned int stack_size);
 __ASM_GLOBAL_FUNC( call_server_func,
                    "pushq %rbp\n\t"
@@ -1210,7 +1210,7 @@ __ASM_GLOBAL_FUNC( call_server_func,
                    "ldp x29, x30, [sp], #16\n\t"
                    "ret" )
 #else
-#warning call_server_func not implemented for your architecture
+//#warning call_server_func not implemented for your architecture
 LONG_PTR __cdecl call_server_func(SERVER_ROUTINE func, unsigned char * args, unsigned short stack_size)
 {
     FIXME("Not implemented for your architecture\n");
@@ -1912,7 +1912,7 @@ cleanup:
     return status;
 }
 
-#ifdef __x86_64__
+#if defined(__x86_64__) && !defined(__arm64ec__)
 
 __ASM_GLOBAL_FUNC( NdrAsyncClientCall,
                    "subq $0x28,%rsp\n\t"
@@ -2254,7 +2254,7 @@ LONG_PTR CDECL ndr64_client_call( MIDL_STUBLESS_PROXY_INFO *info,
     return 0;
 }
 
-#ifdef __x86_64__
+#if defined(__x86_64__) && !defined(__arm64ec__)
 
 __ASM_GLOBAL_FUNC( NdrClientCall3,
                    "subq $0x28,%rsp\n\t"
@@ -2316,7 +2316,7 @@ LONG_PTR CDECL ndr64_async_client_call( MIDL_STUBLESS_PROXY_INFO *info,
     return 0;
 }
 
-#ifdef __x86_64__
+#if defined(__x86_64__) && !defined(__arm64ec__)
 
 __ASM_GLOBAL_FUNC( Ndr64AsyncClientCall,
                    "subq $0x28,%rsp\n\t"

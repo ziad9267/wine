@@ -1889,7 +1889,7 @@ struct fpu_thread_ctx
 
 static inline unsigned long get_fpu_cw(void)
 {
-#if defined(__i386__) || defined(__x86_64__)
+#if (defined(__i386__) || defined(__x86_64__)) && !defined(__arm64ec__)
     WORD cw = 0;
     unsigned int sse = 0;
 #ifdef _MSC_VER

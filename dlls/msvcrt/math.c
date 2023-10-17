@@ -77,7 +77,7 @@ void msvcrt_init_math( void *module )
 #endif
 }
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || (defined(__x86_64__) && !defined(__arm64ec__))
 static inline double ret_nan( BOOL update_sw )
 {
     double x = 1.0;
@@ -260,7 +260,7 @@ float CDECL MSVCRT_atanf( float x )
 }
 #endif
 
-#ifdef __x86_64__
+#if defined(__x86_64__) && !defined(__arm64ec__)
 extern short CDECL _fdclass(float x);
 
 static BOOL sqrtf_validate( float *x )
@@ -289,7 +289,7 @@ __ASM_GLOBAL_FUNC( sse2_sqrtf,
  */
 float CDECL MSVCRT_sqrtf( float x )
 {
-#ifdef __x86_64__
+#if defined(__x86_64__) && !defined(__arm64ec__)
     if (!sqrtf_validate(&x))
         return x;
 
@@ -382,7 +382,7 @@ double CDECL MSVCRT_exp( double x )
 }
 #endif
 
-#if defined(__x86_64__) || defined(__i386__)
+#if (defined(__x86_64__) && !defined(__arm64ec__)) || defined(__i386__)
 extern short CDECL _dclass(double x);
 
 static BOOL sqrt_validate( double *x, BOOL update_sw )
@@ -431,7 +431,7 @@ __ASM_GLOBAL_FUNC( x87_sqrt,
  */
 double CDECL MSVCRT_sqrt( double x )
 {
-#ifdef __x86_64__
+#if defined(__x86_64__) && !defined(__arm64ec__)
     if (!sqrt_validate(&x, TRUE))
         return x;
 
@@ -697,7 +697,7 @@ __int64 CDECL _abs64( __int64 n )
     return n >= 0 ? n : -n;
 }
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || (defined(__x86_64__) && !defined(__arm64ec__))
 static void _setfp_sse( unsigned int *cw, unsigned int cw_mask,
         unsigned int *sw, unsigned int sw_mask )
 {
@@ -912,7 +912,7 @@ static void _setfp( unsigned int *cw, unsigned int cw_mask,
         __asm__ __volatile__( "fnclex" );
     if (oldcw != newcw)
         __asm__ __volatile__( "fldcw %0" : : "m" (newcw) );
-#elif defined(__x86_64__)
+#elif defined(__x86_64__) && !defined(__arm64ec__)
     _setfp_sse(cw, cw_mask, sw, sw_mask);
 #elif defined(__aarch64__)
     ULONG_PTR old_fpsr = 0, fpsr = 0, old_fpcr = 0, fpcr = 0;
@@ -1247,7 +1247,7 @@ int CDECL _controlfp_s(unsigned int *cur, unsigned int newval, unsigned int mask
     return 0;
 }
 
-#if _MSVCR_VER >= 140 && (defined(__i386__) || defined(__x86_64__))
+#if _MSVCR_VER >= 140 && (defined(__i386__) || (defined(__x86_64__) && !defined(__arm64ec__)))
 enum fenv_masks
 {
     FENV_X_INVALID = 0x00100010,

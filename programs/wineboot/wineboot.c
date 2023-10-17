@@ -191,7 +191,7 @@ static DWORD set_reg_value_dword( HKEY hkey, const WCHAR *name, DWORD value )
     return RegSetValueExW( hkey, name, 0, REG_DWORD, (const BYTE *)&value, sizeof(value) );
 }
 
-#if defined(__i386__) || defined(__x86_64__)
+#if (defined(__i386__) || defined(__x86_64__)) && !defined(__arm64ec__)
 
 static void initialize_xstate_features(struct _KUSER_SHARED_DATA *data)
 {
@@ -479,7 +479,7 @@ static void create_user_shared_data(void)
     UnmapViewOfFile( data );
 }
 
-#if defined(__i386__) || defined(__x86_64__)
+#if (defined(__i386__) || defined(__x86_64__)) && !defined(__arm64ec__)
 
 static void regs_to_str( int *regs, unsigned int len, WCHAR *buffer )
 {

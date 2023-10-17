@@ -90,7 +90,7 @@ __ASM_GLOBAL_FUNC(call_stubless_func,
     ".long " __ASM_NAME("call_stubless_func") "-1f\n" \
     "1:\n\t"
 
-#elif defined(__x86_64__)
+#elif defined(__x86_64__) && !defined(__arm64ec__)
 
 extern void call_stubless_func(void);
 __ASM_GLOBAL_FUNC(call_stubless_func,
@@ -195,7 +195,7 @@ __ASM_GLOBAL_FUNC( call_stubless_func,
 
 #else  /* __i386__ */
 
-#warning You must implement stubless proxies for your CPU
+//#warning You must implement stubless proxies for your CPU
 
 #define THUNK_ENTRY_SIZE 0
 #define THUNK_ENTRY(num) ""

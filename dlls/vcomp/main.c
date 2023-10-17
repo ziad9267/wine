@@ -168,7 +168,7 @@ __ASM_GLOBAL_FUNC( _vcomp_fork_call_wrapper,
                    __ASM_CFI(".cfi_same_value %ebp\n\t")
                    "ret" )
 
-#elif defined(__x86_64__)
+#elif defined(__x86_64__) && !defined(__arm64ec__)
 
 extern void CDECL _vcomp_fork_call_wrapper(void *wrapper, int nargs, void **args);
 __ASM_GLOBAL_FUNC( _vcomp_fork_call_wrapper,

@@ -3257,6 +3257,7 @@ static DWORD WINAPI handler( EXCEPTION_RECORD *rec, ULONG64 frame,
         (rec->ExceptionCode == STATUS_BREAKPOINT && rec->ExceptionAddress == (char*)context->Rip + 1),
         "Unexpected exception address %p/%p\n", rec->ExceptionAddress, (char*)context->Rip );
 
+#ifndef __arm64ec__
     __asm__ volatile( "movw %%ds,%0" : "=g" (ds) );
     __asm__ volatile( "movw %%es,%0" : "=g" (es) );
     __asm__ volatile( "movw %%fs,%0" : "=g" (fs) );
@@ -3275,7 +3276,7 @@ static DWORD WINAPI handler( EXCEPTION_RECORD *rec, ULONG64 frame,
         "gs %#x does not match ss %#x\n", context->SegGs, context->SegSs );
     todo_wine ok( context->SegFs && context->SegFs != context->SegSs,
         "got fs %#x\n", context->SegFs );
-
+#endif
     if (except->status == STATUS_BREAKPOINT && is_wow64)
         parameter_count = 1;
     else if (except->alt_status == 0 || rec->ExceptionCode != except->alt_status)
@@ -3595,6 +3596,7 @@ static void test_exceptions(void)
     run_exception_test(int3_handler, NULL, int3_code, sizeof(int3_code), 0);
 
     /* test segment registers */
+#ifndef __arm64ec__
     ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_SEGMENTS;
     res = pNtGetContextThread( GetCurrentThread(), &ctx );
     ok( res == STATUS_SUCCESS, "NtGetContextThread failed with %lx\n", res );
@@ -3633,6 +3635,7 @@ static void test_exceptions(void)
     ok( ctx.SegEs == ctx.SegSs, "wrong es %04x / %04x\n", ctx.SegEs, ctx.SegSs );
     ok( ctx.SegFs != ctx.SegSs, "wrong fs %04x / %04x\n", ctx.SegFs, ctx.SegSs );
     ok( ctx.SegGs == ctx.SegSs, "wrong gs %04x / %04x\n", ctx.SegGs, ctx.SegSs );
+#endif
 }
 
 static DWORD WINAPI simd_fault_handler( EXCEPTION_RECORD *rec, ULONG64 frame,
@@ -4156,7 +4159,11 @@ static void test_debugger(DWORD cont_status, BOOL with_WaitForDebugEventEx)
                 else if (stage == STAGE_SEGMENTS)
                 {
                     USHORT ss;
+#ifdef __arm64ec__
+                    ss = 0x2b;
+#else
                     __asm__( "movw %%ss,%0" : "=r" (ss) );
+#endif
                     ok( ctx.SegSs == ss, "wrong ss %04x / %04x\n", ctx.SegSs, ss );
                     ok( ctx.SegDs == ctx.SegSs, "wrong ds %04x / %04x\n", ctx.SegDs, ctx.SegSs );
                     ok( ctx.SegEs == ctx.SegSs, "wrong es %04x / %04x\n", ctx.SegEs, ctx.SegSs );
@@ -10913,6 +10920,7 @@ static void test_extended_context(void)
 
     enabled_features = pRtlGetEnabledExtendedFeatures(~(ULONG64)0);
 
+#ifndef __arm64ec__
     if (enabled_features)
     {
         int regs[4];
@@ -10921,6 +10929,7 @@ static void test_extended_context(void)
         xsaveopt_enabled = regs[0] & 1;
         compaction_enabled = regs[0] & 2;
     }
+#endif
 
     /* Test context manipulation functions. */
     length = 0xdeadbeef;
