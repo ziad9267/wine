@@ -1207,7 +1207,7 @@ static BOOL write_gpu_to_registry( const struct gpu *gpu, const struct pci_id *p
             break;
         /* AMD */
         case 0x1002:
-            strcpy( buffer, "31.0.14051.5006" );
+            strcpy( buffer, "31.0.21902.5" );
             break;
         /* Nvidia */
         case 0x10de:
