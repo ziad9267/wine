@@ -243,9 +243,27 @@ static struct addr_range ranges64;
 
 void init_memory(void)
 {
+#ifdef __LP64__
+    size_t page_size = sysconf( _SC_PAGESIZE );
+    size_t limit = 1LLU << 48U;
+    page_mask = page_size - 1;
+    while(limit > 0x100000000LLU)
+    {
+        void* addr = (void*)(limit - page_size);
+        void* ret = mmap(addr, page_size, PROT_NONE, MAP_PRIVATE | MAP_ANON, -1, 0);
+        size_t next = limit >> 1U;
+        if (ret == (void*)-1) ret = NULL;
+        if (ret) munmap(ret, page_size);
+        if (ret >= (void*)next) break;
+        limit = next;
+    }
+    free_map_addr( 0x60000000, 0x1c000000 );
+    free_map_addr( limit - (limit >> 4U), limit >> 4U );
+#else
     page_mask = sysconf( _SC_PAGESIZE ) - 1;
     free_map_addr( 0x60000000, 0x1c000000 );
     free_map_addr( 0x600000000000, 0x100000000000 );
+#endif
 }
 
 static void ranges_dump( struct object *obj, int verbose )

@@ -571,7 +571,7 @@ static void mmap_init( const struct preload_info *preload_info )
     /* if we don't have a preloader, try to reserve the space now */
     reserve_area( (void *)0x000000010000, (void *)0x000068000000 );
     reserve_area( (void *)0x00007f000000, (void *)0x00007fff0000 );
-    reserve_area( (void *)0x7ffffe000000, (void *)0x7fffffff0000 );
+    reserve_area( ((char *)user_space_limit) - 0x1ff0000, user_space_limit );
 
 #endif
 }
@@ -3368,6 +3368,24 @@ static void *alloc_virtual_heap( SIZE_T size )
     return anon_mmap_alloc( size, PROT_READ | PROT_WRITE );
 }
 
+#ifdef _WIN64
+static void set_space_limit(void)
+{
+    size_t limit = 1LLU << 48U;
+    while(limit > 0x100000000LLU)
+    {
+        void* addr = (void*)(limit - page_size);
+        void* ret = mmap(addr, page_size, PROT_NONE, MAP_PRIVATE | MAP_ANON, -1, 0);
+        size_t next = limit >> 1U;
+        if (ret == (void*)-1) ret = NULL;
+        if (ret) munmap(ret, page_size);
+        if (ret >= (void*)next) break;
+        limit = next;
+    }
+    address_space_limit = user_space_limit = working_set_limit = (void*)(limit - 0x10000LLU);
+}
+#endif
+
 /***********************************************************************
  *           virtual_init
  */
@@ -3409,6 +3427,10 @@ void virtual_init(void)
         if (ERR_ON(virtual))
             MESSAGE("wine: using kernel write watches (experimental).\n");
     }
+
+#ifdef _WIN64
+    set_space_limit();
+#endif
 
     if (preload_info && *preload_info)
         for (i = 0; (*preload_info)[i].size; i++)
