@@ -69,6 +69,7 @@ AddReg=\
     Printing,\
     Services, \
     SessionMgr,\
+    SteamClient,\
     Tapi,\
     ThemeManager,\
     LicenseInformation
@@ -92,6 +93,7 @@ AddReg=\
     Printing,\
     Services, \
     SessionMgr,\
+    SteamClient,\
     Tapi,\
     ThemeManager,\
     VersionInfo,\
@@ -117,6 +119,7 @@ AddReg=\
     Printing,\
     Services, \
     SessionMgr,\
+    SteamClient64,\
     Tapi,\
     ThemeManager,\
     VersionInfo,\
@@ -142,6 +145,7 @@ AddReg=\
     Printing,\
     Services, \
     SessionMgr,\
+    SteamClient64,\
     Tapi,\
     ThemeManager,\
     VersionInfo,\
@@ -158,6 +162,7 @@ AddReg=\
     DirectX,\
     MCI,\
     Misc,\
+    SteamClient64,\
     Tapi,\
     VersionInfo,\
     LicenseInformation
@@ -173,6 +178,7 @@ AddReg=\
     DirectX,\
     MCI,\
     Misc,\
+    SteamClient64,\
     Tapi,\
     VersionInfo,\
     LicenseInformation
@@ -2728,3 +2734,19 @@ EtcFiles  = 12,etc
 InfFiles  = 17
 NlsFiles  = 11
 SortFiles = 10,globalization\sorting
+
+[SteamClient]
+HKCU,Software\Valve\Steam,"SteamPath",,"%16422%\Steam"
+HKCU,Software\Valve\Steam,"SteamExe",,"%16422%\Steam\Steam.exe"
+HKCU,Software\Valve\Steam\ActiveProcess,"PID",0x10001,0x0000fffe
+HKCU,Software\Valve\Steam\ActiveProcess,"SteamClientDll",,"%16422%\Steam\steamclient.dll"
+HKCU,Software\Valve\Steam\ActiveProcess,"SteamPath",,"%16422%\Steam"
+
+[SteamClient64]
+HKCU,Software\Valve\Steam,"SteamPath",,"%16422%\Steam"
+HKCU,Software\Valve\Steam,"SteamExe",,"%16422%\Steam\Steam.exe"
+HKCU,Software\Valve\Steam\ActiveProcess,"PID",0x10001,0x0000fffe
+HKCU,Software\Valve\Steam\ActiveProcess,"SteamClientDll",,"%16426%\Steam\steamclient.dll"
+HKCU,Software\Valve\Steam\ActiveProcess,"SteamClientDll64",,"%16426%\Steam\steamclient64.dll"
+HKCU,Software\Valve\Steam\ActiveProcess,"SteamPath",,"%16426%\Steam"
+HKLM,Software\Wow6432Node\Valve\Steam,"InstallPath",,"%16422%\Steam"
