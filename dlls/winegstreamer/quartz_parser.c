@@ -1717,7 +1717,7 @@ static HRESULT parser_create(BOOL output_compressed, struct parser **parser)
     if (!(object = calloc(1, sizeof(*object))))
         return E_OUTOFMEMORY;
 
-    if (!(object->wg_parser = wg_parser_create(output_compressed)))
+    if (!(object->wg_parser = wg_parser_create(output_compressed, FALSE)))
     {
         free(object);
         return E_OUTOFMEMORY;
