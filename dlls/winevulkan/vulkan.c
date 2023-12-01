@@ -969,6 +969,28 @@ VkResult wine_vkCreateDevice(VkPhysicalDevice client_physical_device, const VkDe
     res = wine_vk_device_convert_create_info(client_physical_device, &ctx, create_info, &create_info_host);
     if (res == VK_SUCCESS)
     {
+        VkPhysicalDeviceFeatures features = {0};
+        VkPhysicalDeviceFeatures2 *features2;
+
+        /* Enable shaderStorageImageWriteWithoutFormat for fshack
+         * This is available on all hardware and driver combinations we care about.
+         */
+        if (create_info_host.pEnabledFeatures)
+        {
+            features = *create_info_host.pEnabledFeatures;
+            features.shaderStorageImageWriteWithoutFormat = VK_TRUE;
+            create_info_host.pEnabledFeatures = &features;
+        }
+        if ((features2 = find_next_struct(&create_info_host, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2)))
+        {
+            features2->features.shaderStorageImageWriteWithoutFormat = VK_TRUE;
+        }
+        else if (!create_info_host.pEnabledFeatures)
+        {
+            features.shaderStorageImageWriteWithoutFormat = VK_TRUE;
+            create_info_host.pEnabledFeatures = &features;
+        }
+
         if (native_create_device)
             res = native_create_device(physical_device->host.physical_device, &create_info_host,
                                        NULL /* allocator */, &host_device,

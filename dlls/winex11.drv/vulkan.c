@@ -80,6 +80,25 @@ static void vulkan_surface_destroy( HWND hwnd, struct x11drv_vulkan_surface *sur
     free( surface );
 }
 
+static RECT get_client_rect( HWND hwnd, BOOL raw )
+{
+    struct x11drv_win_data *data;
+    RECT rect;
+
+    if (!raw)
+        NtUserGetClientRect( hwnd, &rect, NtUserGetDpiForWindow( hwnd ) );
+    else if (!(data = get_win_data( hwnd )))
+        NtUserGetClientRect( hwnd, &rect, NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI ) );
+    else
+    {
+        rect = data->rects.client;
+        OffsetRect( &rect, -rect.left, -rect.top );
+        release_win_data( data );
+    }
+
+    return rect;
+}
+
 static VkResult X11DRV_vulkan_surface_create( HWND hwnd, VkInstance instance, VkSurfaceKHR *handle, void **private )
 {
     VkXlibSurfaceCreateInfoKHR info =
@@ -88,6 +107,7 @@ static VkResult X11DRV_vulkan_surface_create( HWND hwnd, VkInstance instance, Vk
         .dpy = gdi_display,
     };
     struct x11drv_vulkan_surface *surface;
+    BOOL enable_fshack = enable_fullscreen_hack( hwnd, FALSE );
 
     TRACE( "%p %p %p %p\n", hwnd, instance, handle, private );
 
@@ -96,7 +116,7 @@ static VkResult X11DRV_vulkan_surface_create( HWND hwnd, VkInstance instance, Vk
         ERR("Failed to allocate vulkan surface for hwnd=%p\n", hwnd);
         return VK_ERROR_OUT_OF_HOST_MEMORY;
     }
-    NtUserGetClientRect( hwnd, &surface->rect, NtUserGetDpiForWindow( hwnd ) );
+    surface->rect = get_client_rect( hwnd, enable_fshack );
 
     if (!(surface->window = create_client_window( hwnd, surface->rect, &default_visual, default_colormap )))
     {
@@ -145,10 +165,11 @@ static void X11DRV_vulkan_surface_detach( HWND hwnd, void *private )
 
 static void vulkan_surface_update_size( HWND hwnd, struct x11drv_vulkan_surface *surface )
 {
+    BOOL enable_fshack = enable_fullscreen_hack( hwnd, FALSE );
     XWindowChanges changes;
     RECT rect;
 
-    NtUserGetClientRect( hwnd, &rect, NtUserGetDpiForWindow( hwnd ) );
+    rect = get_client_rect( hwnd, enable_fshack );
     if (EqualRect( &surface->rect, &rect )) return;
 
     changes.width  = min( max( 1, rect.right ), 65535 );
@@ -250,6 +271,11 @@ static void X11DRV_vulkan_surface_presented( HWND hwnd, void *private, VkResult 
     if (hdc) NtUserReleaseDC( hwnd, hdc );
 }
 
+static BOOL X11DRV_vulkan_surface_enable_fshack( HWND hwnd, void *private )
+{
+    return enable_fullscreen_hack( hwnd, FALSE );
+}
+
 static VkBool32 X11DRV_vkGetPhysicalDeviceWin32PresentationSupportKHR(VkPhysicalDevice phys_dev,
         uint32_t index)
 {
@@ -271,6 +297,7 @@ static const struct vulkan_driver_funcs x11drv_vulkan_driver_funcs =
     .p_vulkan_surface_detach = X11DRV_vulkan_surface_detach,
     .p_vulkan_surface_update = X11DRV_vulkan_surface_update,
     .p_vulkan_surface_presented = X11DRV_vulkan_surface_presented,
+    .p_vulkan_surface_enable_fshack = X11DRV_vulkan_surface_enable_fshack,
 
     .p_vkGetPhysicalDeviceWin32PresentationSupportKHR = X11DRV_vkGetPhysicalDeviceWin32PresentationSupportKHR,
     .p_get_host_surface_extension = X11DRV_get_host_surface_extension,

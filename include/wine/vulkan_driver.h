@@ -176,6 +176,7 @@ struct vulkan_funcs
     PFN_vkGetPhysicalDeviceSurfaceFormats2KHR p_vkGetPhysicalDeviceSurfaceFormats2KHR;
     PFN_vkGetPhysicalDeviceSurfaceFormatsKHR p_vkGetPhysicalDeviceSurfaceFormatsKHR;
     PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR p_vkGetPhysicalDeviceWin32PresentationSupportKHR;
+    PFN_vkGetSwapchainImagesKHR p_vkGetSwapchainImagesKHR;
     PFN_vkQueuePresentKHR p_vkQueuePresentKHR;
 
     /* winevulkan specific functions */
@@ -190,6 +191,7 @@ struct vulkan_driver_funcs
     void (*p_vulkan_surface_detach)(HWND, void *);
     void (*p_vulkan_surface_update)(HWND, void *);
     void (*p_vulkan_surface_presented)(HWND, void *, VkResult);
+    BOOL (*p_vulkan_surface_enable_fshack)(HWND, void *);
 
     VkBool32 (*p_vkGetPhysicalDeviceWin32PresentationSupportKHR)(VkPhysicalDevice, uint32_t);
     const char *(*p_get_host_surface_extension)(void);

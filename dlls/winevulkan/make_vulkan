@@ -208,6 +208,7 @@ USER_DRIVER_FUNCS = {
     "vkGetPhysicalDeviceSurfaceFormats2KHR",
     "vkGetPhysicalDeviceSurfaceFormatsKHR",
     "vkGetPhysicalDeviceWin32PresentationSupportKHR",
+    "vkGetSwapchainImagesKHR",
     "vkQueuePresentKHR",
 }
 
