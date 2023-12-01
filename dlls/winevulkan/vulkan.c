@@ -962,6 +962,7 @@ static VkResult wine_vk_instance_init_physical_devices(struct wine_instance *obj
         res = wine_vk_physical_device_init(phys_dev, host_physical_devices[i], &client_instance->phys_devs[i], instance);
         if (res != VK_SUCCESS)
             goto err;
+        TRACE("added host_physical_devices[i] %p.\n", host_physical_devices[i]);
     }
     object->phys_dev_count = phys_dev_count;
 
@@ -4635,4 +4636,50 @@ VkResult wine_wine_vkAcquireKeyedMutex(VkDevice device, VkDeviceMemory memory, u
 VkResult wine_wine_vkReleaseKeyedMutex(VkDevice device, VkDeviceMemory memory, uint64_t key)
 {
     return release_keyed_mutex(vulkan_device_from_handle(device), wine_device_memory_from_handle(memory), key, NULL);
+}
+
+DECLSPEC_EXPORT VkDevice __wine_get_native_VkDevice(VkDevice handle)
+{
+    struct vulkan_device *device = vulkan_device_from_handle(handle);
+
+    return device->host.device;
+}
+
+DECLSPEC_EXPORT VkInstance __wine_get_native_VkInstance(VkInstance handle)
+{
+    struct vulkan_instance *instance = vulkan_instance_from_handle(handle);
+
+    return instance->host.instance;
+}
+
+DECLSPEC_EXPORT VkPhysicalDevice __wine_get_native_VkPhysicalDevice(VkPhysicalDevice handle)
+{
+    struct vulkan_physical_device *phys_dev;
+
+    if (!handle) return NULL;
+
+    phys_dev = vulkan_physical_device_from_handle(handle);
+    return phys_dev->host.physical_device;
+}
+
+DECLSPEC_EXPORT VkQueue __wine_get_native_VkQueue(VkQueue handle)
+{
+    struct vulkan_queue *queue = vulkan_queue_from_handle(handle);
+
+    return queue->host.queue;
+}
+
+DECLSPEC_EXPORT VkPhysicalDevice __wine_get_wrapped_VkPhysicalDevice(VkInstance handle, VkPhysicalDevice native_phys_dev)
+{
+    struct wine_instance *instance = wine_instance_from_handle(handle);
+    unsigned int i;
+
+    for (i = 0; i < instance->phys_dev_count; ++i)
+    {
+        if (instance->phys_devs[i].obj.host.physical_device == native_phys_dev)
+            return instance->phys_devs[i].obj.client.physical_device;
+    }
+
+    ERR("Unknown native physical device: %p, instance %p, handle %p\n", native_phys_dev, instance, handle);
+    return NULL;
 }
