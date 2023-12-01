@@ -531,6 +531,49 @@ static void wine_vk_device_init_queues(struct wine_device *object, const VkDevic
     object->queue_count += info->queueCount;
 }
 
+static char *cc_strdup(struct conversion_context *ctx, const char *s)
+{
+    int len = strlen(s) + 1;
+    char *ret;
+
+    ret = conversion_context_alloc(ctx, len);
+    memcpy(ret, s, len);
+    return ret;
+}
+
+static void parse_xr_extensions(struct conversion_context *ctx, const char **extra_extensions, unsigned int *extra_count)
+{
+    char *iter, *start;
+
+    iter = getenv("__WINE_OPENXR_VK_DEVICE_EXTENSIONS");
+    if (!iter) return;
+    iter = cc_strdup(ctx, iter);
+
+    TRACE("got var: %s\n", iter);
+    start = iter;
+    do
+    {
+        if(*iter == ' ')
+        {
+            *iter = 0;
+            extra_extensions[(*extra_count)++] = cc_strdup(ctx, start);
+            TRACE("added %s to list\n", extra_extensions[(*extra_count) - 1]);
+            iter++;
+            start = iter;
+        }
+        else if(*iter == 0)
+        {
+            extra_extensions[(*extra_count)++] = cc_strdup(ctx, start);
+            TRACE("added %s to list\n", extra_extensions[(*extra_count) - 1]);
+            break;
+        }
+        else
+        {
+            iter++;
+        }
+    } while (1);
+}
+
 static const char *find_extension(const char *const *extensions, uint32_t count, const char *ext)
 {
     while (count--)
@@ -544,9 +587,12 @@ static const char *find_extension(const char *const *extensions, uint32_t count,
 static VkResult wine_vk_device_convert_create_info(VkPhysicalDevice client_physical_device,
         struct conversion_context *ctx, const VkDeviceCreateInfo *src, VkDeviceCreateInfo *dst)
 {
+    static const char *wine_xr_extension_name = "VK_WINE_openxr_device_extensions";
     struct wine_phys_dev *phys_dev = wine_phys_dev_from_handle(client_physical_device);
-    const char *extra_extensions[2], * const*extensions = src->ppEnabledExtensionNames;
+    const char *extra_extensions[64], * const*extensions = src->ppEnabledExtensionNames;
     unsigned int i, extra_count = 0, extensions_count = src->enabledExtensionCount;
+    unsigned int j, remove_count = 0;
+    const char *remove_extensions[64];
 
     *dst = *src;
 
@@ -559,6 +605,12 @@ static VkResult wine_vk_device_convert_create_info(VkPhysicalDevice client_physi
     {
         const char *extension_name = extensions[i];
         TRACE("Extension %u: %s.\n", i, debugstr_a(extension_name));
+    }
+
+    if (find_extension(extensions, extensions_count, wine_xr_extension_name))
+    {
+        parse_xr_extensions(ctx, extra_extensions, &extra_count);
+        remove_extensions[remove_count++] = wine_xr_extension_name;
     }
 
     if (phys_dev->map_placed_align)
@@ -592,6 +644,20 @@ static VkResult wine_vk_device_convert_create_info(VkPhysicalDevice client_physi
         dst->enabledExtensionCount += extra_count;
         new_extensions = conversion_context_alloc(ctx, dst->enabledExtensionCount * sizeof(*new_extensions));
         memcpy(new_extensions, extensions, extensions_count * sizeof(*new_extensions));
+        for (i = 0; i < extensions_count; i++)
+        {
+            for (j = 0; j < remove_count; ++j)
+            {
+                if (!strcmp(new_extensions[i], remove_extensions[j]))
+                {
+                    --dst->enabledExtensionCount;
+                    --extensions_count;
+                    memmove(&new_extensions[i], &new_extensions[i + 1], sizeof(*new_extensions) * (extensions_count - i));
+                    --i;
+                    break;
+                }
+            }
+        }
         memcpy(new_extensions + extensions_count, extra_extensions, extra_count * sizeof(*new_extensions));
         dst->ppEnabledExtensionNames = new_extensions;
     }
