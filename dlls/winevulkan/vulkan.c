@@ -688,11 +688,6 @@ static VkResult wine_vk_instance_convert_create_info(struct conversion_context *
     {
         const char *extension_name = src->ppEnabledExtensionNames[i];
         TRACE("Extension %u: %s.\n", i, debugstr_a(extension_name));
-        if (!wine_vk_instance_extension_supported(extension_name))
-        {
-            WARN("Extension %s is not supported.\n", debugstr_a(extension_name));
-            return VK_ERROR_EXTENSION_NOT_PRESENT;
-        }
     }
 
     new_extensions = conversion_context_alloc(ctx, (src->enabledExtensionCount + 2) *
