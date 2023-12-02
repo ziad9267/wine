@@ -185,6 +185,7 @@ struct makefile
     struct strarray include_args;
     struct strarray define_args;
     struct strarray unix_cflags;
+    struct strarray extra_cflags;
     struct strarray programs;
     struct strarray scripts;
     struct strarray imports;
@@ -3238,6 +3239,7 @@ static void output_source_one_arch( struct makefile *make, struct incl_file *sou
     output( "\t%s%s -c -o $@ %s", cmd_prefix( "CC" ), var_cc, source->filename );
     output_filenames( defines );
     if (!source->use_msvcrt) output_filenames( make->unix_cflags );
+    else output_filenames( make->extra_cflags );
     output_filenames( arch_cflags );
 
     if (!arch)
@@ -4323,6 +4325,7 @@ static void load_sources( struct makefile *make )
     make->include_args = empty_strarray;
     make->define_args = empty_strarray;
     make->unix_cflags = empty_strarray;
+    make->extra_cflags = empty_strarray;
     if (!make->extlib) strarray_add( &make->define_args, "-D__WINESRC__" );
     strarray_add( &make->unix_cflags, "-DWINE_UNIX_LIB" );
 
@@ -4344,6 +4347,7 @@ static void load_sources( struct makefile *make )
     }
     strarray_addall( &make->define_args, get_expanded_make_var_array( make, "EXTRADEFS" ));
     strarray_addall_uniq( &make->unix_cflags, get_expanded_make_var_array( make, "UNIX_CFLAGS" ));
+    strarray_addall_uniq( &make->extra_cflags, get_expanded_make_var_array( make, "EXTRA_CFLAGS" ));
 
     strarray_add( &make->include_args, strmake( "-I%s", obj_dir_path( make, "" )));
     if (make->src_dir)
