@@ -2770,7 +2770,7 @@ int peek_message( MSG *msg, const struct peek_message_filter *filter )
         thread_info->client_info.msg_source = prev_source;
         wake_mask = filter->mask & (QS_SENDMESSAGE | QS_SMRESULT);
 
-        if (NtGetTickCount() - thread_info->last_getmsg_time < 3000 && /* avoid hung queue */
+        if (!filter->waited && NtGetTickCount() - thread_info->last_getmsg_time < 3000 && /* avoid hung queue */
             check_queue_bits( wake_mask, filter->mask, wake_mask | signal_bits, filter->mask | clear_bits,
                               &wake_bits, &changed_bits ))
             res = STATUS_PENDING;
@@ -2970,6 +2970,7 @@ int peek_message( MSG *msg, const struct peek_message_filter *filter )
                         .last = info.msg.message,
                         .mask = filter->mask,
                         .internal = filter->internal,
+                        .waited = TRUE,
                     };
                     peek_message( msg, &new_filter );
                 }
@@ -3341,6 +3342,7 @@ BOOL WINAPI NtUserGetMessage( MSG *msg, HWND hwnd, UINT first, UINT last )
 
     filter.mask = mask;
     filter.flags = PM_REMOVE | (mask << 16);
+    filter.waited = TRUE;
     while (!(ret = peek_message( msg, &filter )))
     {
         wait_objects( 1, &server_queue, INFINITE, mask & (QS_SENDMESSAGE | QS_SMRESULT), mask, 0 );

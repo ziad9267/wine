@@ -215,6 +215,7 @@ struct peek_message_filter
     UINT mask;
     UINT flags;
     BOOL internal;
+    BOOL waited;
 };
 
 extern int peek_message( MSG *msg, const struct peek_message_filter *filter );
