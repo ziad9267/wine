@@ -141,6 +141,10 @@ typedef struct _wine_modref
     BOOL                  system;
 } WINE_MODREF;
 
+#ifdef __arm64ec__
+static WINE_MODREF *xtajit64_wm;
+#endif
+
 static UINT tls_module_count;      /* number of modules with TLS directory */
 static IMAGE_TLS_DIRECTORY *tls_dirs;  /* array of TLS directories */
 LIST_ENTRY tls_links = { &tls_links, &tls_links };
@@ -288,6 +292,7 @@ static void update_hybrid_metadata( void *module, IMAGE_NT_HEADERS *nt,
 
 #endif
 
+static void update_load_config( void *module );
 /*********************************************************************
  *           RtlGetUnloadEventTrace [NTDLL.@]
  */
@@ -1712,6 +1717,7 @@ static NTSTATUS process_attach( LDR_DDAG_NODE *node, LPVOID lpReserved )
 
     mod = CONTAINING_RECORD( node->Modules.Flink, LDR_DATA_TABLE_ENTRY, NodeModuleLink );
     wm = CONTAINING_RECORD( mod, WINE_MODREF, ldr );
+    update_load_config( wm->ldr.DllBase );
 
     /* prevent infinite recursion in case of cyclical dependencies */
     if (    ( wm->ldr.Flags & LDR_LOAD_IN_PROGRESS )
@@ -1813,6 +1819,7 @@ static void thread_attach(void)
 {
     PLIST_ENTRY mark, entry;
     PLDR_DATA_TABLE_ENTRY mod;
+    WINE_MODREF *wm;
 
     mark = &NtCurrentTeb()->Peb->LdrData->InInitializationOrderModuleList;
     for (entry = mark->Flink; entry != mark; entry = entry->Flink)
@@ -1824,7 +1831,13 @@ static void thread_attach(void)
         if ( mod->Flags & LDR_NO_DLL_CALLS )
             continue;
 
-        MODULE_InitDLL( CONTAINING_RECORD(mod, WINE_MODREF, ldr), DLL_THREAD_ATTACH, NULL );
+        wm = CONTAINING_RECORD(mod, WINE_MODREF, ldr);
+
+#ifdef __arm64ec__
+        if ( wm == xtajit64_wm )
+            continue;
+#endif
+        MODULE_InitDLL( wm, DLL_THREAD_ATTACH, NULL );
     }
 }
 
@@ -4198,18 +4211,17 @@ static NTSTATUS (WINAPI *pResetToConsistentState)( EXCEPTION_POINTERS * );
 static void init_xtajit64(void)
 {
     HMODULE xtajit64;
-    WINE_MODREF *wm;
     NTSTATUS status;
     void (WINAPI *pDispatchJump)(void);
     void (WINAPI *pExitToX64)(void);
     void (WINAPI *pRetToEntryThunk)(void);
 
-    if ((status = load_dll( NULL, L"xtajit64.dll", 0, &wm, FALSE )))
+    if ((status = load_dll( NULL, L"libarm64ecfex.dll", 0, &xtajit64_wm, FALSE )))
     {
         ERR( "could not load xtajit64, status %lx\n", status );
         NtTerminateProcess( GetCurrentProcess(), status );
     }
-    xtajit64 = wm->ldr.DllBase;
+    xtajit64 = xtajit64_wm->ldr.DllBase;
 #define GET_PTR(name) \
     if (!(p ## name = RtlFindExportedRoutineByName( xtajit64, #name ))) ERR( "failed to load %s\n", #name )
 
@@ -4224,8 +4236,6 @@ static void init_xtajit64(void)
     __os_arm64x_dispatch_call_no_redirect = pExitToX64;
     __os_arm64x_dispatch_fptr = pDispatchJump;
     __os_arm64x_dispatch_ret = pRetToEntryThunk;
-
-    pProcessInit();
 }
 #endif
 
@@ -4345,16 +4355,13 @@ void loader_init( CONTEXT *context, void **entry )
         load_global_options();
         version_init();
 
-        if (NtCurrentTeb()->WowTebOffset) init_wow64( context );
-
         wm = build_main_module();
         build_ntdll_module();
-#ifdef __arm64ec__
-        init_xtajit64();
-        update_load_config( wm->ldr.DllBase );
-#endif
 
-        if ((status = load_dll( NULL, L"kernel32.dll", 0, &kernel32, FALSE )) != STATUS_SUCCESS)
+        actctx_init();
+        locale_init();
+
+        if ((status = load_dll( system_dir, L"kernel32.dll", 0, &kernel32, FALSE )) != STATUS_SUCCESS)
         {
             MESSAGE( "wine: could not load kernel32.dll, status %lx\n", status );
             NtTerminateProcess( GetCurrentProcess(), status );
@@ -4363,8 +4370,8 @@ void loader_init( CONTEXT *context, void **entry )
         pBaseThreadInitThunk = RtlFindExportedRoutineByName( kernel32->ldr.DllBase, "BaseThreadInitThunk" );
         LdrGetProcedureAddress( kernel32->ldr.DllBase, &ctrl_routine, 0, (void **)&pCtrlRoutine );
 
-        actctx_init();
-        locale_init();
+        if (NtCurrentTeb()->WowTebOffset) init_wow64( context );
+
         get_env_var( L"WINESYSTEMDLLPATH", 0, &system_dll_path );
         if (wm->ldr.Flags & LDR_COR_ILONLY)
             status = fixup_imports_ilonly( wm, NULL, entry );
@@ -4377,15 +4384,18 @@ void loader_init( CONTEXT *context, void **entry )
                  debugstr_w(NtCurrentTeb()->Peb->ProcessParameters->ImagePathName.Buffer), status );
             NtTerminateProcess( GetCurrentProcess(), status );
         }
+
+#ifdef __arm64ec__
+        init_xtajit64();
+        update_load_config( wm->ldr.DllBase );
+#endif
+
         imports_fixup_done = TRUE;
     }
     else wm = get_modref( NtCurrentTeb()->Peb->ImageBaseAddress );
 
 #ifdef _WIN64
     if (NtCurrentTeb()->WowTebOffset) init_wow64( context );
-#endif
-#ifdef __arm64ec__
-    pThreadInit();
 #endif
 
     RtlAcquirePebLock();
@@ -4414,6 +4424,11 @@ void loader_init( CONTEXT *context, void **entry )
                  debugstr_w(NtCurrentTeb()->Peb->ProcessParameters->ImagePathName.Buffer), status );
             NtTerminateProcess( GetCurrentProcess(), status );
         }
+#ifdef __arm64ec__
+	process_attach ( xtajit64_wm->ldr.DdagNode, context );
+        pProcessInit();
+	pThreadInit();
+#endif
 
         if ((status = walk_node_dependencies( wm->ldr.DdagNode, context, process_attach )))
         {
@@ -4433,6 +4448,10 @@ void loader_init( CONTEXT *context, void **entry )
     {
         if ((status = alloc_thread_tls()) != STATUS_SUCCESS)
             NtTerminateThread( GetCurrentThread(), status );
+#ifdef __arm64ec__
+	MODULE_InitDLL( xtajit64_wm, DLL_THREAD_ATTACH, NULL );
+	pThreadInit();
+#endif
         thread_attach();
         if (wm->ldr.TlsIndex == -1) call_tls_callbacks( wm->ldr.DllBase, DLL_THREAD_ATTACH );
     }
