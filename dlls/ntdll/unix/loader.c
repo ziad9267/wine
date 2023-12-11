@@ -2125,6 +2125,7 @@ BOOL alert_simulate_sched_quantum;
 BOOL fsync_yield_to_waiters;
 BOOL localsystem_sid;
 BOOL simulate_writecopy;
+BOOL wine_allocs_2g_limit;
 SIZE_T kernel_stack_size = 0x100000;
 long long ram_reporting_bias;
 
@@ -2203,6 +2204,9 @@ static void hacks_init(void)
                                        || !strcmp(sgi, "2053940") /* Idol Hands 2 */
                                        || !strcmp(sgi, "391150") /* Red Tie Runner */
                                        || !strcmp(sgi, "2176450"); /* Mr. Hopp's Playhouse 3 */
+
+    if (sgi) wine_allocs_2g_limit = !strcmp(sgi, "359870");
+    if (wine_allocs_2g_limit) ERR("Allocation 2g limit enabled.\n");
 
     if (main_argc > 1 && strstr(main_argv[1], "MicrosoftEdgeUpdate.exe"))
     {
