@@ -51,6 +51,12 @@ extern UINT_PTR page_size;
 extern LONG call_vectored_handlers( EXCEPTION_RECORD *rec, CONTEXT *context );
 extern void DECLSPEC_NORETURN raise_status( NTSTATUS status, EXCEPTION_RECORD *rec );
 extern LONG WINAPI call_unhandled_exception_filter( PEXCEPTION_POINTERS eptr );
+#ifdef __x86_64__
+extern PVOID virtual_unwind_x86_64( ULONG type, ULONG64 base, ULONG64 pc,
+                                    RUNTIME_FUNCTION *function, CONTEXT *context,
+                                    PVOID *data, ULONG64 *frame_ret,
+                                    KNONVOLATILE_CONTEXT_POINTERS *ctx_ptr );
+#endif
 
 #if defined(__aarch64__) || defined(__arm64ec__)
 extern PVOID virtual_unwind_arm64( ULONG type, ULONG_PTR base, ULONG_PTR pc,
