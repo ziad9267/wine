@@ -1964,6 +1964,28 @@ typedef struct _DISPATCHER_CONTEXT
     DWORD                 Fill0;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 
+#ifdef __arm64ec__
+
+typedef struct _DISPATCHER_CONTEXT_ARM64EC {
+    ULONG64               ControlPc;
+    ULONG64               ImageBase;
+    PRUNTIME_FUNCTION     FunctionEntry;
+    ULONG64               EstablisherFrame;
+    union {
+        ULONG64 TargetIp;
+        ULONG64 TargetPc;
+    } DUMMYUNIONNAME;
+    PCONTEXT              ContextRecord;
+    PEXCEPTION_ROUTINE    LanguageHandler;
+    PVOID                 HandlerData;
+    PUNWIND_HISTORY_TABLE HistoryTable;
+    DWORD                 ScopeIndex;
+    BOOLEAN               ControlPcIsUnwound;
+    PBYTE                 NonVolatileRegisters;
+} DISPATCHER_CONTEXT_ARM64EC, *PDISPATCHER_CONTEXT_ARM64EC;
+
+#endif
+
 typedef LONG (CALLBACK *PEXCEPTION_FILTER)(struct _EXCEPTION_POINTERS*,PVOID);
 typedef void (CALLBACK *PTERMINATION_HANDLER)(BOOLEAN,PVOID);
 
@@ -2064,6 +2086,21 @@ typedef void (CALLBACK *PTERMINATION_HANDLER)(BOOLEAN,DWORD64);
 #define UNW_FLAG_UHANDLER  2
 
 #endif /* __aarch64__ */
+
+#define NONVOL_INT_NUMREG_ARM64 11
+#define NONVOL_FP_NUMREG_ARM64 8
+
+#define NONVOL_INT_SIZE_ARM64 NONVOL_INT_NUMREG_ARM64 * 8
+#define NONVOL_FP_SIZE_ARM64  NONVOL_FP_NUMREG_ARM64 * 8
+
+typedef union _DISPATCHER_CONTEXT_NONVOLREG_ARM64 {
+    BYTE Buffer[NONVOL_INT_SIZE_ARM64 + NONVOL_FP_SIZE_ARM64];
+
+    struct {
+        DWORD64 GpNvRegs[NONVOL_INT_NUMREG_ARM64];
+        double FpNvRegs[NONVOL_FP_NUMREG_ARM64];
+    } DUMMYSTRUCTNAME;
+} DISPATCHER_CONTEXT_NONVOLREG_ARM64;
 
 NTSYSAPI void    NTAPI RtlRaiseException(struct _EXCEPTION_RECORD*);
 NTSYSAPI void    NTAPI RtlUnwind(void*,void*,struct _EXCEPTION_RECORD*,void*);
