@@ -326,9 +326,29 @@ static RTL_CRITICAL_SECTION_DEBUG dynamic_unwind_debug =
 };
 static RTL_CRITICAL_SECTION dynamic_unwind_section = { &dynamic_unwind_debug, -1, 0, 0, 0, 0 };
 
+#if defined(__arm64ec__) || defined(__aarch64__)
+static ULONG_PTR get_runtime_function_end_arm64( ARM64_RUNTIME_FUNCTION *func, ULONG_PTR addr )
+{
+    if (func->Flag) return func->BeginAddress + func->FunctionLength * 4;
+    else
+    {
+        struct unwind_info
+        {
+            DWORD function_length : 18;
+            DWORD version : 2;
+            DWORD x : 1;
+            DWORD e : 1;
+            DWORD epilog : 5;
+            DWORD codes : 5;
+        } *info = (struct unwind_info *)(addr + func->UnwindData);
+        return func->BeginAddress + info->function_length * 4;
+    }
+}
+#endif
+
 static ULONG_PTR get_runtime_function_end( RUNTIME_FUNCTION *func, ULONG_PTR addr )
 {
-#ifdef __x86_64__
+#if defined(__x86_64__)
     return func->EndAddress;
 #elif defined(__arm__)
     if (func->Flag) return func->BeginAddress + func->FunctionLength * 2;
@@ -346,21 +366,8 @@ static ULONG_PTR get_runtime_function_end( RUNTIME_FUNCTION *func, ULONG_PTR add
         } *info = (struct unwind_info *)(addr + func->UnwindData);
         return func->BeginAddress + info->function_length * 2;
     }
-#else  /* __aarch64__ */
-    if (func->Flag) return func->BeginAddress + func->FunctionLength * 4;
-    else
-    {
-        struct unwind_info
-        {
-            DWORD function_length : 18;
-            DWORD version : 2;
-            DWORD x : 1;
-            DWORD e : 1;
-            DWORD epilog : 5;
-            DWORD codes : 5;
-        } *info = (struct unwind_info *)(addr + func->UnwindData);
-        return func->BeginAddress + info->function_length * 4;
-    }
+#else
+    return get_runtime_function_end_arm64( (ARM64_RUNTIME_FUNCTION *)func, addr );
 #endif
 }
 
@@ -380,6 +387,7 @@ BOOLEAN CDECL RtlAddFunctionTable( RUNTIME_FUNCTION *table, DWORD count, ULONG_P
         return FALSE;
 
     entry->base      = addr;
+    /* TODO: test that this adds as an x64 table even to an EC code range */
     entry->end       = addr + (count ? get_runtime_function_end( &table[count - 1], addr ) : 0);
     entry->table     = table;
     entry->count     = count;
@@ -548,25 +556,38 @@ static RUNTIME_FUNCTION *find_function_info( ULONG_PTR pc, ULONG_PTR base,
 
     while (min <= max)
     {
+        int pos = (min + max) / 2;
 #ifdef __x86_64__
-        int pos = (min + max) / 2;
-        if (pc < base + func[pos].BeginAddress) max = pos - 1;
-        else if (pc >= base + func[pos].EndAddress) min = pos + 1;
-        else
+#ifdef __arm64ec__
+        if (!RtlIsEcCode( (void *)pc ))
+#endif
         {
-            func += pos;
-            while (func->UnwindData & 1)  /* follow chained entry */
-                func = (RUNTIME_FUNCTION *)(base + (func->UnwindData & ~1));
-            return func;
+            if (pc < base + func[pos].BeginAddress) max = pos - 1;
+            else if (pc >= base + get_runtime_function_end( &func[pos], base )) min = pos + 1;
+            else
+            {
+                func += pos;
+                while (func->UnwindData & 1)  /* follow chained entry */
+                    func = (RUNTIME_FUNCTION *)(base + (func->UnwindData & ~1));
+                return func;
+            }
+
         }
-#elif defined(__arm__)
-        int pos = (min + max) / 2;
+#ifdef __arm64ec__
+        else
+#endif
+#endif
+#if defined(__aarch64__) || defined(__arm64ec__)
+        {
+            ARM64_RUNTIME_FUNCTION *arm_func = (ARM64_RUNTIME_FUNCTION *)func + pos;
+            if (pc < base + arm_func->BeginAddress) max = pos - 1;
+            else if (pc >= base + get_runtime_function_end_arm64( arm_func, base ))
+                min = pos + 1;
+            else return (RUNTIME_FUNCTION *)(arm_func);
+        }
+#endif
+#if defined(__arm__)
         if (pc < base + (func[pos].BeginAddress & ~1)) max = pos - 1;
-        else if (pc >= base + get_runtime_function_end( &func[pos], base )) min = pos + 1;
-        else return func + pos;
-#else  /* __aarch64__ */
-        int pos = (min + max) / 2;
-        if (pc < base + func[pos].BeginAddress) max = pos - 1;
         else if (pc >= base + get_runtime_function_end( &func[pos], base )) min = pos + 1;
         else return func + pos;
 #endif
@@ -587,11 +608,28 @@ RUNTIME_FUNCTION *lookup_function_info( ULONG_PTR pc, ULONG_PTR *base, LDR_DATA_
     if (!LdrFindEntryForAddress( (void *)pc, module ))
     {
         *base = (ULONG_PTR)(*module)->DllBase;
-        if ((func = RtlImageDirectoryEntryToData( (*module)->DllBase, TRUE,
-                                                  IMAGE_DIRECTORY_ENTRY_EXCEPTION, &size )))
+#ifdef __arm64ec__
+        if (RtlIsEcCode( (void *)pc ))
         {
-            /* lookup in function table */
-            func = find_function_info( pc, (ULONG_PTR)(*module)->DllBase, func, size/sizeof(*func) );
+            const IMAGE_ARM64EC_METADATA *metadata = get_module_arm64ec_metadata( (*module)->DllBase );
+            if (metadata && metadata->ExtraRFETable)
+            {
+                func = (RUNTIME_FUNCTION *)((char *)(*module)->DllBase + metadata->ExtraRFETable);
+                size = metadata->ExtraRFETableSize;
+                func = find_function_info( pc, (ULONG_PTR)(*module)->DllBase, func,
+                                           size/sizeof(ARM64_RUNTIME_FUNCTION) );
+            }
+        }
+        else
+#endif
+        {
+            func = RtlImageDirectoryEntryToData( (*module)->DllBase, TRUE,
+                                                 IMAGE_DIRECTORY_ENTRY_EXCEPTION, &size );
+            if (func)
+            {
+                /* lookup in function table */
+                func = find_function_info( pc, (ULONG_PTR)(*module)->DllBase, func, size/sizeof(*func) );
+            }
         }
     }
     else
