@@ -156,6 +156,8 @@ struct arm64ec_callbacks {
     void (WINAPI *pNotifyMemoryFree)( void *, SIZE_T, ULONG );
     void (WINAPI *pNotifyMemoryProtect)( void *, SIZE_T, ULONG );
     void (WINAPI *pNotifyUnmapViewOfSection)( void * );
+    BOOLEAN (WINAPI *pBTCpu64IsProcessorFeaturePresent)( UINT );
+    void (WINAPI *pUpdateProcessorInformation)( SYSTEM_CPU_INFORMATION * );
 };
 
 extern struct arm64ec_callbacks arm64ec_callbacks;

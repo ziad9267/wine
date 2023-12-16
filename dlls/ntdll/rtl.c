@@ -2129,7 +2129,7 @@ void WINAPI RtlGetCurrentProcessorNumberEx(PROCESSOR_NUMBER *processor)
  */
 BOOLEAN WINAPI RtlIsProcessorFeaturePresent( UINT feature )
 {
-#ifdef __aarch64__
+#if defined(__aarch64__) || defined(__arm64ec__)
     static const ULONGLONG arm64_features =
         (1ull << PF_COMPARE_EXCHANGE_DOUBLE) |
         (1ull << PF_NX_ENABLED) |
@@ -2149,8 +2149,13 @@ BOOLEAN WINAPI RtlIsProcessorFeaturePresent( UINT feature )
         (1ull << PF_ARM_V83_JSCVT_INSTRUCTIONS_AVAILABLE) |
         (1ull << PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE);
 
-    return (feature < PROCESSOR_FEATURE_MAX && (arm64_features & (1ull << feature)) &&
-            user_shared_data->ProcessorFeatures[feature]);
+    if (arm64_features & (1ull << feature))
+        return feature < PROCESSOR_FEATURE_MAX && user_shared_data->ProcessorFeatures[feature];
+#ifdef __arm64ec__ // TODO: check KUSER_SHARED_DATA on a64ec
+    else if (arm64ec_callbacks.pBTCpu64IsProcessorFeaturePresent)
+        return arm64ec_callbacks.pBTCpu64IsProcessorFeaturePresent( feature );
+#endif
+    return FALSE;
 #elif defined _WIN64
     return feature < PROCESSOR_FEATURE_MAX && user_shared_data->ProcessorFeatures[feature];
 #else

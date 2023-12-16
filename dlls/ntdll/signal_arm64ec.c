@@ -1243,10 +1243,25 @@ NTSTATUS SYSCALL_API NtQuerySystemEnvironmentValueEx( UNICODE_STRING *name, GUID
     __ASM_SYSCALL_FUNC( __id_NtQuerySystemEnvironmentValueEx );
 }
 
-NTSTATUS SYSCALL_API NtQuerySystemInformation( SYSTEM_INFORMATION_CLASS class,
-                                               void *info, ULONG size, ULONG *ret_size )
+static NTSTATUS SYSCALL_API syscall_NtQuerySystemInformation( SYSTEM_INFORMATION_CLASS class,
+                                                              void *info, ULONG size, ULONG *ret_size )
 {
     __ASM_SYSCALL_FUNC( __id_NtQuerySystemInformation );
+}
+
+NTSTATUS WINAPI NtQuerySystemInformation( SYSTEM_INFORMATION_CLASS class,
+                                          void *info, ULONG size, ULONG *ret_size )
+{
+    NTSTATUS status = syscall_NtQuerySystemInformation( class, info, size, ret_size );
+    // TODO: check windows behaviour when called from non x86 code
+    if (!status && class == SystemCpuInformation &&
+        syscall_callback_begin( arm64ec_callbacks.pUpdateProcessorInformation ))
+    {
+        arm64ec_callbacks.pUpdateProcessorInformation( info );
+        syscall_callback_end();
+    }
+
+    return status;
 }
 
 NTSTATUS SYSCALL_API NtQuerySystemInformationEx( SYSTEM_INFORMATION_CLASS class, void *query,
