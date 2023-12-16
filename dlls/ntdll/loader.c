@@ -4219,17 +4219,12 @@ static void init_wow64( CONTEXT *context )
 #ifdef __arm64ec__
 
 /* xtajit64.dll functions */
-static void (WINAPI *pProcessInit)(void);
-static void (WINAPI *pThreadInit)(void);
-static NTSTATUS (WINAPI *pResetToConsistentState)( EXCEPTION_POINTERS * );
+struct arm64ec_callbacks arm64ec_callbacks;
 
 static void init_xtajit64(void)
 {
     HMODULE xtajit64;
     NTSTATUS status;
-    void (WINAPI *pDispatchJump)(void);
-    void (WINAPI *pExitToX64)(void);
-    void (WINAPI *pRetToEntryThunk)(void);
 
     if ((status = load_dll( NULL, L"libarm64ecfex.dll", 0, &xtajit64_wm, FALSE )))
     {
@@ -4238,7 +4233,7 @@ static void init_xtajit64(void)
     }
     xtajit64 = xtajit64_wm->ldr.DllBase;
 #define GET_PTR(name) \
-    if (!(p ## name = RtlFindExportedRoutineByName( xtajit64, #name ))) ERR( "failed to load %s\n", #name )
+    if (!(arm64ec_callbacks.p## name = RtlFindExportedRoutineByName( xtajit64, #name ))) ERR( "failed to load %s\n", #name )
 
     GET_PTR( DispatchJump );
     GET_PTR( ExitToX64 );
@@ -4248,9 +4243,9 @@ static void init_xtajit64(void)
     GET_PTR( ThreadInit );
 #undef GET_PTR
 
-    __os_arm64x_dispatch_call_no_redirect = pExitToX64;
-    __os_arm64x_dispatch_fptr = pDispatchJump;
-    __os_arm64x_dispatch_ret = pRetToEntryThunk;
+    __os_arm64x_dispatch_call_no_redirect = arm64ec_callbacks.pExitToX64;
+    __os_arm64x_dispatch_fptr = arm64ec_callbacks.pDispatchJump;
+    __os_arm64x_dispatch_ret = arm64ec_callbacks.pRetToEntryThunk;
 }
 #endif
 
@@ -4441,8 +4436,8 @@ void loader_init( CONTEXT *context, void **entry )
         }
 #ifdef __arm64ec__
 	process_attach ( xtajit64_wm->ldr.DdagNode, context );
-        pProcessInit();
-	pThreadInit();
+        arm64ec_callbacks.pProcessInit();
+        arm64ec_callbacks.pThreadInit();
 #endif
 
         if ((status = walk_node_dependencies( wm->ldr.DdagNode, context, process_attach )))
@@ -4465,7 +4460,7 @@ void loader_init( CONTEXT *context, void **entry )
             NtTerminateThread( GetCurrentThread(), status );
 #ifdef __arm64ec__
 	MODULE_InitDLL( xtajit64_wm, DLL_THREAD_ATTACH, NULL );
-	pThreadInit();
+	arm64ec_callbacks.pThreadInit();
 #endif
         thread_attach();
         if (wm->ldr.TlsIndex == -1) call_tls_callbacks( wm->ldr.DllBase, DLL_THREAD_ATTACH );
