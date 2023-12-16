@@ -1643,9 +1643,19 @@ NTSTATUS SYSCALL_API NtTerminateProcess( HANDLE handle, LONG exit_code )
     __ASM_SYSCALL_FUNC( __id_NtTerminateProcess );
 }
 
-NTSTATUS SYSCALL_API NtTerminateThread( HANDLE handle, LONG exit_code )
+static NTSTATUS SYSCALL_API syscall_NtTerminateThread( HANDLE handle, LONG exit_code )
 {
     __ASM_SYSCALL_FUNC( __id_NtTerminateThread );
+}
+
+NTSTATUS WINAPI NtTerminateThread( HANDLE handle, LONG exit_code )
+{
+    if (syscall_callback_begin( arm64ec_callbacks.pThreadTerm) )
+    {
+        arm64ec_callbacks.pThreadTerm( handle );
+	syscall_callback_end();
+    }
+    return syscall_NtTerminateThread( handle, exit_code );
 }
 
 NTSTATUS SYSCALL_API NtTestAlert(void)

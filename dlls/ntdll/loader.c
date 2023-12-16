@@ -4250,6 +4250,7 @@ static void init_xtajit64(void)
     GET_PTR( NotifyUnmapViewOfSection );
     GET_PTR( BTCpu64IsProcessorFeaturePresent );
     GET_PTR( UpdateProcessorInformation );
+    GET_PTR( ThreadTerm );
 #undef GET_PTR
 
     __os_arm64x_dispatch_call_no_redirect = arm64ec_callbacks.pExitToX64;
