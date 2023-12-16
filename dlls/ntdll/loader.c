@@ -4241,6 +4241,13 @@ static void init_xtajit64(void)
     GET_PTR( ResetToConsistentState );
     GET_PTR( RetToEntryThunk );
     GET_PTR( ThreadInit );
+    GET_PTR( BTCpu64FlushInstructionCache );
+    GET_PTR( FlushInstructionCacheHeavy );
+    GET_PTR( NotifyMapViewOfSection );
+    GET_PTR( NotifyMemoryAlloc );
+    GET_PTR( NotifyMemoryFree );
+    GET_PTR( NotifyMemoryProtect );
+    GET_PTR( NotifyUnmapViewOfSection );
 #undef GET_PTR
 
     __os_arm64x_dispatch_call_no_redirect = arm64ec_callbacks.pExitToX64;

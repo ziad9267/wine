@@ -149,6 +149,13 @@ struct arm64ec_callbacks {
     NTSTATUS (WINAPI *pResetToConsistentState)( EXCEPTION_POINTERS * );
     void (WINAPI *pRetToEntryThunk)(void);
     void (WINAPI *pThreadInit)(void);
+    void (WINAPI *pBTCpu64FlushInstructionCache)( const void *, SIZE_T );
+    void (WINAPI *pFlushInstructionCacheHeavy)(void);
+    void (WINAPI *pNotifyMapViewOfSection)( void * );
+    void (WINAPI *pNotifyMemoryAlloc)( void *, SIZE_T, ULONG, ULONG );
+    void (WINAPI *pNotifyMemoryFree)( void *, SIZE_T, ULONG );
+    void (WINAPI *pNotifyMemoryProtect)( void *, SIZE_T, ULONG );
+    void (WINAPI *pNotifyUnmapViewOfSection)( void * );
 };
 
 extern struct arm64ec_callbacks arm64ec_callbacks;
