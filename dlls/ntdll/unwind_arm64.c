@@ -70,7 +70,7 @@ static const BYTE unwind_code_len[256] =
 /* 80 */ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
 /* a0 */ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
 /* c0 */ 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
-/* e0 */ 4,1,2,1,1,1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+/* e0 */ 4,1,2,1,1,1,1,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
 };
 
 /***********************************************************************
@@ -119,6 +119,56 @@ static void restore_fpregs( int reg, int count, int pos, ARM64_NT_CONTEXT *conte
         context->V[reg + i].D[0] = ((double *)context->Sp)[i + offset];
     }
     if (pos < 0) context->Sp += -8 * pos;
+}
+
+static void restore_simdregs( int reg, int count, int pos, ARM64_NT_CONTEXT *context,
+                              KNONVOLATILE_CONTEXT_POINTERS_ARM64 *ptrs )
+{
+    int i, offset = max( 0, pos );
+    for (i = 0; i < count; i++)
+    {
+        DWORD64 *reg_ptr = (DWORD64 *)context->Sp + (i + offset) * 2;
+        if (ptrs && reg + i >= 8) (&ptrs->D8)[reg + i - 8] = reg_ptr;
+        memcpy(&context->V[reg + i], reg_ptr, sizeof(context->V[reg + i]));
+    }
+    if (pos < 0) context->Sp += -16 * pos;
+}
+
+static void do_save_any_reg( int save_count, BYTE *ptr, ARM64_NT_CONTEXT *context,
+                             KNONVOLATILE_CONTEXT_POINTERS_ARM64 *ptrs)
+{
+    BOOL writeback = !!(ptr[1] & 0x20);
+    BOOL paired = !!(ptr[1] & 0x40);
+    // 0 -> Xn, 1 -> Dn, 2 -> Qn, 3-> Reserved
+    int reg_kind = (ptr[2] & 0xc0) >> 6;
+    int reg = ptr[1] & 0x1f;
+    int stack_offset = ptr[2] & 0x3f;
+
+
+    if ((paired && save_count != 2) || ((ptr[1] & 0x80) != 0) || (reg_kind == 3))
+    {
+        ERR( "Invalid save_any_reg format" );
+        return;
+    }
+
+    if (!paired)
+        save_count = 1;
+
+    if (writeback) stack_offset = (stack_offset + 1) * -1;
+    if ((writeback || paired) && reg_kind != 2) stack_offset *= 2;
+
+    switch (reg_kind)
+    {
+        case 0:
+            restore_regs( reg, save_count, stack_offset, context, ptrs );
+            break;
+        case 1:
+            restore_fpregs( reg, save_count, stack_offset, context, ptrs );
+            break;
+        case 2:
+            restore_simdregs( reg, save_count, stack_offset, context, ptrs );
+            break;
+    }
 }
 
 static void do_pac_auth( ARM64_NT_CONTEXT *context )
@@ -208,6 +258,10 @@ static void process_unwind_codes( BYTE *ptr, BYTE *end, ARM64_NT_CONTEXT *contex
             save_next += 2;
             ptr += len;
             continue;
+        }
+        else if (*ptr == 0xe7)  /* save_any_reg */
+        {
+            do_save_any_reg( save_next, ptr, context, ptrs );
         }
         else if (*ptr == 0xe9)  /* MSFT_OP_MACHINE_FRAME */
         {
