@@ -248,17 +248,37 @@ static void module_push_unload_trace( const WINE_MODREF *wm )
 
 #ifdef __arm64ec__
 
-static void update_hybrid_metadata( void *module, IMAGE_NT_HEADERS *nt,
-                                    const IMAGE_ARM64EC_METADATA *metadata )
+const IMAGE_ARM64EC_METADATA *get_module_arm64ec_metadata( void *module )
 {
-    DWORD i, protect_old;
-    const IMAGE_SECTION_HEADER *sec = IMAGE_FIRST_SECTION( nt );
+    IMAGE_NT_HEADERS *nt = RtlImageNtHeader( module );
+    IMAGE_LOAD_CONFIG_DIRECTORY *cfg;
+    ULONG size;
+    const IMAGE_ARM64EC_METADATA *metadata;
 
+    cfg = RtlImageDirectoryEntryToData( module, TRUE, IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, &size );
+    if (!cfg) return NULL;
+    size = min( size, cfg->Size );
+    if (size <= offsetof( IMAGE_LOAD_CONFIG_DIRECTORY, CHPEMetadataPointer ) ||
+        cfg->CHPEMetadataPointer <= (ULONG_PTR)module ||
+        cfg->CHPEMetadataPointer >= (ULONG_PTR)module + nt->OptionalHeader.SizeOfImage)
+        return NULL;
+
+    metadata = (const IMAGE_ARM64EC_METADATA *)cfg->CHPEMetadataPointer;
     if (metadata->Version != 1)
     {
         ERR( "unknown version %lu\n", metadata->Version );
-        return;
+        return NULL;
     }
+
+    return metadata;
+}
+
+static void update_hybrid_metadata( void *module, IMAGE_NT_HEADERS *nt )
+{
+    DWORD i, protect_old;
+    const IMAGE_SECTION_HEADER *sec = IMAGE_FIRST_SECTION( nt );
+    const IMAGE_ARM64EC_METADATA *metadata = get_module_arm64ec_metadata( module );
+    if (!metadata) return;
 
     /* assume that all pointers are in the same section */
 
@@ -2101,12 +2121,7 @@ static void update_load_config( void *module )
         set_security_cookie( (ULONG_PTR *)cfg->SecurityCookie );
     }
 #ifdef __arm64ec__
-    if (size > offsetof( IMAGE_LOAD_CONFIG_DIRECTORY, CHPEMetadataPointer ) &&
-        cfg->CHPEMetadataPointer > (ULONG_PTR)module &&
-        cfg->CHPEMetadataPointer < (ULONG_PTR)module + nt->OptionalHeader.SizeOfImage)
-    {
-        update_hybrid_metadata( module, nt, (void *)cfg->CHPEMetadataPointer );
-    }
+    update_hybrid_metadata( module, nt );
 #endif
 }
 

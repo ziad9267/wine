@@ -142,6 +142,8 @@ extern void *__os_arm64x_dispatch_ret;
 extern void *__os_arm64x_get_x64_information;
 extern void *__os_arm64x_set_x64_information;
 
+const IMAGE_ARM64EC_METADATA *get_module_arm64ec_metadata( void *module );
+
 #endif
 
 #endif
