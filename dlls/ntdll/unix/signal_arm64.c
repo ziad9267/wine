@@ -166,6 +166,15 @@ struct callback_stack_layout
 C_ASSERT( offsetof(struct callback_stack_layout, sp) == 0x20 );
 C_ASSERT( sizeof(struct callback_stack_layout) == 0x30 );
 
+/* stack layout when calling KiUserEmulationDispatcher */
+struct emu_stack_layout
+{
+    CONTEXT              context;        /* 000 */
+    ULONG64              redzone[2];     /* 390 */
+};
+
+C_ASSERT( sizeof(struct emu_stack_layout) == 0x3a0 );
+
 struct syscall_frame
 {
     ULONG64               x[29];          /* 000 */
@@ -622,6 +631,20 @@ void *get_wow_context( CONTEXT *context )
     return get_cpu_area( main_image_info.Machine );
 }
 
+/***********************************************************************
+ *           is_ec_code
+ */
+static BOOLEAN is_ec_code( const void *ptr )
+{
+    const UINT64 *map = (const UINT64 *)peb->EcCodeBitMap;
+    ULONG_PTR page;
+    if (!map) return TRUE;
+
+    page = (ULONG_PTR)ptr / page_size;
+    return (map[page / 64] >> (page & 63)) & 1;
+}
+
+static void call_user_emulation_dispatcher( CONTEXT *context );
 
 /***********************************************************************
  *              NtSetContextThread  (NTDLL.@)
@@ -668,6 +691,15 @@ NTSTATUS WINAPI NtSetContextThread( HANDLE handle, const CONTEXT *context )
     }
     if (flags & CONTEXT_DEBUG_REGISTERS) FIXME( "debug registers not supported\n" );
     frame->restore_flags |= flags & ~CONTEXT_INTEGER;
+
+    if (is_arm64ec() && !is_ec_code( (void *)frame->pc ))
+    {
+        CONTEXT ctx;
+        ctx.ContextFlags = CONTEXT_FULL;
+        NtGetContextThread( GetCurrentThread(), &ctx );
+        call_user_emulation_dispatcher( &ctx );
+    }
+
     return STATUS_SUCCESS;
 }
 
@@ -1064,6 +1096,21 @@ NTSTATUS call_user_exception_dispatcher( EXCEPTION_RECORD *rec, CONTEXT *context
     return status;
 }
 
+/***********************************************************************
+ *           call_user_emulation_dispatcher
+ */
+static void call_user_emulation_dispatcher( CONTEXT *context )
+{
+    struct syscall_frame *frame = arm64_thread_data()->syscall_frame;
+    struct emu_stack_layout *stack;
+
+    stack = (struct emu_stack_layout *)(NtCurrentTeb()->ChpeV2CpuAreaInfo->EmulatorStackBase & ~15) - 1;
+    memmove( &stack->context, context, sizeof(*context) );
+    frame->pc = (ULONG64)pKiUserEmulationDispatcher;
+    frame->sp = (ULONG64)stack;
+    frame->restore_flags |= CONTEXT_CONTROL;
+    syscall_frame_fixup_for_fastpath( frame );
+}
 
 /***********************************************************************
  *           call_user_mode_callback

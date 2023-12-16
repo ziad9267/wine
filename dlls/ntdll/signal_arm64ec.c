@@ -1836,7 +1836,26 @@ static NTSTATUS WINAPI LdrpSetX64Information( ULONG type, ULONG_PTR input, void 
 
 
 /*******************************************************************
- *		KiUserExceptionDispatcher (NTDLL.@)
+ *                dispatch_emulation
+ */
+void WINAPI dispatch_emulation( ARM64_NT_CONTEXT *arm_ctx )
+{
+    context_arm_to_x64( (CONTEXT *)NtCurrentTeb()->ChpeV2CpuAreaInfo->ContextAmd64, arm_ctx );
+    arm64ec_callbacks.pBeginSimulation();
+}
+
+/*******************************************************************
+ *                KiUserEmulationDispatcher (NTDLL.@)
+ */
+__ASM_GLOBAL_FUNC( "#KiUserEmulationDispatcher",
+                   __ASM_SEH(".seh_context\n\t")
+                   __ASM_SEH(".seh_endprologue\n\t")
+                   "mov x0, sp\n\t"        /* context */
+                   "bl " __ASM_NAME("dispatch_emulation") "\n\t"
+                   "brk #1" )
+
+/*******************************************************************
+ *             KiUserExceptionDispatcher (NTDLL.@)
  */
 NTSTATUS WINAPI KiUserExceptionDispatcher( EXCEPTION_RECORD *rec, CONTEXT *context )
 {

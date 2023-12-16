@@ -4250,6 +4250,7 @@ static void init_xtajit64(void)
     GET_PTR( NotifyUnmapViewOfSection );
     GET_PTR( BTCpu64IsProcessorFeaturePresent );
     GET_PTR( UpdateProcessorInformation );
+    GET_PTR( BeginSimulation );
     GET_PTR( ThreadTerm );
 #undef GET_PTR
 

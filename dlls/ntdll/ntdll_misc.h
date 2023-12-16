@@ -158,6 +158,7 @@ struct arm64ec_callbacks {
     void (WINAPI *pNotifyUnmapViewOfSection)( void * );
     BOOLEAN (WINAPI *pBTCpu64IsProcessorFeaturePresent)( UINT );
     void (WINAPI *pUpdateProcessorInformation)( SYSTEM_CPU_INFORMATION * );
+    void (WINAPI *pBeginSimulation)(void);
     void (WINAPI *pThreadTerm)( HANDLE );
 };
 
