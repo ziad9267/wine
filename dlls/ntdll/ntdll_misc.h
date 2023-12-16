@@ -52,6 +52,13 @@ extern LONG call_vectored_handlers( EXCEPTION_RECORD *rec, CONTEXT *context );
 extern void DECLSPEC_NORETURN raise_status( NTSTATUS status, EXCEPTION_RECORD *rec );
 extern LONG WINAPI call_unhandled_exception_filter( PEXCEPTION_POINTERS eptr );
 
+#if defined(__aarch64__) || defined(__arm64ec__)
+extern PVOID virtual_unwind_arm64( ULONG type, ULONG_PTR base, ULONG_PTR pc,
+                                   ARM64_RUNTIME_FUNCTION *func, ARM64_NT_CONTEXT *context,
+                                   PVOID *handler_data, ULONG_PTR *frame_ret,
+                                   KNONVOLATILE_CONTEXT_POINTERS_ARM64 *ctx_ptr );
+#endif
+
 extern void WINAPI LdrInitializeThunk(CONTEXT*,ULONG_PTR,ULONG_PTR,ULONG_PTR);
 extern NTSTATUS WINAPI KiUserExceptionDispatcher(EXCEPTION_RECORD*,CONTEXT*);
 extern void WINAPI KiUserApcDispatcher(CONTEXT*,ULONG_PTR,ULONG_PTR,ULONG_PTR,PNTAPCFUNC);
