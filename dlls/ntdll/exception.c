@@ -1141,8 +1141,13 @@ NTSTATUS WINAPI RtlCopyExtendedContext( CONTEXT_EX *dst, ULONG context_flags, CO
 }
 
 #if defined(__x86_64__) || defined(__arm__) || defined(__aarch64__)
+#ifdef __arm64ec__
+typedef DISPATCHER_CONTEXT_ARM64EC DISPATCHER_CONTEXT_NATIVE;
+#else
+typedef DISPATCHER_CONTEXT DISPATCHER_CONTEXT_NATIVE;
+#endif
 
-#if defined(__aarch64__)
+#if defined(__arm64ec__) || defined(__aarch64__)
 #define INSTR_SIZE 4
 #elif defined(__arm__)
 #define INSTR_SIZE 2
@@ -1153,7 +1158,15 @@ NTSTATUS WINAPI RtlCopyExtendedContext( CONTEXT_EX *dst, ULONG context_flags, CO
 #define CTX_REG_SP(context) (context)->Rsp
 #define CTX_REG_RETVAL(context) (context)->Rax
 #define DISPATCHER_TARGET(dispatch) (dispatch)->TargetIp
+
+#ifdef __arm64ec__
+#define IS_X86_64_CODE(arg) !RtlIsEcCode(arg)
+#define IS_ARM_CODE(arg) RtlIsEcCode(arg)
+#define CTX_REG_FP(context) (context)->Rbp
+#define CTX_REG_LR(context) ((ARM64EC_NT_CONTEXT *)context)->Lr
+#else
 #define IS_X86_64_CODE(arg) TRUE
+#endif
 
 #else
 
@@ -1213,7 +1226,7 @@ static inline BOOL is_valid_frame( ULONG_PTR frame )
 /***********************************************************************
  *           virtual_unwind
  */
-static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEXT *context )
+static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT_NATIVE *dispatch, CONTEXT *context )
 {
     LDR_DATA_TABLE_ENTRY *module;
     NTSTATUS status = STATUS_SUCCESS;
@@ -1224,7 +1237,7 @@ static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEX
     dispatch->EstablisherFrame = 0;
     dispatch->ControlPc = CTX_REG_PC(context);
 
-#if defined(__aarch64__) || defined(__arm__)
+#if defined(__arm64ec__) || defined(__aarch64__) || defined(__arm__)
     /*
      * TODO: CONTEXT_UNWOUND_TO_CALL should be cleared if unwound past a
      * signal frame.
@@ -1249,6 +1262,7 @@ static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEX
 
     /* then look for host system exception information */
 
+#ifndef __arm64ec__
     if (!module || (module->Flags & LDR_WINE_INTERNAL))
     {
         struct unwind_builtin_dll_params params = { type, dispatch, context };
@@ -1265,11 +1279,12 @@ static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEX
         }
         if (status != STATUS_UNSUCCESSFUL) return status;
     }
+#endif
 
     dispatch->EstablisherFrame = CTX_REG_SP(context);
     dispatch->LanguageHandler = NULL;
 
-#if defined(__aarch64__) || defined(__arm__)
+#if defined(__arm64ec__) || defined(__aarch64__) || defined(__arm__)
     if (IS_ARM_CODE( (const void *) pc ))
     {
         status = CTX_REG_PC(context) != CTX_REG_LR(context) ?
@@ -1277,7 +1292,7 @@ static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEX
 
         CTX_REG_PC(context) = CTX_REG_LR(context);
         context->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
-#ifdef __aarch64__
+#if defined(__arm64ec__) || defined(__aarch64__)
         if (status == STATUS_SUCCESS)
             dispatch->EstablisherFrame = CTX_REG_FP(context);
 #endif
@@ -1301,7 +1316,27 @@ static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEX
     return status;
 }
 
-#ifdef __aarch64__
+#ifdef __arm64ec__
+static void fill_nonvolatile_regs( DISPATCHER_CONTEXT_NONVOLREG_ARM64 *regs,
+                                   CONTEXT *context )
+{
+    ARM64EC_NT_CONTEXT *ec_context = (ARM64EC_NT_CONTEXT *)context;
+    int i;
+    regs->GpNvRegs[0] = ec_context->X19;
+    regs->GpNvRegs[1] = ec_context->X20;
+    regs->GpNvRegs[2] = ec_context->X21;
+    regs->GpNvRegs[3] = ec_context->X22;
+    /* X23/X24 are reserved for EC */
+    regs->GpNvRegs[6] = ec_context->X25;
+    regs->GpNvRegs[7] = ec_context->X26;
+    regs->GpNvRegs[8] = ec_context->X27;
+    /* X28 is reserved for EC */
+    regs->GpNvRegs[10] = ec_context->Fp;
+
+    for (i = 0; i < NONVOL_FP_NUMREG_ARM64; i++)
+        regs->FpNvRegs[i] = ec_context->V[i + 8].D[0];
+}
+#elif defined(__aarch64__)
 static void fill_nonvolatile_regs( DISPATCHER_CONTEXT_NONVOLREG_ARM64 *regs,
                                    CONTEXT *context )
 {
@@ -1324,11 +1359,11 @@ DWORD __cdecl nested_exception_handler( EXCEPTION_RECORD *rec, EXCEPTION_REGISTR
 /***********************************************************************
  *                exception_handler_call_wrapper
  */
-#if defined(__WINE_PE_BUILD) && defined(__x86_64__) // TODO: impl for all, maybe move to signal_*?
+#if defined(__WINE_PE_BUILD) && defined(__x86_64__) && !defined(__arm64ec__) // TODO: impl for all, maybe move to signal_*?
 DWORD WINAPI exception_handler_call_wrapper( EXCEPTION_RECORD *rec, void *frame,
-                                      CONTEXT *context, DISPATCHER_CONTEXT *dispatch );
+                                      CONTEXT *context, DISPATCHER_CONTEXT_NATIVE *dispatch );
 
-C_ASSERT( offsetof(DISPATCHER_CONTEXT, LanguageHandler) == 0x30 );
+C_ASSERT( offsetof(DISPATCHER_CONTEXT_NATIVE, LanguageHandler) == 0x30 );
 
 __ASM_GLOBAL_FUNC( exception_handler_call_wrapper,
                    ".seh_endprologue\n\t"
@@ -1341,7 +1376,7 @@ __ASM_GLOBAL_FUNC( exception_handler_call_wrapper,
                    ".seh_handler " __ASM_NAME("nested_exception_handler") ", @except\n\t" )
 #else
 static DWORD exception_handler_call_wrapper( EXCEPTION_RECORD *rec, void *frame,
-                                             CONTEXT *context, DISPATCHER_CONTEXT *dispatch )
+                                             CONTEXT *context, DISPATCHER_CONTEXT_NATIVE *dispatch )
 {
     EXCEPTION_REGISTRATION_RECORD wrapper_frame;
     DWORD res;
@@ -1359,7 +1394,7 @@ static DWORD exception_handler_call_wrapper( EXCEPTION_RECORD *rec, void *frame,
  *
  * Call a single exception handler.
  */
-static DWORD call_handler( EXCEPTION_RECORD *rec, CONTEXT *context, DISPATCHER_CONTEXT *dispatch )
+static DWORD call_handler( EXCEPTION_RECORD *rec, CONTEXT *context, DISPATCHER_CONTEXT_NATIVE *dispatch )
 {
     DWORD res;
 
@@ -1379,7 +1414,7 @@ static DWORD call_handler( EXCEPTION_RECORD *rec, CONTEXT *context, DISPATCHER_C
  * Call a single exception handler from the TEB chain.
  * FIXME: Handle nested exceptions.
  */
-static DWORD call_teb_handler( EXCEPTION_RECORD *rec, CONTEXT *context, DISPATCHER_CONTEXT *dispatch,
+static DWORD call_teb_handler( EXCEPTION_RECORD *rec, CONTEXT *context, DISPATCHER_CONTEXT_NATIVE *dispatch,
                                   EXCEPTION_REGISTRATION_RECORD *teb_frame )
 {
     DWORD res;
@@ -1401,11 +1436,11 @@ NTSTATUS call_stack_handlers( EXCEPTION_RECORD *rec, CONTEXT *orig_context )
 {
     EXCEPTION_REGISTRATION_RECORD *teb_frame = NtCurrentTeb()->Tib.ExceptionList;
     UNWIND_HISTORY_TABLE table;
-#if defined(__aarch64__) || defined(__arm__)
+#if defined(__arm64ec__) || defined(__aarch64__) || defined(__arm__)
     // Obviously not right for arm32...
     DISPATCHER_CONTEXT_NONVOLREG_ARM64 nonvolatile_regs;
 #endif
-    DISPATCHER_CONTEXT dispatch;
+    DISPATCHER_CONTEXT_NATIVE dispatch;
     CONTEXT context;
     NTSTATUS status;
 
@@ -1417,7 +1452,7 @@ NTSTATUS call_stack_handlers( EXCEPTION_RECORD *rec, CONTEXT *orig_context )
     DISPATCHER_TARGET(&dispatch) = 0;
     dispatch.ContextRecord       = &context;
     dispatch.HistoryTable        = &table;
-#if defined(__aarch64__) || defined(__arm__)
+#if defined(__arm64ec__) || defined(__aarch64__) || defined(__arm__)
     fill_nonvolatile_regs( &nonvolatile_regs, &context );
     dispatch.NonVolatileRegisters = nonvolatile_regs.Buffer;
 #endif
@@ -1457,7 +1492,7 @@ NTSTATUS call_stack_handlers( EXCEPTION_RECORD *rec, CONTEXT *orig_context )
 
                 context = *dispatch.ContextRecord;
                 dispatch.ContextRecord = &context;
-#if defined(__aarch64__) || defined(__arm__)
+#if defined(__arm64ec__) || defined(__aarch64__) || defined(__arm__)
                 fill_nonvolatile_regs( &nonvolatile_regs, &context );
 #endif
                 RtlVirtualUnwind( UNW_FLAG_NHANDLER, dispatch.ImageBase,
@@ -1491,7 +1526,7 @@ NTSTATUS call_stack_handlers( EXCEPTION_RECORD *rec, CONTEXT *orig_context )
 
                 context = *dispatch.ContextRecord;
                 dispatch.ContextRecord = &context;
-#if defined(__aarch64__) || defined(__arm__)
+#if defined(__arm64ec__) || defined(__aarch64__) || defined(__arm__)
                 fill_nonvolatile_regs( &nonvolatile_regs, &context );
 #endif
                 RtlVirtualUnwind( UNW_FLAG_NHANDLER, dispatch.ImageBase,
@@ -1507,7 +1542,7 @@ NTSTATUS call_stack_handlers( EXCEPTION_RECORD *rec, CONTEXT *orig_context )
         }
 
         if (CTX_REG_SP(&context) == (ULONG_PTR)NtCurrentTeb()->Tib.StackBase) break;
-#if defined(__aarch64__) || defined(__arm__)
+#if defined(__arm64ec__) || defined(__aarch64__) || defined(__arm__)
         fill_nonvolatile_regs( &nonvolatile_regs, &context );
 #endif
     }
@@ -1521,7 +1556,7 @@ struct unwind_exception_frame
     char dummy[0x10]; /* Layout 'dispatch' accessed from unwind_exception_handler() so it is above register
                        * save space when .seh handler is used. */
 #endif
-    DISPATCHER_CONTEXT *dispatch;
+    DISPATCHER_CONTEXT_NATIVE *dispatch;
 };
 
 /**********************************************************************
@@ -1533,7 +1568,7 @@ DWORD __cdecl unwind_exception_handler( EXCEPTION_RECORD *rec, EXCEPTION_REGISTR
                                         CONTEXT *context, EXCEPTION_REGISTRATION_RECORD **dispatcher )
 {
     struct unwind_exception_frame *unwind_frame = (struct unwind_exception_frame *)frame;
-    DISPATCHER_CONTEXT *dispatch = (DISPATCHER_CONTEXT *)dispatcher;
+    DISPATCHER_CONTEXT_NATIVE *dispatch = (DISPATCHER_CONTEXT_NATIVE *)dispatcher;
 
     /* copy the original dispatcher into the current one, except for the TargetIp */
     dispatch->ControlPc        = unwind_frame->dispatch->ControlPc;
@@ -1552,13 +1587,13 @@ DWORD __cdecl unwind_exception_handler( EXCEPTION_RECORD *rec, EXCEPTION_REGISTR
 /***********************************************************************
  *                unwind_handler_call_wrapper
  */
-#if defined(__WINE_PE_BUILD) && defined(__x86_64__) // TODO: impl for all, maybe move to signal_*?
+#if defined(__WINE_PE_BUILD) && defined(__x86_64__) && !defined(__arm64ec__) // TODO: impl for all, maybe move to signal_*?
 DWORD WINAPI unwind_handler_call_wrapper( EXCEPTION_RECORD *rec, void *frame,
-                                   CONTEXT *context, DISPATCHER_CONTEXT *dispatch );
+                                   CONTEXT *context, DISPATCHER_CONTEXT_NATIVE *dispatch );
 
 C_ASSERT( sizeof(struct unwind_exception_frame) == 0x28 );
 C_ASSERT( offsetof(struct unwind_exception_frame, dispatch) == 0x20 );
-C_ASSERT( offsetof(DISPATCHER_CONTEXT, LanguageHandler) == 0x30 );
+C_ASSERT( offsetof(DISPATCHER_CONTEXT_NATIVE, LanguageHandler) == 0x30 );
 
 __ASM_GLOBAL_FUNC( unwind_handler_call_wrapper,
                    ".seh_endprologue\n\t"
@@ -1572,7 +1607,7 @@ __ASM_GLOBAL_FUNC( unwind_handler_call_wrapper,
                    ".seh_handler " __ASM_NAME("unwind_exception_handler") ", @except, @unwind\n\t" )
 #else
 static DWORD unwind_handler_call_wrapper( EXCEPTION_RECORD *rec, void *frame,
-                                          CONTEXT *context, DISPATCHER_CONTEXT *dispatch )
+                                          CONTEXT *context, DISPATCHER_CONTEXT_NATIVE *dispatch )
 {
     struct unwind_exception_frame wrapper_frame;
     DWORD res;
@@ -1592,7 +1627,7 @@ static DWORD unwind_handler_call_wrapper( EXCEPTION_RECORD *rec, void *frame,
  *
  * Call a single unwind handler.
  */
-DWORD call_unwind_handler( EXCEPTION_RECORD *rec, DISPATCHER_CONTEXT *dispatch )
+DWORD call_unwind_handler( EXCEPTION_RECORD *rec, DISPATCHER_CONTEXT_NATIVE *dispatch )
 {
     DWORD res;
 
@@ -1620,7 +1655,7 @@ DWORD call_unwind_handler( EXCEPTION_RECORD *rec, DISPATCHER_CONTEXT *dispatch )
  *
  * Call a single unwind handler from the TEB chain.
  */
-static DWORD call_teb_unwind_handler( EXCEPTION_RECORD *rec, DISPATCHER_CONTEXT *dispatch,
+static DWORD call_teb_unwind_handler( EXCEPTION_RECORD *rec, DISPATCHER_CONTEXT_NATIVE *dispatch,
                                       EXCEPTION_REGISTRATION_RECORD *teb_frame )
 {
     DWORD res;
@@ -1686,11 +1721,11 @@ void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec
 {
     EXCEPTION_REGISTRATION_RECORD *teb_frame = NtCurrentTeb()->Tib.ExceptionList;
     EXCEPTION_RECORD record;
-#if defined(__aarch64__) || defined(__arm__)
+#if defined(__arm64ec__) || defined(__aarch64__) || defined(__arm__)
     // Obviously not right for arm32...
     DISPATCHER_CONTEXT_NONVOLREG_ARM64 nonvolatile_regs;
 #endif
-    DISPATCHER_CONTEXT dispatch;
+    DISPATCHER_CONTEXT_NATIVE dispatch;
 
     CONTEXT new_context;
     NTSTATUS status;
@@ -1722,7 +1757,7 @@ void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec
     DISPATCHER_TARGET(&dispatch) = (ULONG_PTR)target_ip;
     dispatch.ContextRecord       = context;
     dispatch.HistoryTable        = table;
-#if defined(__aarch64__) || defined(__arm__)
+#if defined(__arm64ec__) || defined(__aarch64__) || defined(__arm__)
     fill_nonvolatile_regs( &nonvolatile_regs, context );
     dispatch.NonVolatileRegisters = nonvolatile_regs.Buffer;
 #endif
@@ -1760,7 +1795,7 @@ void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec
                 new_context.ContextFlags &= ~0x40;
 #endif
                 *context = new_context;
-#if defined(__aarch64__) || defined(__arm__)
+#if defined(__arm64ec__) || defined(__aarch64__) || defined(__arm__)
                 fill_nonvolatile_regs( &nonvolatile_regs, context );
 #endif
                 dispatch.ContextRecord = context;
@@ -1790,7 +1825,7 @@ void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec
                     new_context.ContextFlags &= ~0x40;
 #endif
                     *context = new_context;
-#if defined(__aarch64__) || defined(__arm__)
+#if defined(__arm64ec__) || defined(__aarch64__) || defined(__arm__)
                     fill_nonvolatile_regs( &nonvolatile_regs, context );
 #endif
                     dispatch.ContextRecord = context;
@@ -1808,7 +1843,7 @@ void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec
 
         if (dispatch.EstablisherFrame == (ULONG_PTR)end_frame) break;
         *context = new_context;
-#if defined(__aarch64__) || defined(__arm__)
+#if defined(__arm64ec__) || defined(__aarch64__) || defined(__arm__)
         fill_nonvolatile_regs( &nonvolatile_regs, context );
 #endif
     }
@@ -1862,7 +1897,7 @@ EXCEPTION_DISPOSITION WINAPI __C_specific_handler( EXCEPTION_RECORD *rec,
     TRACE( "%p %p %p %p\n", rec, frame, context, dispatch );
     if (TRACE_ON(seh)) dump_scope_table( dispatch->ImageBase, table );
 
-#if defined(__aarch64__) || defined(__arm__)
+#if defined(__arm64ec__) || defined(__aarch64__) || defined(__arm__)
     if (IS_ARM_CODE( (const void *)ControlPc ) && ((DISPATCHER_CONTEXT_NATIVE *)dispatch)->ControlPcIsUnwound)
         ControlPc -= INSTR_SIZE;
 #endif
@@ -1889,7 +1924,15 @@ EXCEPTION_DISPOSITION WINAPI __C_specific_handler( EXCEPTION_RECORD *rec,
                 dispatch->ScopeIndex = i+1;
 
                 TRACE( "calling __finally %p frame %p\n", handler, frame );
-#if defined(__aarch64__) || defined(__arm__)
+#ifdef __arm64ec__
+                if (RtlIsEcCode(handler))
+                {
+                    DISPATCHER_CONTEXT_ARM64EC *ec_dispatch = (DISPATCHER_CONTEXT_ARM64EC *)&dispatch;
+                    __C_ExecuteTerminationHandler( TRUE, frame, handler,
+                                                   ec_dispatch->NonVolatileRegisters );
+                }
+                else handler( TRUE, frame );
+#elif defined(__aarch64__) || defined(__arm__)
                 __C_ExecuteTerminationHandler( TRUE, frame, handler, dispatch->NonVolatileRegisters );
 #else /* __x86_64__ */
                 handler( TRUE, frame );
@@ -1915,7 +1958,15 @@ EXCEPTION_DISPOSITION WINAPI __C_specific_handler( EXCEPTION_RECORD *rec,
                 ptrs.ExceptionRecord = rec;
                 ptrs.ContextRecord = context;
                 TRACE( "calling filter %p ptrs %p frame %p\n", filter, &ptrs, frame );
-#if defined(__aarch64__) || defined(__arm__)
+ #ifdef __arm64ec__
+                if (RtlIsEcCode(filter))
+                {
+                    DISPATCHER_CONTEXT_ARM64EC *ec_dispatch = (DISPATCHER_CONTEXT_ARM64EC *)&dispatch;
+                    filter_ret = __C_ExecuteExceptionFilter( &ptrs, frame, filter,
+                                                             ec_dispatch->NonVolatileRegisters );
+                }
+                else filter_ret = filter( &ptrs, frame );
+#elif defined(__aarch64__) || defined(__arm__)
                 filter_ret = __C_ExecuteExceptionFilter( &ptrs, frame, filter, dispatch->NonVolatileRegisters );
 #else /* __x86_64__ */
                 filter_ret = filter( &ptrs, frame );
@@ -1970,7 +2021,7 @@ static inline ULONG hash_pointers( void **ptrs, ULONG count )
 USHORT WINAPI RtlCaptureStackBackTrace( ULONG skip, ULONG count, PVOID *buffer, ULONG *hash )
 {
     UNWIND_HISTORY_TABLE table;
-    DISPATCHER_CONTEXT dispatch;
+    DISPATCHER_CONTEXT_NATIVE dispatch;
     CONTEXT context;
     NTSTATUS status;
     ULONG i;

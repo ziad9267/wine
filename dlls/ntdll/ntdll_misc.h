@@ -83,7 +83,7 @@ extern void context_restore_from_jmpbuf( CONTEXT *context, void *buf );
 
 extern void context_trace_gprs( CONTEXT *context );
 
-#if defined(__aarch64__) || defined(__arm__)
+#if defined(__arm64ec__) || defined(__aarch64__) || defined(__arm__)
 extern LONG __C_ExecuteExceptionFilter(PEXCEPTION_POINTERS ptrs, PVOID frame,
 				       PEXCEPTION_FILTER filter,
 				       PUCHAR nonvolatile);

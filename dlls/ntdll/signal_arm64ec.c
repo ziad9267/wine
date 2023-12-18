@@ -46,6 +46,7 @@ static ULONG ctx_flags_x64_to_arm( ULONG flags )
     if (flags & CONTEXT_AMD64_CONTROL) ret |= CONTEXT_ARM64_CONTROL;
     if (flags & CONTEXT_AMD64_INTEGER) ret |= CONTEXT_ARM64_INTEGER;
     if (flags & CONTEXT_AMD64_FLOATING_POINT) ret |= CONTEXT_ARM64_FLOATING_POINT;
+    if (flags & CONTEXT_AMD64_UNWOUND_TO_CALL) ret |= CONTEXT_ARM64_UNWOUND_TO_CALL;
     return ret;
 }
 
@@ -57,6 +58,7 @@ static ULONG ctx_flags_arm_to_x64( ULONG flags )
     if (flags & CONTEXT_ARM64_CONTROL) ret |= CONTEXT_AMD64_CONTROL;
     if (flags & CONTEXT_ARM64_INTEGER) ret |= CONTEXT_AMD64_INTEGER;
     if (flags & CONTEXT_ARM64_FLOATING_POINT) ret |= CONTEXT_AMD64_FLOATING_POINT;
+    if (flags & CONTEXT_ARM64_UNWOUND_TO_CALL) ret |= CONTEXT_AMD64_UNWOUND_TO_CALL;
     return ret;
 }
 
@@ -1935,88 +1937,96 @@ BOOLEAN WINAPI RtlIsEcCode( const void *ptr )
 }
 
 
-/***********************************************************************
- *		RtlCaptureContext (NTDLL.@)
- */
-void WINAPI RtlCaptureContext( CONTEXT *context )
-{
-    FIXME( "not implemented\n" );
-}
-
-
-/*******************************************************************
- *              RtlRestoreContext (NTDLL.@)
- */
-void CDECL RtlRestoreContext( CONTEXT *context, EXCEPTION_RECORD *rec )
-{
-    FIXME( "not implemented\n" );
-}
-
-
 /**********************************************************************
  *              RtlVirtualUnwind   (NTDLL.@)
  */
-PVOID WINAPI RtlVirtualUnwind( ULONG type, ULONG64 base, ULONG64 pc,
-                               RUNTIME_FUNCTION *function, CONTEXT *context,
-                               PVOID *data, ULONG64 *frame_ret,
+PVOID WINAPI RtlVirtualUnwind( ULONG type, ULONG_PTR base, ULONG_PTR pc,
+                               RUNTIME_FUNCTION *func, CONTEXT *context,
+                               PVOID *handler_data, ULONG_PTR *frame_ret,
                                KNONVOLATILE_CONTEXT_POINTERS *ctx_ptr )
 {
-    FIXME( "not implemented\n" );
-    return NULL;
+    if (RtlIsEcCode( (const void *)pc ))
+    {
+        ARM64_RUNTIME_FUNCTION *arm_func = (ARM64_RUNTIME_FUNCTION *)func;
+        ARM64_NT_CONTEXT arm_context;
+        KNONVOLATILE_CONTEXT_POINTERS_ARM64 arm_ctx_ptr; /* TODO: convert? needs test */
+        void *ptr;
+        context_x64_to_arm( &arm_context, context );
+        ptr = virtual_unwind_arm64( type, base, pc, arm_func, &arm_context, handler_data, frame_ret, &arm_ctx_ptr );
+        context_arm_to_x64( context, &arm_context );
+        if ((context->ContextFlags & CONTEXT_AMD64_UNWOUND_TO_CALL) == CONTEXT_AMD64_UNWOUND_TO_CALL &&
+            !RtlIsEcCode( (const void *)context->Rip ))
+	{
+            context->ContextFlags &= ~CONTEXT_AMD64_UNWOUND_TO_CALL;
+            if (frame_ret) *frame_ret -= 8;
+	}
+        return ptr;
+    }
+    else
+    {
+        return virtual_unwind_x86_64( type, base, pc, func, context, handler_data, frame_ret, ctx_ptr );
+    }
 }
 
-
-/*******************************************************************
- *		RtlUnwindEx (NTDLL.@)
+/***********************************************************************
+ *                RtlCaptureContext (NTDLL.@)
  */
-void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec,
-                         PVOID retval, CONTEXT *context, UNWIND_HISTORY_TABLE *table )
+// TODO: tests
+void __attribute__((naked)) RtlCaptureContext( CONTEXT *context )
 {
-    FIXME( "not implemented\n" );
+    asm( "str xzr,  [x0, #0x80]\n\t" /* context->X0 */
+         "stp x1,   x27, [x0, #0x88]\n\t" /* context->X1, context->X27 */
+         "mov x1,   sp\n\t"
+         "stp x1,   x29, [x0, #0x98]\n\t" /* context->Sp, context->Fp */
+         "stp x25,  x26, [x0, #0xa8]\n\t" /* context->X25, context->X26 */
+         "stp x2,   x3,  [x0, #0xb8]\n\t" /* context->X2, context->X3 */
+         "stp x4,   x5,  [x0, #0xc8]\n\t" /* context->X4, context->X5 */
+         "stp x19,  x20, [x0, #0xd8]\n\t" /* context->X19, context->X20 */
+         "stp x21,  x22, [x0, #0xe8]\n\t" /* context->X21, context->X22 */
+         "str x30,      [x0, #0xf8]\n\t" /* context->Pc */
+
+         "mov x1,   #0x27f\n\t"
+         /* context->AMD64_{ControlWord,StatusWord,TagWord,Reserved1,ErrorOpcode,ErrorOffset,ErrorSelector,Reserved2} */
+         "stp x1,   xzr, [x0, #0x100]\n\t"
+         "mov w1,   #0x1f80\n\t"
+         "stp xzr,  x1,  [x0, #0x110];\n\t" /* context->AMD64_{DataOffset,DataSelector,Reserved3,MxCsr,MxCsr_Mask} */
+         "str w1,   [x0, #0x34];\n\t" /* context->AMD64_MxCsr_copy */
+         "str xzr,  [x0, #0x120];\n\t" /* context->Lr */
+
+         "strh w16, [x0, #0x128]\n\t" /* context->X16_0 */
+         "str  x6,  [x0, #0x130]\n\t" /* context->X6 */
+         "lsr  x16, x16, 16\n\t"
+         "strh w16, [x0, #0x138]\n\t" /* context->X16_1 */
+         "str  x7,  [x0, #0x140]\n\t" /* context->X7 */
+         "lsr  x16, x16, 16\n\t"
+         "strh w16, [x0, #0x148]\n\t" /* context->X16_2 */
+         "str  x9,  [x0, #0x150]\n\t" /* context->X9 */
+         "lsr  x16, x16, 16\n\t"
+         "strh w16, [x0, #0x158]\n\t" /* context->X16_3 */
+         "str  x10, [x0, #0x160]\n\t" /* context->X10 */
+         "strh w17, [x0, #0x168]\n\t" /* context->X17_0 */
+         "str  x11, [x0, #0x170]\n\t" /* context->X11 */
+         "lsr  x17, x17, 16\n\t"
+         "strh w17, [x0, #0x178]\n\t" /* context->X17_1 */
+         "str  x12, [x0, #0x180]\n\t" /* context->X12 */
+         "lsr  x17, x17, 16\n\t"
+         "strh w17, [x0, #0x188]\n\t" /* context->X17_2 */
+         "str  x15, [x0, #0x190]\n\t" /* context->X15 */
+         "lsr  x17, x17, 16\n\t"
+         "strh w17, [x0, #0x198]\n\t" /* context->X17_3 */
+         "stp  q0,  q1,  [x0, #0x1a0]\n\t" /* context->V[0-1] */
+         "stp  q2,  q3,  [x0, #0x1c0]\n\t" /* context->V[2-3] */
+         "stp  q4,  q5,  [x0, #0x1e0]\n\t" /* context->V[4-5] */
+         "stp  q6,  q7,  [x0, #0x200]\n\t" /* context->V[6-7] */
+         "stp  q8,  q9,  [x0, #0x220]\n\t" /* context->V[8-9] */
+         "stp  q10, q11, [x0, #0x240]\n\t" /* context->V[10-11] */
+         "stp  q12, q13, [x0, #0x260]\n\t" /* context->V[12-13] */
+         "stp  q14, q15, [x0, #0x280]\n\t" /* context->V[14-15] */
+         "mov  x1,  #0x100000\n\t" /* CONTEXT_AMD64 */
+         "movk x1,  #0xb\n\t" /* CONTEXT_AMD64_CONTROL | CONTEXT_AMD64_INTEGER | CONTEXT_AMD64_FLOATING_POINT */
+         "str  w1,  [x0, #0x30]\n\t" /* context->ContextFlags */
+         "ret" );
 }
-
-
-/*******************************************************************
- *		RtlUnwind (NTDLL.@)
- */
-void WINAPI RtlUnwind( void *frame, void *target_ip, EXCEPTION_RECORD *rec, void *retval )
-{
-    FIXME( "not implemented\n" );
-}
-
-
-/*******************************************************************
- *		_local_unwind (NTDLL.@)
- */
-void WINAPI _local_unwind( void *frame, void *target_ip )
-{
-    CONTEXT context;
-    RtlUnwindEx( frame, target_ip, NULL, NULL, &context, NULL );
-}
-
-
-/*******************************************************************
- *		__C_specific_handler (NTDLL.@)
- */
-EXCEPTION_DISPOSITION WINAPI __C_specific_handler( EXCEPTION_RECORD *rec,
-                                                   void *frame,
-                                                   CONTEXT *context,
-                                                   struct _DISPATCHER_CONTEXT *dispatch )
-{
-    FIXME( "not implemented\n" );
-    return ExceptionContinueSearch;
-}
-
-
-/*************************************************************************
- *		RtlCaptureStackBackTrace (NTDLL.@)
- */
-USHORT WINAPI RtlCaptureStackBackTrace( ULONG skip, ULONG count, PVOID *buffer, ULONG *hash )
-{
-    FIXME( "not implemented\n" );
-    return 0;
-}
-
 
 static int code_match( BYTE *code, const BYTE *seq, size_t len )
 {
@@ -2135,15 +2145,143 @@ void __attribute__((naked)) __chkstk_arm64ec(void)
     asm( "ret" );
 }
 
-
-/***********************************************************************
- *		RtlRaiseException (NTDLL.@)
+/**********************************************************************
+ *           call_Consolidate_callback
+ *
+ * Wrapper function to call a consolidate callback from a fake frame.
+ * If the callback executes RtlUnwindEx (like for example done in C++ handlers),
+ * we have to skip all frames which were already processed. To do that we
+ * trick the unwinding functions into thinking the call came from the specified
+ * context.
  */
-void WINAPI RtlRaiseException( struct _EXCEPTION_RECORD * rec)
+void *consolidate_callback_wrapper( EXCEPTION_RECORD *rec, void *(CALLBACK *callback)(EXCEPTION_RECORD *) )
 {
-    FIXME( "not implemented\n" );
+    return callback( rec );
 }
 
+void *__attribute__((naked)) call_consolidate_callback( CONTEXT *context,
+                                                        void *(CALLBACK *callback)(EXCEPTION_RECORD *),
+                                                        EXCEPTION_RECORD *rec)
+{
+    asm( __ASM_SEH(".seh_proc call_consolidate_callback\n\t")
+         "stp x29, x30, [sp, #-0x20]!\n\t"
+          __ASM_SEH(".seh_nop\n\t")
+          "stp x1,  x2,  [sp, #0x10]\n\t"
+          __ASM_SEH(".seh_nop\n\t")
+          "mov x29, sp\n\t"
+          __ASM_SEH(".seh_nop\n\t")
+          /* Memcpy the context onto the stack */
+          "sub sp, sp, #0x4d0\n\t"
+          __ASM_SEH(".seh_nop\n\t")
+          "mov x1,  x0\n\t"
+          __ASM_SEH(".seh_nop\n\t")
+          "mov x0,  sp\n\t"
+          __ASM_SEH(".seh_nop\n\t")
+          "mov x2,  #0x4d0\n\t"
+          __ASM_SEH(".seh_nop\n\t")
+          "bl " __ASM_NAME("memcpy") "\n\t"
+          __ASM_SEH(".seh_ec_context\n\t")
+          __ASM_SEH(".seh_endprologue\n\t")
+          "ldp x1,  x2,  [x29, #0x10]\n\t"
+          "mov x0,  x2\n\t"
+          "bl " __ASM_NAME("consolidate_callback_wrapper") "\n\t"
+          "mov sp,  x29\n\t"
+          "ldp x29, x30, [sp], #0x20\n\t"
+          "ret\n\t"
+          __ASM_SEH(".seh_endproc") );
+}
+
+void context_restore_from_jmpbuf( CONTEXT *context, void *buf )
+{
+    struct MSVCRT_JUMP_BUFFER *jmp = (struct MSVCRT_JUMP_BUFFER *)buf;
+    context->Rbx   = jmp->Rbx;
+    context->Rsp   = jmp->Rsp;
+    context->Rbp   = jmp->Rbp;
+    context->Rsi   = jmp->Rsi;
+    context->Rdi   = jmp->Rdi;
+    context->R12   = jmp->R12;
+    context->R13   = jmp->R13;
+    context->R14   = jmp->R14;
+    context->R15   = jmp->R15;
+    context->Rip   = jmp->Rip;
+    context->Xmm6  = jmp->Xmm6;
+    context->Xmm7  = jmp->Xmm7;
+    context->Xmm8  = jmp->Xmm8;
+    context->Xmm9  = jmp->Xmm9;
+    context->Xmm10 = jmp->Xmm10;
+    context->Xmm11 = jmp->Xmm11;
+    context->Xmm12 = jmp->Xmm12;
+    context->Xmm13 = jmp->Xmm13;
+    context->Xmm14 = jmp->Xmm14;
+    context->Xmm15 = jmp->Xmm15;
+    context->MxCsr = jmp->MxCsr;
+    context->FltSave.MxCsr = jmp->MxCsr;
+    context->FltSave.ControlWord = jmp->FpCsr;
+}
+
+void context_trace_gprs( CONTEXT *context )
+{
+    TRACE(" rax=%016I64x rbx=%016I64x rcx=%016I64x rdx=%016I64x\n",
+          context->Rax, context->Rbx, context->Rcx, context->Rdx );
+    TRACE(" rsi=%016I64x rdi=%016I64x rbp=%016I64x rsp=%016I64x\n",
+          context->Rsi, context->Rdi, context->Rbp, context->Rsp );
+    TRACE("  r8=%016I64x  r9=%016I64x r10=%016I64x r11=%016I64x\n",
+          context->R8, context->R9, context->R10, context->R11 );
+    TRACE(" r12=%016I64x r13=%016I64x r14=%016I64x r15=%016I64x\n",
+          context->R12, context->R13, context->R14, context->R15 );
+}
+
+__ASM_GLOBAL_FUNC( "#__C_ExecuteExceptionFilter",
+                   "stp x29, x30, [sp, #-136]!\n\t"
+                   __ASM_SEH(".seh_save_fplr_x 128\n\t")
+                   "stp x19, x20, [sp, #16]\n\t"
+                   __ASM_SEH(".seh_save_regp x19, 16\n\t")
+                   "stp x21, x22, [sp, #32]\n\t"
+                   __ASM_SEH(".seh_save_regp x21, 32\n\t")
+                   "stp x25, x26, [sp, #48]\n\t"
+                   __ASM_SEH(".seh_save_regp x25, 48\n\t")
+                   "str x27,      [sp, #64]\n\t"
+                   __ASM_SEH(".seh_save_reg  x27, 64\n\t")
+                   "stp d8,  d9,  [sp, #72]\n\t"
+                   __ASM_SEH(".seh_save_fregp d8,  72\n\t")
+                   "stp d10, d11, [sp, #88]\n\t"
+                   __ASM_SEH(".seh_save_fregp d10, 88\n\t")
+                   "stp d12, d13, [sp, #104]\n\t"
+                   __ASM_SEH(".seh_save_fregp d12, 104\n\t")
+                   "stp d14, d15, [sp, #120]\n\t"
+                   __ASM_SEH(".seh_save_fregp d14, 120\n\t")
+                   "mov x29, sp\n\t"
+                   __ASM_SEH(".seh_set_fp\n\t")
+                   __ASM_SEH(".seh_endprologue\n\t")
+
+                   "ldp x19, x20, [x3, #0]\n\t"
+                   "ldp x21, x22, [x3, #16]\n\t"
+                   /* X23/X24 are reserved for EC */
+                   "ldp x25, x26, [x3, #48]\n\t"
+                   "ldr x27,      [x3, #64]\n\t"
+                   /* X28 is reserved for EC */
+                   /* Overwrite the frame parameter with Fp from the
+                    * nonvolatile regs */
+                   "ldr x1,  [x3, #80]\n\t"
+                   "ldp d8,  d9,  [x3, #88]\n\t"
+                   "ldp d10, d11, [x3, #104]\n\t"
+                   "ldp d12, d13, [x3, #120]\n\t"
+                   "ldp d14, d15, [x3, #136]\n\t"
+                   "blr x2\n\t"
+                   "ldp x19, x20, [sp, #16]\n\t"
+                   "ldp x21, x22, [sp, #32]\n\t"
+                   "ldp x25, x26, [sp, #48]\n\t"
+                   "ldr x27,      [sp, #64]\n\t"
+                   "ldp d8,  d9,  [sp, #72]\n\t"
+                   "ldp d10, d11, [sp, #88]\n\t"
+                   "ldp d12, d13, [sp, #104]\n\t"
+                   "ldp d14, d15, [sp, #120]\n\t"
+                   "ldp x29, x30, [sp], #136\n\t"
+                   "ret")
+
+/* This is, implementation wise, identical to __C_ExecuteExceptionFilter. */
+__ASM_GLOBAL_FUNC( "#__C_ExecuteTerminationHandler",
+                   "b " __ASM_NAME("#__C_ExecuteExceptionFilter") "\n\t");
 
 /***********************************************************************
  *           RtlUserThreadStart (NTDLL.@)
