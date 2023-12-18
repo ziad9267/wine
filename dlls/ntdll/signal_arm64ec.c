@@ -37,6 +37,85 @@ WINE_DEFAULT_DEBUG_CHANNEL(unwind);
 WINE_DECLARE_DEBUG_CHANNEL(seh);
 WINE_DECLARE_DEBUG_CHANNEL(relay);
 
+/* layering violation: the setjmp buffer is defined in msvcrt, but used by RtlUnwindEx */
+struct MSVCRT_JUMP_BUFFER
+{
+    ULONG64 Frame;
+    ULONG64 Rbx;
+    ULONG64 Rsp;
+    ULONG64 Rbp;
+    ULONG64 Rsi;
+    ULONG64 Rdi;
+    ULONG64 R12;
+    ULONG64 R13;
+    ULONG64 R14;
+    ULONG64 R15;
+    ULONG64 Rip;
+    ULONG  MxCsr;
+    USHORT FpCsr;
+    USHORT Spare;
+    M128A   Xmm6;
+    M128A   Xmm7;
+    M128A   Xmm8;
+    M128A   Xmm9;
+    M128A   Xmm10;
+    M128A   Xmm11;
+    M128A   Xmm12;
+    M128A   Xmm13;
+    M128A   Xmm14;
+    M128A   Xmm15;
+};
+
+__declspec(naked) void capture_arm64_context( ARM64_NT_CONTEXT *context )
+{
+    asm( "str xzr, [x0, #0x8]\n\t"        /* context->X0 */
+         "stp x1,  x2,  [x0, #0x10]\n\t"  /* context->X1,X2 */
+         "stp x3,  x4,  [x0, #0x20]\n\t"  /* context->X3,X4 */
+         "stp x5,  x6,  [x0, #0x30]\n\t"  /* context->X5,X6 */
+         "stp x7,  x8,  [x0, #0x40]\n\t"  /* context->X7,X8 */
+         "stp x9,  x10, [x0, #0x50]\n\t"  /* context->X9,X10 */
+         "stp x11, x12, [x0, #0x60]\n\t"  /* context->X11,X12 */
+         "stp x13, x14, [x0, #0x70]\n\t"  /* context->X13,X14 */
+         "stp x15, x16, [x0, #0x80]\n\t"  /* context->X15,X16 */
+         "stp x17, x18, [x0, #0x90]\n\t"  /* context->X17,X18 */
+         "stp x19, x20, [x0, #0xa0]\n\t"  /* context->X19,X20 */
+         "stp x21, x22, [x0, #0xb0]\n\t"  /* context->X21,X22 */
+         "stp x23, x24, [x0, #0xc0]\n\t"  /* context->X23,X24 */
+         "stp x25, x26, [x0, #0xd0]\n\t"  /* context->X25,X26 */
+         "stp x27, x28, [x0, #0xe0]\n\t"  /* context->X27,X28 */
+         "stp x29, xzr, [x0, #0xf0]\n\t"  /* context->Fp,Lr */
+         "mov x1,  sp\n\t"
+         "stp x1,  x30, [x0, #0x100]\n\t" /* context->Sp,Pc */
+         "stp q0,  q1,  [x0, #0x110]\n\t" /* context->V[0-1] */
+         "stp q2,  q3,  [x0, #0x130]\n\t" /* context->V[2-3] */
+         "stp q4,  q5,  [x0, #0x150]\n\t" /* context->V[4-5] */
+         "stp q6,  q7,  [x0, #0x170]\n\t" /* context->V[6-7] */
+         "stp q8,  q9,  [x0, #0x190]\n\t" /* context->V[8-9] */
+         "stp q10, q11, [x0, #0x1b0]\n\t" /* context->V[10-11] */
+         "stp q12, q13, [x0, #0x1d0]\n\t" /* context->V[12-13] */
+         "stp q14, q15, [x0, #0x1f0]\n\t" /* context->V[14-15] */
+         "stp q16, q17, [x0, #0x210]\n\t" /* context->V[16-17] */
+         "stp q18, q19, [x0, #0x230]\n\t" /* context->V[18-19] */
+         "stp q20, q21, [x0, #0x250]\n\t" /* context->V[20-21] */
+         "stp q22, q23, [x0, #0x270]\n\t" /* context->V[22-23] */
+         "stp q24, q25, [x0, #0x290]\n\t" /* context->V[24-25] */
+         "stp q26, q27, [x0, #0x2b0]\n\t" /* context->V[26-27] */
+         "stp q28, q29, [x0, #0x2d0]\n\t" /* context->V[28-29] */
+         "stp q30, q31, [x0, #0x2f0]\n\t" /* context->V[30-31] */
+         "mov w1, #0x400000\n\t"          /* CONTEXT_ARM64 */
+         "movk w1, #0x7\n\t"              /* CONTEXT_FULL */
+         "str w1, [x0]\n\t"               /* context->ContextFlags */
+         "mrs x1, NZCV\n\t"
+         "str w1, [x0, #0x4]\n\t"         /* context->Cpsr */
+         "mrs x1, FPCR\n\t"
+         "str w1, [x0, #0x310]\n\t"       /* context->Fpcr */
+         "mrs x1, FPSR\n\t"
+         "str w1, [x0, #0x314]\n\t"       /* context->Fpsr */
+         "ret"
+    );
+}
+
+
 
 static ULONG ctx_flags_x64_to_arm( ULONG flags )
 {
@@ -1313,7 +1392,7 @@ NTSTATUS SYSCALL_API NtQueueApcThread( HANDLE handle, PNTAPCFUNC func, ULONG_PTR
     __ASM_SYSCALL_FUNC( __id_NtQueueApcThread );
 }
 
-static NTSTATUS SYSCALL_API syscall_NtRaiseException( EXCEPTION_RECORD *rec, ARM64_NT_CONTEXT *context, BOOL first_chance )
+NTSTATUS SYSCALL_API syscall_NtRaiseException( EXCEPTION_RECORD *rec, ARM64_NT_CONTEXT *context, BOOL first_chance )
 {
     __ASM_SYSCALL_FUNC( __id_NtRaiseException );
 }
@@ -1856,18 +1935,32 @@ __ASM_GLOBAL_FUNC( "#KiUserEmulationDispatcher",
                    "bl " __ASM_NAME("dispatch_emulation") "\n\t"
                    "brk #1" )
 
-/*******************************************************************
- *             KiUserExceptionDispatcher (NTDLL.@)
- */
-NTSTATUS WINAPI KiUserExceptionDispatcher( EXCEPTION_RECORD *rec, CONTEXT *context )
+NTSTATUS dispatch_exception_ec( EXCEPTION_RECORD *rec, ARM64_NT_CONTEXT *arm_context )
 {
-    FIXME( "not implemented\n" );
-    return STATUS_INVALID_DISPOSITION;
+    CONTEXT context;
+    EXCEPTION_POINTERS pointers = { rec, &context };
+
+    context_arm_to_x64( &context, arm_context );
+    arm64ec_callbacks.pResetToConsistentState( &pointers );
+    context_x64_to_arm( arm_context, &context );
+
+    return dispatch_exception( rec, &context );
 }
 
+/*******************************************************************
+ *                KiUserExceptionDispatcher (NTDLL.@)
+ */
+__ASM_GLOBAL_FUNC( "#KiUserExceptionDispatcher",
+                   "nop\n\t"
+                   __ASM_SEH(".seh_context\n\t")
+                   __ASM_SEH(".seh_endprologue\n\t")
+                   "add x0, sp, #0x390\n\t" /* rec (context + 1) */
+                   "mov x1, sp\n\t"             /* context */
+                   "bl " __ASM_NAME("dispatch_exception_ec") "\n\t"
+                   "brk #1" )
 
 /*******************************************************************
- *		KiUserApcDispatcher (NTDLL.@)
+ *                KiUserApcDispatcher (NTDLL.@)
  */
 void WINAPI dispatch_apc( void (CALLBACK *func)(ULONG_PTR,ULONG_PTR,ULONG_PTR,CONTEXT*),
                           ULONG_PTR arg1, ULONG_PTR arg2, ULONG_PTR arg3,
@@ -2321,6 +2414,42 @@ void WINAPI LdrInitializeThunk( CONTEXT *arm_context, ULONG_PTR unk2, ULONG_PTR 
     TRACE_(relay)( "\1Starting thread proc %p (arg=%p)\n", (void *)context.Rcx, (void *)context.Rdx );
     NtContinue( &context, TRUE );
 }
+
+/***********************************************************************
+ *                RtlRaiseException (NTDLL.@)
+ */
+// TODO: is it better to capture ec context here?
+void __attribute__((naked)) RtlRaiseException( struct _EXCEPTION_RECORD * rec)
+{
+    asm( __ASM_SEH(".seh_proc RtlRaiseException\n\t")
+         "sub sp, sp, #0x3b0\n\t" /* 0x390 (context) + 0x20 */
+         "stp x29, x30, [sp]\n\t"
+         __ASM_SEH(".seh_stackalloc 0x3b0\n\t")
+         __ASM_SEH(".seh_save_fplr 0\n\t")
+         __ASM_SEH(".seh_endprologue\n\t")
+         "mov x29, sp\n\t"
+         "str x0,  [sp, #0x10]\n\t"
+         "add x0,  sp, #0x20\n\t"
+         "bl " __ASM_NAME("capture_arm64_context") "\n\t"
+         "add x1,  sp, #0x20\n\t"      /* context pointer */
+         "add x2,  sp, #0x3b0\n\t"     /* orig stack pointer */
+         "str x2,  [x1, #0x100]\n\t"   /* context->Sp */
+         "ldr x0,  [sp, #0x10]\n\t"    /* original first parameter */
+         "str x0,  [x1, #0x08]\n\t"    /* context->X0 */
+         "ldp x4, x5, [sp]\n\t"        /* frame pointer, return address */
+         "stp x4, x5, [x1, #0xf0]\n\t" /* context->Fp, Lr */
+         "str  x5, [x1, #0x108]\n\t"   /* context->Pc */
+         "str  x5, [x0, #0x10]\n\t"    /* rec->ExceptionAddress */
+         "ldr x3, [x18, #0x60]\n\t"    /* peb */
+         "ldrb w2, [x3, #2]\n\t"       /* peb->BeingDebugged */
+         "cbnz w2, 1f\n\t"
+         "bl " __ASM_NAME("dispatch_exception_ec") "\n"
+         "1:\tmov  x2, #1\n\t"
+         "bl " __ASM_NAME("syscall_NtRaiseException") "\n\t"
+         "bl " __ASM_NAME("RtlRaiseStatus") "\n\t" /* does not return */
+          __ASM_SEH(".seh_endproc\n\t") );
+}
+
 
 
 /**********************************************************************
