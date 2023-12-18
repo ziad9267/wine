@@ -56,6 +56,7 @@ extern PVOID virtual_unwind_x86_64( ULONG type, ULONG64 base, ULONG64 pc,
                                     RUNTIME_FUNCTION *function, CONTEXT *context,
                                     PVOID *data, ULONG64 *frame_ret,
                                     KNONVOLATILE_CONTEXT_POINTERS *ctx_ptr );
+extern NTSTATUS call_stack_handlers( EXCEPTION_RECORD *rec, CONTEXT *orig_context );
 #endif
 
 #if defined(__aarch64__) || defined(__arm64ec__)
@@ -73,6 +74,25 @@ extern void (WINAPI *pWow64PrepareForException)( EXCEPTION_RECORD *rec, CONTEXT 
 
 #if defined(__x86_64__) || defined(__arm__) || defined(__aarch64__)
 extern RUNTIME_FUNCTION *lookup_function_info( ULONG_PTR pc, ULONG_PTR *base, LDR_DATA_TABLE_ENTRY **module );
+
+extern void * WINAPI call_consolidate_callback( CONTEXT *context,
+                                                void *(CALLBACK *callback)(EXCEPTION_RECORD *),
+                                                EXCEPTION_RECORD *rec );
+
+extern void context_restore_from_jmpbuf( CONTEXT *context, void *buf );
+
+extern void context_trace_gprs( CONTEXT *context );
+
+#if defined(__aarch64__) || defined(__arm__)
+extern LONG __C_ExecuteExceptionFilter(PEXCEPTION_POINTERS ptrs, PVOID frame,
+				       PEXCEPTION_FILTER filter,
+				       PUCHAR nonvolatile);
+
+extern void __C_ExecuteTerminationHandler(BOOL abnormal, PVOID frame,
+                                          PTERMINATION_HANDLER handler,
+                                          PUCHAR nonvolatile);
+
+#endif
 #endif
 
 /* debug helpers */
