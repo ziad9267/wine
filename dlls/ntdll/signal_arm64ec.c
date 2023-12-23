@@ -1939,9 +1939,11 @@ NTSTATUS dispatch_exception_ec( EXCEPTION_RECORD *rec, ARM64_NT_CONTEXT *arm_con
 {
     CONTEXT context;
     EXCEPTION_POINTERS pointers = { rec, &context };
+    BOOLEAN cont = FALSE;
 
     context_arm_to_x64( &context, arm_context );
-    arm64ec_callbacks.pResetToConsistentState( &pointers );
+    arm64ec_callbacks.pResetToConsistentState( &pointers, arm_context, &cont);
+    if (cont) syscall_NtContinue( arm_context, FALSE );
     context_x64_to_arm( arm_context, &context );
 
     return dispatch_exception( rec, &context );
