@@ -74,14 +74,6 @@ struct MSVCRT_JUMP_BUFFER
 ALL_SYSCALLS64
 #undef SYSCALL_ENTRY
 
-/**************************************************************************
- *		__chkstk (NTDLL.@)
- *
- * Supposed to touch all the stack pages, but we shouldn't need that.
- */
-__ASM_GLOBAL_FUNC( __chkstk, "ret" );
-
-
 /***********************************************************************
  *		RtlCaptureContext (NTDLL.@)
  */

@@ -35,6 +35,7 @@ SOURCES = \
 	rtlbitmap.c \
 	rtlstr.c \
 	sec.c \
+	chkstk.o \
 	signal_arm.c \
 	signal_arm64.c \
 	unwind_arm64.c \
