@@ -271,7 +271,9 @@ static void context_arm_to_x64( CONTEXT *ctx, const ARM64_NT_CONTEXT *arm_ctx )
     ec_ctx->AMD64_SegGs  = 0x2b;
     ec_ctx->AMD64_SegSs  = 0x2b;
     ec_ctx->AMD64_EFlags = cpsr_to_eflags( arm_ctx->Cpsr );
+    ec_ctx->AMD64_ControlWord = 0x27f; // TODO: test
     ec_ctx->AMD64_MxCsr  = ec_ctx->AMD64_MxCsr_copy = fpcsr_to_mxcsr( arm_ctx->Fpcr, arm_ctx->Fpsr );
+    ec_ctx->AMD64_MxCsr_Mask = 0x2ffff;
 
     ec_ctx->X8    = arm_ctx->X8;
     ec_ctx->X0    = arm_ctx->X0;
@@ -848,6 +850,7 @@ NTSTATUS WINAPI NtGetContextThread( HANDLE handle, CONTEXT *context )
 {
     ARM64_NT_CONTEXT arm_ctx = { .ContextFlags = ctx_flags_x64_to_arm( context->ContextFlags ) };
     NTSTATUS status = syscall_NtGetContextThread( handle, &arm_ctx );
+    ERR("unimpl\n");
 
     if (!status) context_arm_to_x64( context, &arm_ctx );
     return status;

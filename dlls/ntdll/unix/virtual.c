@@ -163,9 +163,9 @@ static void *address_space_start = (void *)0x110000; /* keep DOS area clear */
 static void *address_space_start = (void *)0x10000;
 #endif
 
-#ifdef __aarch64__
-static void *address_space_limit = (void *)0xffffffff0000;  /* top of the total available address space */
-#elif defined(_WIN64)
+//#ifdef __aarch64__
+//static void *address_space_limit = (void *)0xffffffff0000;  /* top of the total available address space */
+#if defined(_WIN64)
 static void *address_space_limit = (void *)0x7fffffff0000;
 #else
 static void *address_space_limit = (void *)0xc0000000;

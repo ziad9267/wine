@@ -2129,7 +2129,7 @@ void init_startup_info(void)
     free( info );
 
     status = load_main_exe( params->ImagePathName.Buffer, NULL, params->CommandLine.Buffer,
-                            machine, &image, &module );
+                            0, &image, &module );
     if (!NT_SUCCESS(status))
     {
         MESSAGE( "wine: failed to start %s\n", debugstr_us(&params->ImagePathName) );

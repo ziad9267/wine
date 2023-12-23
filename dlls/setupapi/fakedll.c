@@ -43,6 +43,9 @@ WINE_DEFAULT_DEBUG_CHANNEL(setupapi);
 #ifdef __i386__
 static const WCHAR pe_dir[] = L"\\i386-windows";
 static const char current_arch[] = "x86";
+#elif defined __arm64ec__
+static const WCHAR pe_dir[] = L"\\arm64ec-windows";
+static const char current_arch[] = "amd64";
 #elif defined __x86_64__
 static const WCHAR pe_dir[] = L"\\x86_64-windows";
 static const char current_arch[] = "amd64";

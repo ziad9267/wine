@@ -1410,8 +1410,6 @@ DECL_HANDLER(map_image_view)
         if (view->image.machine != current->process->machine)
         {
             /* on 32-bit, the native 64-bit machine is allowed */
-            if (is_machine_64bit( current->process->machine ) || view->image.machine != native_machine)
-                set_error( STATUS_IMAGE_MACHINE_TYPE_MISMATCH );
         }
     }
 

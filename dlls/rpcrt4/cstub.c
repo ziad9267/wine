@@ -135,7 +135,7 @@ static ULONG WINAPI delegating_Release(IUnknown *pUnk)
     ".byte 0xff,0xa0\n\t" /* jmp *offset(%eax) */ \
     ".long 4*("#num")\n\t"
 
-#elif defined(__x86_64__)
+#elif defined(__x86_64__) && !defined(__arm64ec__)
 
 #define THUNK_ENTRY_SIZE 16
 #define THUNK_ENTRY(num) \
@@ -171,9 +171,10 @@ static ULONG WINAPI delegating_Release(IUnknown *pUnk)
 #define THUNK_ENTRY(num) ""
 
 #endif
-
+#ifndef __arm64ec__
 extern void vtbl_thunks(void);
 __ASM_GLOBAL_FUNC( vtbl_thunks, ALL_THUNK_ENTRIES )
+#endif
 #undef THUNK_ENTRY
 
 static const struct
@@ -185,7 +186,9 @@ static const struct
     { delegating_QueryInterface, delegating_AddRef, delegating_Release },
     {
 #define THUNK_ENTRY(num) (char *)vtbl_thunks + ((num) - 3) * THUNK_ENTRY_SIZE,
+#ifndef __arm64ec__
         ALL_THUNK_ENTRIES
+#endif
 #undef THUNK_ENTRY
     }
 };

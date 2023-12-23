@@ -329,9 +329,9 @@ static const char *get_pe_dir( WORD machine )
     switch(machine)
     {
     case IMAGE_FILE_MACHINE_I386:  return "/i386-windows";
-    case IMAGE_FILE_MACHINE_AMD64: return "/x86_64-windows";
+    case IMAGE_FILE_MACHINE_AMD64: return "/arm64ec-windows";
     case IMAGE_FILE_MACHINE_ARMNT: return "/arm-windows";
-    case IMAGE_FILE_MACHINE_ARM64: return "/aarch64-windows";
+    case IMAGE_FILE_MACHINE_ARM64: return "/arm64ec-windows";
     default: return "";
     }
 }
@@ -1169,6 +1169,11 @@ static NTSTATUS find_builtin_dll( UNICODE_STRING *nt_name, void **module, SIZE_T
     BOOL found_image = FALSE;
     BOOL try_so = (search_machine == current_machine && (!load_machine || load_machine == search_machine));
 
+#ifdef __aarch64__
+    if (is_arm64ec() && search_machine == IMAGE_FILE_MACHINE_ARM64) search_machine = main_image_info.Machine;
+    pe_dir = get_pe_dir( search_machine );
+#endif
+
     for (i = namepos = 0; i < len; i++)
         if (nt_name->Buffer[i] == '/' || nt_name->Buffer[i] == '\\') namepos = i + 1;
     len -= namepos;
@@ -1331,7 +1336,7 @@ static const WCHAR *get_machine_wow64_dir( WORD machine )
     static const WCHAR syswow64[] = {'\\','?','?','\\','C',':','\\','w','i','n','d','o','w','s','\\','s','y','s','w','o','w','6','4','\\',0};
     static const WCHAR sysarm32[] = {'\\','?','?','\\','C',':','\\','w','i','n','d','o','w','s','\\','s','y','s','a','r','m','3','2','\\',0};
 
-    if (machine == native_machine) machine = IMAGE_FILE_MACHINE_TARGET_HOST;
+    machine = IMAGE_FILE_MACHINE_TARGET_HOST;
 
     switch (machine)
     {
@@ -1353,9 +1358,6 @@ BOOL is_builtin_path( const UNICODE_STRING *path, WORD *machine )
 {
     unsigned int i, len = path->Length / sizeof(WCHAR), dirlen;
     const WCHAR *sysdir, *p = path->Buffer;
-
-    /* only fake builtin existence during prefix bootstrap */
-    if (!is_prefix_bootstrap) return FALSE;
 
     for (i = 0; i < supported_machines_count; i++)
     {

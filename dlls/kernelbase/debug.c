@@ -313,7 +313,7 @@ void WINAPI DECLSPEC_HOTPATCH OutputDebugStringW( LPCWSTR str )
 /*******************************************************************
  *           RaiseException  (kernelbase.@)
  */
-#if defined(__x86_64__)
+#if defined(__x86_64__) && !defined(__arm64ec__)
 /* Some DRMs depend on RaiseException not altering non-volatile registers. */
 __ASM_GLOBAL_FUNC( RaiseException,
                    ".byte 0x48,0x8d,0xa4,0x24,0x00,0x00,0x00,0x00\n\t" /* hotpatch prolog */

@@ -914,7 +914,7 @@ static void _setfp( unsigned int *cw, unsigned int cw_mask,
         __asm__ __volatile__( "fldcw %0" : : "m" (newcw) );
 #elif defined(__x86_64__) && !defined(__arm64ec__)
     _setfp_sse(cw, cw_mask, sw, sw_mask);
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) || defined(__arm64ec__)
     ULONG_PTR old_fpsr = 0, fpsr = 0, old_fpcr = 0, fpcr = 0;
     unsigned int flags;
 

@@ -52,6 +52,9 @@ WINE_DECLARE_DEBUG_CHANNEL(imports);
 #ifdef __i386__
 static const WCHAR pe_dir[] = L"\\i386-windows";
 static const USHORT current_machine = IMAGE_FILE_MACHINE_I386;
+#elif defined __arm64ec__
+static const WCHAR pe_dir[] = L"\\arm64ec-windows";
+static const USHORT current_machine = IMAGE_FILE_MACHINE_AMD64;
 #elif defined __x86_64__
 static const WCHAR pe_dir[] = L"\\x86_64-windows";
 static const USHORT current_machine = IMAGE_FILE_MACHINE_AMD64;
@@ -2461,6 +2464,9 @@ static BOOL is_valid_binary( HANDLE file, const SECTION_IMAGE_INFORMATION *info 
     if (NtCurrentTeb()->WowTebOffset) return TRUE;
     /* support ARM64EC binaries on x86-64 */
     if (current_machine == IMAGE_FILE_MACHINE_AMD64 && has_chpe_metadata( file, info )) return TRUE;
+#ifdef __arm64ec__
+    if (info->Machine == IMAGE_FILE_MACHINE_ARM64) return TRUE; /* FIXME */
+#endif
     /* support 32-bit IL-only images on 64-bit */
     if (!info->ImageContainsCode) return TRUE;
     if (info->ComPlusNativeReady) return TRUE;
@@ -3073,12 +3079,6 @@ static NTSTATUS find_builtin_without_file( const WCHAR *name, UNICODE_STRING *ne
     BOOL found_image = FALSE;
 
     if (contains_path( name )) return status;
-
-    if (!is_prefix_bootstrap)
-    {
-        /* 16-bit files can't be loaded from the prefix */
-        if (!name[1] || wcscmp( name + wcslen(name) - 2, L"16" )) return status;
-    }
 
     if (!get_env_var( L"WINEBUILDDIR", 20 + 2 * wcslen(name) + wcslen(pe_dir), new_name ))
     {

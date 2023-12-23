@@ -202,8 +202,10 @@ __ASM_GLOBAL_FUNC( call_stubless_func,
 
 #endif  /* __i386__ */
 
+#ifndef __arm64ec__
 extern void stubless_thunks(void);
 __ASM_GLOBAL_FUNC( stubless_thunks, ALL_THUNK_ENTRIES )
+#endif
 #undef THUNK_ENTRY
 
 BOOL fill_stubless_table( IUnknownVtbl *vtbl, DWORD num )
@@ -216,9 +218,10 @@ BOOL fill_stubless_table( IUnknownVtbl *vtbl, DWORD num )
         FIXME( "%lu methods not supported\n", num );
         return FALSE;
     }
+#ifndef __arm64ec__
     for (i = 0; i < num - 3; i++, entry++)
         if (*entry == (void *)-1) *entry = (char *)stubless_thunks + i * THUNK_ENTRY_SIZE;
-
+#endif
     return TRUE;
 }
 

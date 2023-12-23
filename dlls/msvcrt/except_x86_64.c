@@ -700,8 +700,17 @@ unsigned int CDECL __CxxQueryExceptionSize(void)
 /*******************************************************************
  *		_setjmp (MSVCRT.@)
  */
+#ifdef __arm64ec__
+#define DECLSPEC_NAKED __attribute__((naked))
+
+int DECLSPEC_NAKED __cdecl MSVCRT__setjmp( jmp_buf buf )
+{
+    asm( "b " __ASM_NAME("__wine_setjmpex") );
+}
+#else
 __ASM_GLOBAL_FUNC( MSVCRT__setjmp,
                    "jmp " __ASM_NAME("__wine_setjmpex") );
+#endif
 
 /*******************************************************************
  *		longjmp (MSVCRT.@)
@@ -765,6 +774,12 @@ void __cdecl get_prev_context(CONTEXT *ctx, DWORD64 rip)
             rf, ctx, &data, &frame, NULL);
 }
 
+#ifdef __arm64ec__
+void __cdecl __crtCapturePreviousContext(CONTEXT *ctx)
+{
+    FIXME("not implemented\n");
+}
+#else
 __ASM_GLOBAL_FUNC( __crtCapturePreviousContext,
                    "movq %rcx,8(%rsp)\n\t"
                    "call " __ASM_NAME("RtlCaptureContext") "\n\t"
@@ -774,6 +789,7 @@ __ASM_GLOBAL_FUNC( __crtCapturePreviousContext,
                    "movq (%rsp),%rax\n\t"
                    "movq %rax,0xf8(%rcx)\n\t"  /* context->Rip */
                    "jmp " __ASM_NAME("get_prev_context") )
+#endif
 #endif
 
 #endif  /* __x86_64__ */
