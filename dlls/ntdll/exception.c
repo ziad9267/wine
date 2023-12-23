@@ -1141,6 +1141,8 @@ NTSTATUS WINAPI RtlCopyExtendedContext( CONTEXT_EX *dst, ULONG context_flags, CO
 }
 
 #if defined(__x86_64__) || defined(__arm__) || defined(__aarch64__)
+WINE_DECLARE_DEBUG_CHANNEL(threadname);
+
 #ifdef __arm64ec__
 typedef DISPATCHER_CONTEXT_ARM64EC DISPATCHER_CONTEXT_NATIVE;
 #else
@@ -2055,6 +2057,64 @@ USHORT WINAPI RtlCaptureStackBackTrace( ULONG skip, ULONG count, PVOID *buffer, 
     if (hash && num_entries > 0) *hash = hash_pointers( buffer, num_entries );
     TRACE( "captured %hu frames\n", num_entries );
     return num_entries;
+}
+
+NTSTATUS WINAPI dispatch_exception( EXCEPTION_RECORD *rec, CONTEXT *context ) {
+    NTSTATUS status;
+    DWORD c;
+
+    TRACE_(seh)( "code=%lx flags=%lx addr=%p pp=%p\n",
+                 rec->ExceptionCode, rec->ExceptionFlags, rec->ExceptionAddress, (void *)CTX_REG_PC(context) );
+    for (c = 0; c < min( EXCEPTION_MAXIMUM_PARAMETERS, rec->NumberParameters ); c++)
+        TRACE_(seh)( " info[%ld]=%p\n", c, (void *)rec->ExceptionInformation[c] );
+
+    if (rec->ExceptionCode == EXCEPTION_WINE_STUB)
+    {
+        if (rec->ExceptionInformation[1] >> 16)
+            MESSAGE( "wine: Call from %p to unimplemented function %s.%s, aborting\n",
+                     rec->ExceptionAddress,
+                     (char*)rec->ExceptionInformation[0], (char*)rec->ExceptionInformation[1] );
+        else
+            MESSAGE( "wine: Call from %p to unimplemented function %s.%p, aborting\n",
+                     rec->ExceptionAddress,
+                     (char*)rec->ExceptionInformation[0], (void *)rec->ExceptionInformation[1] );
+    }
+    else if (rec->ExceptionCode == EXCEPTION_WINE_NAME_THREAD && rec->ExceptionInformation[0] == 0x1000)
+    {
+        if ((DWORD)rec->ExceptionInformation[2] == -1 || (DWORD)rec->ExceptionInformation[2] == GetCurrentThreadId())
+            WARN_(threadname)( "Thread renamed to %s\n", debugstr_a((char *)rec->ExceptionInformation[1]) );
+        else
+            WARN_(threadname)( "Thread ID %04lx renamed to %s\n", (DWORD)rec->ExceptionInformation[2],
+                               debugstr_a((char *)rec->ExceptionInformation[1]) );
+
+        set_native_thread_name((DWORD)rec->ExceptionInformation[2], (char *)rec->ExceptionInformation[1]);
+    }
+    else if (rec->ExceptionCode == DBG_PRINTEXCEPTION_C)
+    {
+        WARN_(seh)( "%s\n", debugstr_an((char *)rec->ExceptionInformation[1], rec->ExceptionInformation[0] - 1) );
+    }
+    else if (rec->ExceptionCode == DBG_PRINTEXCEPTION_WIDE_C)
+    {
+        WARN_(seh)( "%s\n", debugstr_wn((WCHAR *)rec->ExceptionInformation[1], rec->ExceptionInformation[0] - 1) );
+    }
+    else
+    {
+        if (rec->ExceptionCode == STATUS_ASSERTION_FAILURE)
+            ERR_(seh)( "%s exception (code=%lx) raised\n", debugstr_exception_code(rec->ExceptionCode), rec->ExceptionCode );
+        else
+            WARN_(seh)( "%s exception (code=%lx) raised\n", debugstr_exception_code(rec->ExceptionCode), rec->ExceptionCode );
+
+	context_trace_gprs( context );
+    }
+
+    if (call_vectored_handlers( rec, context ) == EXCEPTION_CONTINUE_EXECUTION)
+        NtContinue( context, FALSE );
+
+    if ((status = call_stack_handlers( rec, context )) == STATUS_SUCCESS)
+        NtContinue( context, FALSE );
+
+    if (status != STATUS_UNHANDLED_EXCEPTION) RtlRaiseStatus( status );
+    return NtRaiseException( rec, context, FALSE );
 }
 
 #endif  /* __x86_64__ || __arm__ || __aarch64__ */

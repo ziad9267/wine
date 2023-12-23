@@ -387,11 +387,7 @@ static NTSTATUS libunwind_virtual_unwind( ULONG_PTR ip, ULONG_PTR *frame, CONTEX
     {
         TRACE( "no info found for %lx ip %lx-%lx, assuming leaf function\n",
                ip, info.start_ip, info.end_ip );
-        *handler = NULL;
-        *frame = context->Sp;
-        context->Pc = context->Lr;
-        context->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
-        return STATUS_SUCCESS;
+        return STATUS_UNSUCCESSFUL;
     }
 
     TRACE( "ip %#lx function %#lx-%#lx personality %#lx lsda %#lx fde %#lx\n",

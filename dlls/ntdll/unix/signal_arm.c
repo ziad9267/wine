@@ -701,18 +701,7 @@ static NTSTATUS libunwind_virtual_unwind( DWORD ip, DWORD *frame, CONTEXT *conte
         return STATUS_INVALID_DISPOSITION;
     }
     if (rc == -UNW_ENOINFO || ip < info.start_ip || ip > info.end_ip)
-    {
-        NTSTATUS status = context->Pc != context->Lr ?
-                          STATUS_SUCCESS : STATUS_INVALID_DISPOSITION;
-        TRACE( "no info found for %x ip %x-%x, %s\n",
-               ip, info.start_ip, info.end_ip, status == STATUS_SUCCESS ?
-               "assuming leaf function" : "error, stuck" );
-        *handler = NULL;
-        *frame = context->Sp;
-        context->Pc = context->Lr;
-        context->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
-        return status;
-    }
+        return STATUS_UNSUCCESSFUL;
 
     TRACE( "ip %#x function %#lx-%#lx personality %#lx lsda %#lx fde %#lx\n",
            ip, (unsigned long)info.start_ip, (unsigned long)info.end_ip, (unsigned long)info.handler,
