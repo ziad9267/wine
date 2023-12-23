@@ -1731,7 +1731,8 @@ static NTSTATUS SYSCALL_API syscall_NtTerminateThread( HANDLE handle, LONG exit_
 
 NTSTATUS WINAPI NtTerminateThread( HANDLE handle, LONG exit_code )
 {
-    if (syscall_callback_begin( arm64ec_callbacks.pThreadTerm) )
+    if (RtlIsCurrentThread( handle ) &&
+        syscall_callback_begin( arm64ec_callbacks.pThreadTerm ))
     {
         arm64ec_callbacks.pThreadTerm( handle );
 	syscall_callback_end();

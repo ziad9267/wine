@@ -1801,6 +1801,7 @@ static void process_detach(void)
 {
     PLIST_ENTRY mark, entry;
     PLDR_DATA_TABLE_ENTRY mod;
+    WINE_MODREF *wm;
 
     mark = &NtCurrentTeb()->Peb->LdrData->InInitializationOrderModuleList;
     do
@@ -1817,8 +1818,14 @@ static void process_detach(void)
 
             /* Call detach notification */
             mod->Flags &= ~LDR_PROCESS_ATTACHED;
-            MODULE_InitDLL( CONTAINING_RECORD(mod, WINE_MODREF, ldr), 
+            wm = CONTAINING_RECORD(mod, WINE_MODREF, ldr);
+
+#ifdef __arm64ec__
+            if ( wm == xtajit64_wm ) arm64ec_callbacks.pThreadTerm( GetCurrentThread() );
+#endif
+            MODULE_InitDLL( wm,
                             DLL_PROCESS_DETACH, ULongToPtr(process_detaching) );
+
             call_ldr_notifications( LDR_DLL_NOTIFICATION_REASON_UNLOADED, mod );
 
             /* Restart at head of WINE_MODREF list, as entries might have
