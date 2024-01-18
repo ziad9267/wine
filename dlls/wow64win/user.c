@@ -1342,6 +1342,9 @@ static NTSTATUS WINAPI wow64_NtUserLoadDriver( void *arg, ULONG size )
 static NTSTATUS WINAPI wow64_NtUserLoadImage( void *arg, ULONG size )
 {
     struct load_image_params *params = arg;
+    void *ret_ptr;
+    ULONG ret_len;
+    NTSTATUS status;
     struct
     {
         ULONG hinst;
@@ -1358,7 +1361,14 @@ static NTSTATUS WINAPI wow64_NtUserLoadImage( void *arg, ULONG size )
     params32.dx = params->dx;
     params32.dy = params->dy;
     params32.flags = params->flags;
-    return dispatch_callback( NtUserLoadImage, &params32, sizeof(params32) );
+    status = Wow64KiUserCallbackDispatcher( NtUserLoadImage, &params32, sizeof(params32),
+                                            &ret_ptr, &ret_len );
+    if (!status && ret_len == sizeof(ULONG))
+    {
+        HANDLE handle = ULongToHandle( *(ULONG *)ret_ptr );
+        return NtCallbackReturn( &handle, sizeof(handle), status );
+    }
+    return status;
 }
 
 static NTSTATUS WINAPI wow64_NtUserLoadSysMenu( void *arg, ULONG size )
