@@ -53,6 +53,8 @@ extern BOOL heap_zero_hack;
 /* exceptions */
 extern LONG call_vectored_handlers( EXCEPTION_RECORD *rec, CONTEXT *context );
 extern NTSTATUS WINAPI dispatch_user_callback( void *args, ULONG len, ULONG id );
+extern EXCEPTION_DISPOSITION WINAPI user_callback_handler( EXCEPTION_RECORD *record, void *frame,
+                                                           CONTEXT *context, void *dispatch );
 extern void DECLSPEC_NORETURN raise_status( NTSTATUS status, EXCEPTION_RECORD *rec );
 extern LONG WINAPI call_unhandled_exception_filter( PEXCEPTION_POINTERS eptr );
 
