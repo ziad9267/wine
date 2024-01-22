@@ -1448,7 +1448,7 @@ void WINAPI glShaderSourceARB( GLhandleARB shaderObj, GLsizei count, const GLcha
  */
 BOOL WINAPI DllMain( HINSTANCE hinst, DWORD reason, LPVOID reserved )
 {
-    void **kernel_callback_table;
+    KERNEL_CALLBACK_PROC *kernel_callback_table;
     NTSTATUS status;
 
     switch(reason)
