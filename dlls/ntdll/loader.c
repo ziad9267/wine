@@ -4278,28 +4278,6 @@ PIMAGE_NT_HEADERS WINAPI RtlImageNtHeader(HMODULE hModule)
     return ret;
 }
 
-/***********************************************************************
- *           process_breakpoint
- *
- * Trigger a debug breakpoint if the process is being debugged.
- */
-static void process_breakpoint(void)
-{
-    DWORD_PTR port = 0;
-
-    NtQueryInformationProcess( GetCurrentProcess(), ProcessDebugPort, &port, sizeof(port), NULL );
-    if (!port) return;
-
-    __TRY
-    {
-        DbgBreakPoint();
-    }
-    __EXCEPT_ALL
-    {
-        /* do nothing */
-    }
-    __ENDTRY
-}
 
 /*************************************************************************
  *           compare_known_dlls
@@ -4505,7 +4483,7 @@ void loader_init( CONTEXT *context, void **entry )
 {
     static int attach_done;
     NTSTATUS status;
-    ULONG_PTR cookie;
+    ULONG_PTR cookie, port = 0;
     WINE_MODREF *wm;
 
     if (process_detaching) NtTerminateThread( GetCurrentThread(), 0 );
@@ -4637,7 +4615,9 @@ void loader_init( CONTEXT *context, void **entry )
         release_address_space();
         if (wm->ldr.TlsIndex == -1) call_tls_callbacks( wm->ldr.DllBase, DLL_PROCESS_ATTACH );
         if (wm->ldr.ActivationContext) RtlDeactivateActivationContext( 0, cookie );
-        process_breakpoint();
+
+        NtQueryInformationProcess( GetCurrentProcess(), ProcessDebugPort, &port, sizeof(port), NULL );
+        if (port) process_breakpoint();
     }
     else
     {
