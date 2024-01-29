@@ -1759,7 +1759,7 @@ void WINAPI process_breakpoint(void)
 {
     __TRY
     {
-        DbgBreakPoint();
+        __asm__ volatile("int $3");
     }
     __EXCEPT_ALL
     {
