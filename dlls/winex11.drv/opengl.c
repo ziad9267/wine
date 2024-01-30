@@ -1894,6 +1894,7 @@ static struct gl_drawable *create_gl_drawable( HWND hwnd, const struct glx_pixel
                                          visual->class == DirectColor) ? AllocAll : AllocNone );
         gl->window = create_client_window( hwnd, gl->rect, visual, gl->colormap );
         gl->fs_hack = enable_fshack;
+        gl->swap_interval = 0;
         if (gl->window)
         {
             struct x11drv_win_data *data;
