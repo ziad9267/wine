@@ -1492,8 +1492,7 @@ static void dump_init_process_done_request( const struct init_process_done_reque
 
 static void dump_init_process_done_reply( const struct init_process_done_reply *req )
 {
-    dump_uint64( " entry=", &req->entry );
-    dump_varargs_cpu_topology_override( ", cpu_override=", cur_size );
+    dump_varargs_cpu_topology_override( " cpu_override=", cur_size );
     fprintf( stderr, ", suspend=%d", req->suspend );
 }
 
@@ -5527,7 +5526,6 @@ static const struct
     { "DEVICE_NOT_READY",            STATUS_DEVICE_NOT_READY },
     { "DIRECTORY_NOT_EMPTY",         STATUS_DIRECTORY_NOT_EMPTY },
     { "DISK_FULL",                   STATUS_DISK_FULL },
-    { "DLL_NOT_FOUND",               STATUS_DLL_NOT_FOUND },
     { "ERROR_CLASS_ALREADY_EXISTS",  0xc0010000 | ERROR_CLASS_ALREADY_EXISTS },
     { "ERROR_CLASS_DOES_NOT_EXIST",  0xc0010000 | ERROR_CLASS_DOES_NOT_EXIST },
     { "ERROR_CLASS_HAS_WINDOWS",     0xc0010000 | ERROR_CLASS_HAS_WINDOWS },
