@@ -1454,9 +1454,6 @@ DECL_HANDLER(get_startup_info)
 DECL_HANDLER(init_process_done)
 {
     struct process *process = current->process;
-    struct memory_view *view;
-    client_ptr_t base;
-    const pe_image_info_t *image_info;
     const struct cpu_topology_override *cpu_override = get_req_data();
     unsigned int have_cpu_override = get_req_data_size() / sizeof(*cpu_override);
     unsigned int i;
@@ -1483,28 +1480,20 @@ DECL_HANDLER(init_process_done)
         set_error( STATUS_INVALID_PARAMETER );
         return;
     }
-    if (!(view = get_exe_view( process )))
-    {
-        set_error( STATUS_DLL_NOT_FOUND );
-        return;
-    }
-    if (!(image_info = get_view_image_info( view, &base ))) return;
 
     current->teb      = req->teb;
     process->peb      = req->peb;
     process->ldt_copy = req->ldt_copy;
 
     process->start_time = current_time;
-    current->entry_point = base + image_info->entry_point;
 
     init_process_tracing( process );
     generate_startup_debug_events( process );
     set_process_startup_state( process, STARTUP_DONE );
 
-    if (image_info->subsystem != IMAGE_SUBSYSTEM_WINDOWS_CUI)
+    if (process->image_info.subsystem != IMAGE_SUBSYSTEM_WINDOWS_CUI)
         process->idle_event = create_event( NULL, NULL, 0, 1, 0, NULL );
     if (process->debug_obj) set_process_debug_flag( process, 1 );
-    reply->entry = current->entry_point;
     reply->suspend = (current->suspend || process->suspend);
 
     if (have_cpu_override)
