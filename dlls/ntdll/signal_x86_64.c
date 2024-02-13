@@ -272,7 +272,8 @@ static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEX
 
     /* first look for PE exception information */
 
-    if ((dispatch->FunctionEntry = lookup_function_info( context->Rip, &dispatch->ImageBase, &module )))
+    if ((dispatch->FunctionEntry = RtlLookupFunctionEntry( context->Rip, &dispatch->ImageBase,
+                                                           dispatch->HistoryTable )))
     {
         if (dump_backtrace)
         {
@@ -291,7 +292,7 @@ static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEX
 
     /* then look for host system exception information */
 
-    if (!module || (module->Flags & LDR_WINE_INTERNAL))
+    if (LdrFindEntryForAddress( (void *)context->Rip, &module ) || (module->Flags & LDR_WINE_INTERNAL))
     {
         struct unwind_builtin_dll_params params = { type, dispatch, context };
 
@@ -305,12 +306,12 @@ static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEX
     }
     else
     {
-        WARN( "exception data not found in %s\n", debugstr_w(module->BaseDllName.Buffer) );
         status = STATUS_UNSUCCESSFUL;
     }
 
     /* no exception information, treat as a leaf function */
 
+    WARN( "exception data not found for pc %p\n", (void *)context->Rip );
     dispatch->EstablisherFrame = context->Rsp;
     dispatch->LanguageHandler = NULL;
     context->Rip = *(ULONG64 *)context->Rsp;
@@ -1051,6 +1052,31 @@ PRUNTIME_FUNCTION WINAPI RtlLookupFunctionTable( ULONG_PTR pc, ULONG_PTR *base, 
     if (LdrFindEntryForAddress( (void *)pc, &module )) return NULL;
     *base = (ULONG_PTR)module->DllBase;
     return RtlImageDirectoryEntryToData( module->DllBase, TRUE, IMAGE_DIRECTORY_ENTRY_EXCEPTION, len );
+}
+
+
+/**********************************************************************
+ *              RtlLookupFunctionEntry   (NTDLL.@)
+ */
+PRUNTIME_FUNCTION WINAPI RtlLookupFunctionEntry( ULONG_PTR pc, ULONG_PTR *base,
+                                                 UNWIND_HISTORY_TABLE *table )
+{
+    RUNTIME_FUNCTION *func;
+    ULONG_PTR dynbase;
+    ULONG size;
+
+    if ((func = RtlLookupFunctionTable( pc, base, &size )))
+        return find_function_info( pc, *base, func, size / sizeof(*func));
+
+    if ((func = lookup_dynamic_function_table( pc, &dynbase, &size )))
+    {
+        RUNTIME_FUNCTION *ret = find_function_info( pc, dynbase, func, size );
+        if (ret) *base = dynbase;
+        return ret;
+    }
+
+    *base = 0;
+    return NULL;
 }
 
 
