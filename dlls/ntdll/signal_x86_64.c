@@ -108,30 +108,14 @@ static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEX
     dispatch->ImageBase = 0;
     dispatch->ScopeIndex = 0;
     dispatch->ControlPc = context->Rip;
+    dispatch->FunctionEntry = RtlLookupFunctionEntry( context->Rip, &dispatch->ImageBase,
+                                                      dispatch->HistoryTable );
 
-    /* first look for PE exception information */
 
-    if ((dispatch->FunctionEntry = RtlLookupFunctionEntry( context->Rip, &dispatch->ImageBase,
-                                                           dispatch->HistoryTable )))
-    {
-        if (dump_backtrace)
-        {
-            if (module)
-                WINE_BACKTRACE_LOG( "%p: %s + %p.\n", (void *)context->Rip, debugstr_w(module->BaseDllName.Buffer),
-                                    (void *)((char *)context->Rip - (char *)dispatch->ImageBase) );
-            else
-                WINE_BACKTRACE_LOG( "%p: unknown module.\n", (void *)context->Rip );
-        }
-        dispatch->LanguageHandler = RtlVirtualUnwind( type, dispatch->ImageBase, context->Rip,
-                                                      dispatch->FunctionEntry, context,
-                                                      &dispatch->HandlerData, &dispatch->EstablisherFrame,
-                                                      NULL );
-        return STATUS_SUCCESS;
-    }
 
-    /* then look for host system exception information */
-
-    if (LdrFindEntryForAddress( (void *)context->Rip, &module ) || (module->Flags & LDR_WINE_INTERNAL))
+    /* look for host system exception information */
+    if (!dispatch->FunctionEntry &&
+        (LdrFindEntryForAddress( (void *)context->Rip, &module ) || (module->Flags & LDR_WINE_INTERNAL)))
     {
         struct unwind_builtin_dll_params params = { type, dispatch, context };
 
@@ -143,19 +127,22 @@ static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEX
         }
         if (status != STATUS_UNSUCCESSFUL) return status;
     }
-    else
+    else WARN( "exception data not found for pc %p\n", (void *)context->Rip );
+
+    if (dispatch->FunctionEntry && dump_backtrace)
     {
-        status = STATUS_UNSUCCESSFUL;
+        if (module)
+            WINE_BACKTRACE_LOG( "%p: %s + %p.\n", (void *)context->Rip, debugstr_w(module->BaseDllName.Buffer),
+                                (void *)((char *)context->Rip - (char *)dispatch->ImageBase) );
+        else
+            WINE_BACKTRACE_LOG( "%p: unknown module.\n", (void *)context->Rip );
     }
 
-    /* no exception information, treat as a leaf function */
-
-    WARN( "exception data not found for pc %p\n", (void *)context->Rip );
-    dispatch->EstablisherFrame = context->Rsp;
-    dispatch->LanguageHandler = NULL;
-    context->Rip = *(ULONG64 *)context->Rsp;
-    context->Rsp = context->Rsp + sizeof(ULONG64);
-    return status ? STATUS_NOT_FOUND : STATUS_SUCCESS;
+    dispatch->LanguageHandler = RtlVirtualUnwind( type, dispatch->ImageBase, context->Rip,
+                                                  dispatch->FunctionEntry, context,
+                                                  &dispatch->HandlerData, &dispatch->EstablisherFrame,
+                                                  NULL );
+    return STATUS_SUCCESS;
 }
 
 
