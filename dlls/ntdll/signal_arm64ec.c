@@ -1812,7 +1812,11 @@ void WINAPI DbgUiRemoteBreakin( void *arg )
  */
 void __attribute__((naked)) DbgBreakPoint(void)
 {
-    asm( "brk #0xf000; ret" );
+    asm( ".seh_proc DbgBreakPoint\n\t"
+         ".seh_endprologue\n\t"
+         "brk #0xf000\n\t"
+         "ret\n\t"
+         ".seh_endproc" );
 }
 
 
@@ -1821,7 +1825,11 @@ void __attribute__((naked)) DbgBreakPoint(void)
  */
 void __attribute__((naked)) DbgUserBreakPoint(void)
 {
-    asm( "brk #0xf000; ret" );
+    asm( ".seh_proc DbgUserBreakPoint\n\t"
+         ".seh_endprologue\n\t"
+         "brk #0xf000\n\t"
+         "ret\n\t"
+         ".seh_endproc" );
 }
 
 #endif  /* __arm64ec__ */
