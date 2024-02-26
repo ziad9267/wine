@@ -210,6 +210,7 @@ struct wine_phys_dev
     uint32_t api_version;
 
     uint32_t external_memory_align;
+    uint32_t map_placed_align;
 
     struct wine_vk_mapping mapping;
 };
@@ -265,6 +266,7 @@ struct keyed_mutex_shm
 struct wine_device_memory
 {
     VkDeviceMemory host_memory;
+    VkDeviceSize size;
     VkExternalMemoryHandleTypeFlagBits handle_types;
     BOOL inherit;
     DWORD access;
