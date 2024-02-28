@@ -239,7 +239,7 @@ static DWORD call_handler( EXCEPTION_RECORD *rec, CONTEXT *context, DISPATCHER_C
     res = exception_handler_call_wrapper( rec, (void *)dispatch->EstablisherFrame, context, dispatch );
     TRACE( "handler at %p returned %lu\n", dispatch->LanguageHandler, res );
 
-    rec->ExceptionFlags &= EH_NONCONTINUABLE;
+    rec->ExceptionFlags &= EXCEPTION_NONCONTINUABLE;
     return res;
 }
 
@@ -294,7 +294,7 @@ NTSTATUS call_seh_handlers( EXCEPTION_RECORD *rec, CONTEXT *orig_context )
         {
             ERR( "invalid frame %p (%p-%p)\n", (void *)dispatch.EstablisherFrame,
                  NtCurrentTeb()->Tib.StackLimit, NtCurrentTeb()->Tib.StackBase );
-            rec->ExceptionFlags |= EH_STACK_INVALID;
+            rec->ExceptionFlags |= EXCEPTION_STACK_INVALID;
             break;
         }
 
@@ -303,12 +303,12 @@ NTSTATUS call_seh_handlers( EXCEPTION_RECORD *rec, CONTEXT *orig_context )
             switch (call_handler( rec, orig_context, &dispatch ))
             {
             case ExceptionContinueExecution:
-                if (rec->ExceptionFlags & EH_NONCONTINUABLE) return STATUS_NONCONTINUABLE_EXCEPTION;
+                if (rec->ExceptionFlags & EXCEPTION_NONCONTINUABLE) return STATUS_NONCONTINUABLE_EXCEPTION;
                 return STATUS_SUCCESS;
             case ExceptionContinueSearch:
                 break;
             case ExceptionNestedException:
-                rec->ExceptionFlags |= EH_NESTED_CALL;
+                rec->ExceptionFlags |= EXCEPTION_NESTED_CALL;
                 TRACE( "nested exception\n" );
                 break;
             case ExceptionCollidedUnwind: {
@@ -334,12 +334,12 @@ NTSTATUS call_seh_handlers( EXCEPTION_RECORD *rec, CONTEXT *orig_context )
             switch (call_teb_handler( rec, orig_context, &dispatch, teb_frame ))
             {
             case ExceptionContinueExecution:
-                if (rec->ExceptionFlags & EH_NONCONTINUABLE) return STATUS_NONCONTINUABLE_EXCEPTION;
+                if (rec->ExceptionFlags & EXCEPTION_NONCONTINUABLE) return STATUS_NONCONTINUABLE_EXCEPTION;
                 return STATUS_SUCCESS;
             case ExceptionContinueSearch:
                 break;
             case ExceptionNestedException:
-                rec->ExceptionFlags |= EH_NESTED_CALL;
+                rec->ExceptionFlags |= EXCEPTION_NESTED_CALL;
                 TRACE( "nested exception\n" );
                 break;
             case ExceptionCollidedUnwind: {
@@ -827,7 +827,7 @@ void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec
         rec = &record;
     }
 
-    rec->ExceptionFlags |= EH_UNWINDING | (end_frame ? 0 : EH_EXIT_UNWIND);
+    rec->ExceptionFlags |= EXCEPTION_UNWINDING | (end_frame ? 0 : EXCEPTION_EXIT_UNWIND);
 
     TRACE( "code=%lx flags=%lx end_frame=%p target_ip=%p\n",
            rec->ExceptionCode, rec->ExceptionFlags, end_frame, target_ip );
@@ -852,7 +852,7 @@ void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec
         {
             ERR( "invalid frame %p (%p-%p)\n", (void *)dispatch.EstablisherFrame,
                  NtCurrentTeb()->Tib.StackLimit, NtCurrentTeb()->Tib.StackBase );
-            rec->ExceptionFlags |= EH_STACK_INVALID;
+            rec->ExceptionFlags |= EXCEPTION_STACK_INVALID;
             break;
         }
 
@@ -863,7 +863,7 @@ void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec
                 ERR( "invalid end frame %p/%p\n", (void *)dispatch.EstablisherFrame, end_frame );
                 raise_status( STATUS_INVALID_UNWIND_TARGET, rec );
             }
-            if (dispatch.EstablisherFrame == (ULONG64)end_frame) rec->ExceptionFlags |= EH_TARGET_UNWIND;
+            if (dispatch.EstablisherFrame == (ULONG64)end_frame) rec->ExceptionFlags |= EXCEPTION_TARGET_UNWIND;
             if (call_unwind_handler( rec, &dispatch ) == ExceptionCollidedUnwind)
             {
                 ULONG64 frame;
@@ -875,10 +875,10 @@ void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec
                 RtlVirtualUnwind( UNW_FLAG_NHANDLER, dispatch.ImageBase,
                         dispatch.ControlPc, dispatch.FunctionEntry,
                         &new_context, NULL, &frame, NULL );
-                rec->ExceptionFlags |= EH_COLLIDED_UNWIND;
+                rec->ExceptionFlags |= EXCEPTION_COLLIDED_UNWIND;
                 goto unwind_done;
             }
-            rec->ExceptionFlags &= ~EH_COLLIDED_UNWIND;
+            rec->ExceptionFlags &= ~EXCEPTION_COLLIDED_UNWIND;
         }
         else  /* hack: call builtin handlers registered in the tib list */
         {
@@ -902,7 +902,7 @@ void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec
                     RtlVirtualUnwind( UNW_FLAG_NHANDLER, dispatch.ImageBase,
                             dispatch.ControlPc, dispatch.FunctionEntry,
                             &new_context, NULL, &frame, NULL );
-                    rec->ExceptionFlags |= EH_COLLIDED_UNWIND;
+                    rec->ExceptionFlags |= EXCEPTION_COLLIDED_UNWIND;
                     goto unwind_done;
                 }
                 teb_frame = __wine_pop_frame( teb_frame );
@@ -935,7 +935,7 @@ EXCEPTION_DISPOSITION WINAPI __C_specific_handler( EXCEPTION_RECORD *rec,
     TRACE( "%p %p %p %p\n", rec, frame, context, dispatch );
     if (TRACE_ON(seh)) dump_scope_table( dispatch->ImageBase, table );
 
-    if (rec->ExceptionFlags & (EH_UNWINDING | EH_EXIT_UNWIND))
+    if (rec->ExceptionFlags & (EXCEPTION_UNWINDING | EXCEPTION_EXIT_UNWIND))
     {
         for (i = dispatch->ScopeIndex; i < table->Count; i++)
         {
@@ -946,7 +946,7 @@ EXCEPTION_DISPOSITION WINAPI __C_specific_handler( EXCEPTION_RECORD *rec,
 
                 if (table->ScopeRecord[i].JumpTarget) continue;
 
-                if (rec->ExceptionFlags & EH_TARGET_UNWIND &&
+                if (rec->ExceptionFlags & EXCEPTION_TARGET_UNWIND &&
                     dispatch->TargetIp >= dispatch->ImageBase + table->ScopeRecord[i].BeginAddress &&
                     dispatch->TargetIp < dispatch->ImageBase + table->ScopeRecord[i].EndAddress)
                 {
