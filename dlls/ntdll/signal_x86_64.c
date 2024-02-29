@@ -129,20 +129,9 @@ static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEX
     }
     else WARN( "exception data not found for pc %p\n", (void *)context->Rip );
 
-    if (dispatch->FunctionEntry && dump_backtrace)
-    {
-        if (module)
-            WINE_BACKTRACE_LOG( "%p: %s + %p.\n", (void *)context->Rip, debugstr_w(module->BaseDllName.Buffer),
-                                (void *)((char *)context->Rip - (char *)dispatch->ImageBase) );
-        else
-            WINE_BACKTRACE_LOG( "%p: unknown module.\n", (void *)context->Rip );
-    }
-
-    dispatch->LanguageHandler = RtlVirtualUnwind( type, dispatch->ImageBase, context->Rip,
-                                                  dispatch->FunctionEntry, context,
-                                                  &dispatch->HandlerData, &dispatch->EstablisherFrame,
-                                                  NULL );
-    return STATUS_SUCCESS;
+    return RtlVirtualUnwind2( type, dispatch->ImageBase, context->Rip, dispatch->FunctionEntry,
+                              context, NULL, &dispatch->HandlerData, &dispatch->EstablisherFrame,
+                              NULL, NULL, NULL, &dispatch->LanguageHandler, 0 );
 }
 
 
