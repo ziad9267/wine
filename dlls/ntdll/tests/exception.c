@@ -5063,7 +5063,8 @@ static void test_raiseexception_regs(void)
     ++expected;
     ok(test_raiseexception_regs_context.Rdi == expected, "got %#I64x.\n", test_raiseexception_regs_context.Rdi);
     ++expected;
-    ok(test_raiseexception_regs_context.Rbp == expected, "got %#I64x.\n", test_raiseexception_regs_context.Rbp);
+    ok(test_raiseexception_regs_context.Rbp == expected || is_arm64ec /* x29 modified by entry thunk */,
+       "got %#I64x.\n", test_raiseexception_regs_context.Rbp);
     ++expected;
     ok(test_raiseexception_regs_context.R12 == expected, "got %#I64x.\n", test_raiseexception_regs_context.R12);
     ++expected;
