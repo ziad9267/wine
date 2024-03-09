@@ -7262,7 +7262,7 @@ static FORCEINLINE DECLSPEC_NORETURN void __fastfail(unsigned int code)
 
 #define InterlockedCompareExchange128 _InterlockedCompareExchange128
 
-#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(_MSC_VER)
 
 #pragma intrinsic(_InterlockedCompareExchange128)
 unsigned char _InterlockedCompareExchange128(volatile __int64 *, __int64, __int64, __int64 *);
