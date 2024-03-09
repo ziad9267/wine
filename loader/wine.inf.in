@@ -2901,3 +2901,9 @@ HKCU,Software\Wine\AppDefaults\Spider-Man.exe\DllOverrides,"atiadlxx",,"builtin"
 HKCU,Software\Wine\AppDefaults\RiftApart.exe\DllOverrides,"atiadlxx",,"builtin"
 HKLM,Software\Wow6432Node\lucasarts entertainment company llc\Star Wars: Episode I Racer\v1.0,"Display Height",0x10001,480
 HKLM,Software\Wow6432Node\lucasarts entertainment company llc\Star Wars: Episode I Racer\v1.0,"Display Width",0x10001,640
+HKLM,Software\Microsoft\VisualStudio\14.0\VC\Runtimes\X64,"Bld",0x00010001,0x00007296
+HKLM,Software\Microsoft\VisualStudio\14.0\VC\Runtimes\X64,"Installed",0x00010001,0x00000001
+HKLM,Software\Microsoft\VisualStudio\14.0\VC\Runtimes\X64,"Major",0x00010001,0x0000001f
+HKLM,Software\Microsoft\VisualStudio\14.0\VC\Runtimes\X64,"Minor",0x00010001,0x0000001c
+HKLM,Software\Microsoft\VisualStudio\14.0\VC\Runtimes\X64,"Rbld",0x00010001,0x00000000
+HKLM,Software\Microsoft\VisualStudio\14.0\VC\Runtimes\X64,"Version",,"v14.28.29334.00"
