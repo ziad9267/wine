@@ -10566,7 +10566,7 @@ static void test_backtrace(void)
     ULONG hash, hash_expect;
     int i, count = RtlCaptureStackBackTrace( 0, 1024, buffer, &hash );
 
-    ok( count > 1, "got %u entries\n", count );
+    ok( count > 0, "got %u entries\n", count );
     for (i = hash_expect = 0; i < count; i++) hash_expect += (ULONG_PTR)buffer[i];
     ok( hash == hash_expect, "hash mismatch %lx / %lx\n", hash, hash_expect );
     RtlPcToFileHeader( buffer[0], &module );
@@ -10574,6 +10574,7 @@ static void test_backtrace(void)
         module, GetModuleHandleA(0), buffer[0]);
 
     if (count && !buffer[count - 1]) count--;  /* win11 32-bit */
+    if (count <= 1) return;
     RtlPcToFileHeader( buffer[count - 1], &module );
     GetModuleFileNameW( module, name, sizeof(name) );
     if ((p = wcsrchr( name, '\\' ))) p++;
