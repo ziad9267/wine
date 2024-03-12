@@ -27,6 +27,12 @@
 # define __ASM_NAME(name) name
 #endif
 
+#if defined(__arm64ec__)
+# define __ASM_FUNC_NAME(name) "\"#" __ASM_NAME(name) "\""
+#else
+# define __ASM_FUNC_NAME(name) __ASM_NAME(name)
+#endif
+
 #if defined(__APPLE__)
 # define __ASM_LOCAL_LABEL(label) "L" label
 #else
