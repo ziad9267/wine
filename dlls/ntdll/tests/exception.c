@@ -146,7 +146,6 @@ static NTSTATUS  (WINAPI *pRtlWow64GetThreadContext)(HANDLE, WOW64_CONTEXT *);
 static NTSTATUS  (WINAPI *pRtlWow64SetThreadContext)(HANDLE, const WOW64_CONTEXT *);
 static NTSTATUS  (WINAPI *pRtlWow64GetCpuAreaInfo)(WOW64_CPURESERVED*,ULONG,WOW64_CPU_AREA_INFO*);
 static NTSTATUS  (WINAPI *pRtlGetNativeSystemInformation)(SYSTEM_INFORMATION_CLASS,void*,ULONG,ULONG*);
-static int       (CDECL *p_setjmp)(_JUMP_BUFFER*);
 #endif
 
 enum debugger_stages
@@ -2226,9 +2225,9 @@ static void test_restore_context(void)
     int i;
     LONG pass;
 
-    if (!pRtlUnwindEx || !pRtlRestoreContext || !pRtlCaptureContext || !p_setjmp)
+    if (!pRtlUnwindEx || !pRtlRestoreContext || !pRtlCaptureContext)
     {
-        skip("RtlUnwindEx/RtlCaptureContext/RtlRestoreContext/_setjmp not found\n");
+        skip("RtlUnwindEx/RtlCaptureContext/RtlRestoreContext not found\n");
         return;
     }
 
@@ -2246,12 +2245,12 @@ static void test_restore_context(void)
     else
         ok(pass < 4, "unexpected pass %ld\n", pass);
 
-    /* test with jmp using RltRestoreContext */
+    /* test with jmp using RtlRestoreContext */
     pass = 0;
     InterlockedIncrement(&pass);
     RtlCaptureContext(&ctx);
     InterlockedIncrement(&pass); /* only called once */
-    p_setjmp(&buf);
+    setjmp((_JBTYPE *)&buf);
     InterlockedIncrement(&pass);
     if (pass == 3)
     {
@@ -2310,7 +2309,7 @@ static void test_restore_context(void)
     InterlockedIncrement(&pass);
     pRtlCaptureContext(&ctx);
     InterlockedIncrement(&pass); /* only called once */
-    p_setjmp(&buf);
+    setjmp((_JBTYPE *)&buf);
     InterlockedIncrement(&pass);
     if (pass == 3)
     {
@@ -2319,7 +2318,7 @@ static void test_restore_context(void)
         rec.ExceptionInformation[0] = (DWORD64)&buf;
 
         /* uses buf.Rip instead of bogus 0xdeadbeef */
-        pRtlUnwindEx((void*)buf.Rsp, (void*)0xdeadbeef, &rec, NULL, &ctx, NULL);
+        pRtlUnwindEx((void*)buf.Frame, (void*)0xdeadbeef, &rec, NULL, &ctx, NULL);
         ok(0, "shouldn't be reached\n");
     }
     else
@@ -10586,9 +10585,6 @@ static void test_backtrace(void)
 START_TEST(exception)
 {
     HMODULE hkernel32 = GetModuleHandleA("kernel32.dll");
-#if defined(__x86_64__)
-    HMODULE hmsvcrt = LoadLibraryA("msvcrt.dll");
-#endif
     hntdll = GetModuleHandleA("ntdll.dll");
 
     my_argc = winetest_get_mainargs( &my_argv );
@@ -10791,7 +10787,6 @@ START_TEST(exception)
     X(RtlWow64GetCpuAreaInfo);
     X(RtlGetNativeSystemInformation);
 #undef X
-    p_setjmp = (void *)GetProcAddress( hmsvcrt, "_setjmp" );
 
     if (pRtlGetNativeSystemInformation)
     {
