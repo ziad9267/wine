@@ -212,8 +212,6 @@ struct wine_phys_dev
     uint32_t external_memory_align;
     uint32_t map_placed_align;
 
-    bool is_nvk;
-
     struct wine_vk_mapping mapping;
 };
 
@@ -356,9 +354,6 @@ NTSTATUS vk_is_available_instance_function(void *arg);
 NTSTATUS vk_is_available_device_function(void *arg);
 NTSTATUS vk_is_available_instance_function32(void *arg);
 NTSTATUS vk_is_available_device_function32(void *arg);
-
-NTSTATUS vk_is_nvk(void *arg);
-NTSTATUS vk_is_nvk32(void *arg);
 
 struct conversion_context
 {
