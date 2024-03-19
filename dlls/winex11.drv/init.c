@@ -225,7 +225,7 @@ BOOL needs_offscreen_rendering( HWND hwnd, BOOL known_child, BOOL check_gamma )
     {
         const char *sgi = getenv( "SteamGameId" );
 
-        no_child_clipping_cached = sgi && !strcmp( sgi, "2229850" );
+        no_child_clipping_cached = sgi && (!strcmp( sgi, "2229850" ) || !strcmp( sgi, "2229880" ));
         if (no_child_clipping_cached) FIXME( "HACK: disabling child GL window clipping.\n" );
     }
 
