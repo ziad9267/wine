@@ -219,10 +219,21 @@ static BOOL needs_client_window_clipping( HWND hwnd )
 
 BOOL needs_offscreen_rendering( HWND hwnd, BOOL known_child, BOOL check_gamma )
 {
+    static int no_child_clipping_cached = -1;
+
+    if (no_child_clipping_cached == -1)
+    {
+        const char *sgi = getenv( "SteamGameId" );
+
+        no_child_clipping_cached = sgi && !strcmp( sgi, "2229850" );
+        if (no_child_clipping_cached) FIXME( "HACK: disabling child GL window clipping.\n" );
+    }
+
     if (NtUserGetDpiForWindow( hwnd ) != NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI )
         && !enable_fullscreen_hack( hwnd, check_gamma ))
         return TRUE; /* needs DPI scaling */
     if (NtUserGetAncestor( hwnd, GA_PARENT ) != NtUserGetDesktopWindow()) return TRUE; /* child window, needs compositing */
+    if (no_child_clipping_cached) return FALSE;
     if (NtUserGetWindowRelative( hwnd, GW_CHILD ) || known_child) return needs_client_window_clipping( hwnd ); /* window has children, needs compositing */
     return FALSE;
 }
