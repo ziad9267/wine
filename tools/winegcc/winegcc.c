@@ -191,6 +191,7 @@ struct options
     const char* entry_point;
     const char* debug_file;
     const char* out_implib;
+    const char* native_arch;
     struct strarray prefix;
     struct strarray lib_dirs;
     struct strarray args;
@@ -1232,6 +1233,13 @@ static void build(struct options* opts)
 
     build_spec_obj( opts, spec_file, output_file, opts->target_alias, files, resources, lib_dirs,
                     entry_point, &spec_objs );
+    if (opts->native_arch)
+    {
+        const char *suffix = strchr( opts->target_alias, '-' );
+        if (!suffix) suffix = "";
+        build_spec_obj( opts, spec_file, output_file, strmake( "%s%s", opts->native_arch, suffix ),
+                        files, empty_strarray, lib_dirs, entry_point, &spec_objs );
+    }
 
     if (opts->fake_module) return;  /* nothing else to do */
 
@@ -1707,6 +1715,11 @@ int main(int argc, char **argv)
                     {
 			raw_linker_arg = 1;
                         raw_winebuild_arg = 1;
+                    }
+                    else if (!strcmp("-marm64x", opts.args.str[i] ))
+                    {
+                        raw_linker_arg = 1;
+                        opts.native_arch = "aarch64";
                     }
                     else if (!strncmp("-mcpu=", opts.args.str[i], 6) ||
                              !strncmp("-mfpu=", opts.args.str[i], 6) ||
