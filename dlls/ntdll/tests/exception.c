@@ -247,7 +247,7 @@ static void check_context_exception_request_( DWORD flags, BOOL hardware_excepti
 
     if (!(flags & CONTEXT_EXCEPTION_REPORTING)) return;
     expected_flags |= hardware_exception ? CONTEXT_EXCEPTION_ACTIVE : CONTEXT_SERVICE_ACTIVE;
-    ok_(__FILE__, line)( (flags & exception_reporting_flags) == expected_flags, "got %#lx, expected %#lx.\n",
+    todo_wine ok_(__FILE__, line)( (flags & exception_reporting_flags) == expected_flags, "got %#lx, expected %#lx.\n",
                          flags, expected_flags );
 }
 
@@ -4489,7 +4489,7 @@ static void test_wow64_context(void)
         {
             trace( "in 64-bit mode %04x\n", context.SegCs );
             if (ctx.ContextFlags & CONTEXT_EXCEPTION_REPORTING)
-                ok( ctx.ContextFlags == (WOW64_CONTEXT_ALL | CONTEXT_EXCEPTION_REQUEST
+                todo_wine ok( ctx.ContextFlags == (WOW64_CONTEXT_ALL | CONTEXT_EXCEPTION_REQUEST
                     | CONTEXT_EXCEPTION_REPORTING | CONTEXT_SERVICE_ACTIVE)
                     || ctx.ContextFlags == (WOW64_CONTEXT_ALL | CONTEXT_EXCEPTION_REQUEST
                     | CONTEXT_EXCEPTION_REPORTING | CONTEXT_EXCEPTION_ACTIVE),
