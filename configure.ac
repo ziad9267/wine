@@ -864,9 +864,17 @@ do
     LDFLAGS=$CROSSLDFLAGS
     CPPFLAGS=$CROSSCPPFLAGS
 
+    AS_VAR_IF([${wine_arch}_CFLAGS],[],
+        [AS_VAR_COPY([${wine_arch}_CFLAGS],[CFLAGS])],
+        [AS_VAR_COPY([CFLAGS],[${wine_arch}_CFLAGS])])
+    AS_VAR_IF([${wine_arch}_LDFLAGS],[],
+        [AS_VAR_COPY([${wine_arch}_LDFLAGS],[LDFLAGS])],
+        [AS_VAR_COPY([LDFLAGS],[${wine_arch}_LDFLAGS])])
+    AS_VAR_IF([${wine_arch}_CPPFLAGS],[],
+        [AS_VAR_COPY([${wine_arch}_CPPFLAGS],[CPPFLAGS])],
+        [AS_VAR_COPY([CPPFLAGS],[${wine_arch}_CPPFLAGS])])
+
     AS_VAR_COPY([CC],[${wine_arch}_CC])
-    AS_VAR_COPY([${wine_arch}_CFLAGS],[CFLAGS])
-    AS_VAR_COPY([${wine_arch}_LDFLAGS],[LDFLAGS])
     AS_VAR_SET([${wine_arch}_EXTRACFLAGS],["-D__WINE_PE_BUILD -Wall"])
 
     target=""
