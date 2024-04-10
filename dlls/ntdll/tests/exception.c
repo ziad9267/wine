@@ -4489,7 +4489,7 @@ static void test_wow64_context(void)
         {
             trace( "in 64-bit mode %04x\n", context.SegCs );
             if (ctx.ContextFlags & CONTEXT_EXCEPTION_REPORTING)
-                todo_wine ok( ctx.ContextFlags == (WOW64_CONTEXT_ALL | CONTEXT_EXCEPTION_REQUEST
+                ok( ctx.ContextFlags == (WOW64_CONTEXT_ALL | CONTEXT_EXCEPTION_REQUEST
                     | CONTEXT_EXCEPTION_REPORTING | CONTEXT_SERVICE_ACTIVE)
                     || ctx.ContextFlags == (WOW64_CONTEXT_ALL | CONTEXT_EXCEPTION_REQUEST
                     | CONTEXT_EXCEPTION_REPORTING | CONTEXT_EXCEPTION_ACTIVE),
