@@ -207,6 +207,7 @@ struct makefile
     const char     *staticlib;
     const char     *importlib;
     const char     *unixlib;
+    const char     *unixlib_override[MAX_ARCHS];
     int             use_msvcrt;
     int             data_only;
     int             is_win16;
@@ -3553,7 +3554,7 @@ static void output_unix_lib( struct makefile *make )
 {
     struct strarray unix_deps = empty_strarray;
     struct strarray unix_libs = add_unix_libraries( make, &unix_deps );
-    unsigned int arch = 0;  /* unix libs are always native */
+    unsigned int arch = 0, i;  /* unix libs are always native */
 
     if (make->disabled[arch]) return;
 
@@ -3571,6 +3572,13 @@ static void output_unix_lib( struct makefile *make )
     output_filenames( unix_libs );
     output_filename( "$(LDFLAGS)" );
     output( "\n" );
+
+    for (i = 1; i < archs.count; i++)
+    {
+        if (make->unixlib_override[i])
+            add_install_rule( make, make->module, i, make->unixlib,
+                              strmake( "y%s%s", arch_install_dirs[arch], make->unixlib_override[i] ));
+    }
 }
 
 
@@ -4326,7 +4334,12 @@ static void load_sources( struct makefile *make )
     make->staticlib     = get_expanded_make_variable( make, "STATICLIB" );
     make->importlib     = get_expanded_make_variable( make, "IMPORTLIB" );
     make->extlib        = get_expanded_make_variable( make, "EXTLIB" );
-    if (unix_lib_supported) make->unixlib = get_expanded_make_variable( make, "UNIXLIB" );
+    if (unix_lib_supported)
+    {
+        make->unixlib = get_expanded_make_variable( make, "UNIXLIB" );
+        for (arch = 1; arch < archs.count; arch++)
+            make->unixlib_override[arch] = get_expanded_arch_var( make, "UNIXLIB", arch );
+    }
 
     make->programs      = get_expanded_make_var_array( make, "PROGRAMS" );
     make->scripts       = get_expanded_make_var_array( make, "SCRIPTS" );
