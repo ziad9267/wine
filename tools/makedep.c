@@ -200,6 +200,7 @@ struct makefile
     const char     *obj_dir;
     const char     *parent_dir;
     const char     *module;
+    const char     *module_override[MAX_ARCHS];
     const char     *testdll;
     const char     *extlib;
     const char     *staticlib;
@@ -3348,10 +3349,12 @@ static const struct
 static void output_fake_module( struct makefile *make, const char *spec_file )
 {
     unsigned int arch = 0;  /* fake modules are always native */
-    const char *name = strmake( "%s%s", arch_pe_dirs[arch], make->module );
+    const char *name, *module = make->module;
 
     if (make->disabled[arch]) return;
+    if (make->module_override[arch]) module = make->module_override[arch];
 
+    name = strmake( "%s%s", arch_pe_dirs[arch], module );
     strarray_add( &make->all_targets[arch], name );
     add_install_rule( make, make->module, arch, name, strmake( "d$(dlldir)/%s", name ));
 
@@ -3380,27 +3383,28 @@ static void output_module( struct makefile *make, unsigned int arch )
     struct strarray all_libs = empty_strarray;
     struct strarray dep_libs = empty_strarray;
     struct strarray imports = make->imports;
-    const char *module_name;
+    const char *module_name, *module = make->module;
     const char *debug_file;
     char *tool, *spec_file = NULL;
     unsigned int i, link_arch;
 
     if (!get_link_arch( make, arch, &link_arch )) return;
+    if (make->module_override[link_arch]) module = make->module_override[link_arch];
 
     if (!make->is_exe)
     {
         if (make->data_only || strarray_exists( &make->extradllflags, "-Wl,--subsystem,native" ))
         {
             /* spec file is optional */
-            struct incl_file *spec = find_src_file( make, replace_extension( make->module, ".dll", ".spec" ));
+            struct incl_file *spec = find_src_file( make, replace_extension( module, ".dll", ".spec" ));
             if (spec) spec_file = spec->filename;
         }
-        else spec_file = src_dir_path( make, replace_extension( make->module, ".dll", ".spec" ));
+        else spec_file = src_dir_path( make, replace_extension( module, ".dll", ".spec" ));
     }
 
     if (!make->data_only)
     {
-        module_name = arch_module_name( make->module, arch );
+        module_name = arch_module_name( module, arch );
 
         if (!strarray_exists( &make->extradllflags, "-nodefaultlibs" )) default_imports = get_default_imports( make, imports );
 
@@ -3424,15 +3428,15 @@ static void output_module( struct makefile *make, unsigned int arch )
             }
         }
     }
-    else module_name = strmake( "%s%s", arch_pe_dirs[arch], make->module );
+    else module_name = strmake( "%s%s", arch_pe_dirs[arch], module );
 
     strarray_add( &make->all_targets[arch], module_name );
     if (make->data_only)
         add_install_rule( make, make->module, arch, module_name,
-                          strmake( "d$(dlldir)/%s%s", arch_pe_dirs[arch], make->module ));
+                          strmake( "d$(dlldir)/%s%s", arch_pe_dirs[arch], module ));
     else
         add_install_rule( make, make->module, arch, module_name,
-                          strmake( "%c%s%s%s", '0' + arch, arch_install_dirs[arch], make->module,
+                          strmake( "%c%s%s%s", '0' + arch, arch_install_dirs[arch], module,
                                    dll_ext[arch] ));
 
     output( "%s:", obj_dir_path( make, module_name ));
@@ -4280,6 +4284,9 @@ static void load_sources( struct makefile *make )
 
     make->parent_dir    = get_expanded_make_variable( make, "PARENTSRC" );
     make->module        = get_expanded_make_variable( make, "MODULE" );
+    for (arch = 1; arch < archs.count; arch++)
+        make->module_override[arch] = get_expanded_arch_var( make, "MODULE", arch );
+
     make->testdll       = get_expanded_make_variable( make, "TESTDLL" );
     make->staticlib     = get_expanded_make_variable( make, "STATICLIB" );
     make->importlib     = get_expanded_make_variable( make, "IMPORTLIB" );
