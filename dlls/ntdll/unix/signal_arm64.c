@@ -203,6 +203,11 @@ static BOOL is_inside_syscall( ucontext_t *sigcontext )
             (char *)SP_sig(sigcontext) <= (char *)arm64_thread_data()->syscall_frame);
 }
 
+static BOOLEAN is_arm64ec_emulator_stack( void *stack_ptr )
+{
+    return (ULONG64)stack_ptr <= NtCurrentTeb()->ChpeV2CpuAreaInfo->EmulatorStackBase &&
+           (ULONG64)stack_ptr > NtCurrentTeb()->ChpeV2CpuAreaInfo->EmulatorStackLimit;
+}
 
 /***********************************************************************
  *           unwind_builtin_dll
@@ -1247,8 +1252,18 @@ static void usr1_handler( int signal, siginfo_t *siginfo, void *sigcontext )
     else
     {
         save_context( &context, sigcontext );
+        DWORD64 spc = context.Sp, pcc = context.Pc;
         context.ContextFlags |= CONTEXT_EXCEPTION_REPORTING;
+        if (is_arm64ec()) {
+            if (is_arm64ec_emulator_stack((void*)context.Sp) && context.X[28] > 0x10000 && context.X[28] < (1ULL << 39)) {
+                context.Sp = context.X[23];
+                context.Pc = *((DWORD64*)context.X[28]);
+            }
+        }
         wait_suspend( &context );
+        if (is_arm64ec()) {
+            context.Sp = spc; context.Pc = pcc;
+        }
         restore_context( &context, sigcontext );
     }
 }
