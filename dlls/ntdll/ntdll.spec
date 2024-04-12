@@ -72,6 +72,7 @@
 @ stdcall -norelay KiUserCallbackDispatcher(long ptr long)
 @ stdcall -norelay -arch=arm,arm64,arm64ec KiUserCallbackDispatcherReturn()
 @ stdcall -norelay KiUserExceptionDispatcher(ptr ptr)
+@ stdcall -norelay -arch=arm64ec KiUserEmulationDispatcher(ptr)
 # @ stub LdrAccessOutOfProcessResource
 @ stdcall LdrAccessResource(long ptr ptr ptr)
 @ stdcall LdrAddDllDirectory(ptr ptr)

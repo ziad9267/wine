@@ -1796,6 +1796,22 @@ __ASM_GLOBAL_FUNC( "#KiUserCallbackDispatcher",
                    "brk #1" )
 
 
+/*******************************************************************
+ *                KiUserEmulationDispatcher (NTDLL.@)
+ */
+void WINAPI dispatch_emulation( ARM64_NT_CONTEXT *arm_ctx )
+{
+    context_arm_to_x64( (CONTEXT *)NtCurrentTeb()->ChpeV2CpuAreaInfo->ContextAmd64, arm_ctx );
+    arm64ec_callbacks.pBeginSimulation();
+}
+__ASM_GLOBAL_FUNC( "#KiUserEmulationDispatcher",
+                   ".seh_context\n\t"
+                   ".seh_endprologue\n\t"
+                   "mov x0, sp\n\t"        /* context */
+                   "bl " __ASM_FUNC_NAME("dispatch_emulation") "\n\t"
+                   "brk #1" )
+
+
 /**************************************************************************
  *              RtlIsEcCode (NTDLL.@)
  */
