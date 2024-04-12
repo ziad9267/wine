@@ -714,6 +714,9 @@ static void setup_raise_exception( ucontext_t *sigcontext, EXCEPTION_RECORD *rec
     /* fix up instruction pointer in context for EXCEPTION_BREAKPOINT */
     if (rec->ExceptionCode == EXCEPTION_BREAKPOINT) context->Pc -= 4;
 
+    if (is_arm64ec() && is_arm64ec_emulator_stack( stack_ptr )) /* TODO: handle on FEX side */
+        stack_ptr = (void *)(REGn_sig(23, sigcontext) & ~63);
+
     stack = virtual_setup_exception( stack_ptr, sizeof(*stack), rec );
     stack->rec = *rec;
     stack->context = *context;
@@ -793,9 +796,13 @@ NTSTATUS call_user_exception_dispatcher( EXCEPTION_RECORD *rec, CONTEXT *context
     struct syscall_frame *frame = arm64_thread_data()->syscall_frame;
     struct exc_stack_layout *stack;
     NTSTATUS status = NtSetContextThread( GetCurrentThread(), context );
+    ULONG64 stack_ptr = context->Sp;
 
     if (status) return status;
-    stack = (struct exc_stack_layout *)(context->Sp & ~15) - 1;
+    if (is_arm64ec() && is_arm64ec_emulator_stack( (void *)stack_ptr )) /* TODO: handle on FEX side */
+        stack_ptr = context->X23 & ~63;
+
+    stack = (struct exc_stack_layout *)(stack_ptr & ~15) - 1;
     memmove( &stack->context, context, sizeof(*context) );
     memmove( &stack->rec, rec, sizeof(*rec) );
     frame->pc = (ULONG64)pKiUserExceptionDispatcher;
