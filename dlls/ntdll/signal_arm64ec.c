@@ -1591,6 +1591,22 @@ NTSTATUS SYSCALL_API NtYieldExecution(void)
     SYSCALL_FUNC( NtYieldExecution );
 }
 
+unsigned int SYSCALL_API __wine_dbg_ftrace( char *str, unsigned int str_size, unsigned int ctx )
+{
+    SYSCALL_FUNC( __wine_dbg_ftrace );
+}
+
+BOOL SYSCALL_API __wine_needs_override_large_address_aware(void)
+{
+
+    SYSCALL_FUNC( __wine_needs_override_large_address_aware );
+}
+
+NTSTATUS SYSCALL_API __wine_set_unix_env( const char *var, const char *val )
+{
+    SYSCALL_FUNC( __wine_set_unix_env );
+}
+
 NTSTATUS SYSCALL_API wine_nt_to_unix_file_name( const OBJECT_ATTRIBUTES *attr, char *nameA, ULONG *size,
                                                 UINT disposition )
 {
