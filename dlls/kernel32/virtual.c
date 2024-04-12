@@ -294,7 +294,7 @@ LPWSTR WINAPI lstrcatW( LPWSTR dst, LPCWSTR src )
  *           lstrcpyA   (KERNEL32.@)
  *           lstrcpy    (KERNEL32.@)
  */
-#ifdef __x86_64__
+#if defined(__x86_64__) && !defined(__arm64ec__)
 LPSTR WINAPI lstrcpyA_impl( LPSTR dst, LPCSTR src )
 {
     __TRY

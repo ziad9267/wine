@@ -279,6 +279,8 @@ NTSTATUS wg_init_gstreamer(void *arg)
         const char *arch = "/registry.x86_64.bin";
 #elif defined(__i386__)
         const char *arch = "/registry.i386.bin";
+#elif defined(__aarch64__)
+        const char *arch = "/registry.aarch64.bin";
 #else
 #error Bad arch
 #endif

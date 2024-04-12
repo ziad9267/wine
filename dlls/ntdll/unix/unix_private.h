@@ -251,6 +251,7 @@ static inline void set_context_exception_reporting_flags( DWORD *context_flags, 
                      | CONTEXT_EXCEPTION_REPORTING | reporting_flag;
 }
 
+#if defined(__i386__) || defined(__x86_64__)
 extern BOOL xstate_compaction_enabled;
 extern UINT64 xstate_supported_features_mask;
 extern UINT64 xstate_features_size;
@@ -262,6 +263,9 @@ static inline UINT64 xstate_extended_features(void)
     return xstate_supported_features_mask & ~(UINT64)3;
 }
 
+extern BOOL validate_context_xstate( CONTEXT *context );
+#endif
+
 extern void *get_cpu_area( USHORT machine );
 extern void set_thread_id( TEB *teb, DWORD pid, DWORD tid );
 extern NTSTATUS init_thread_stack( TEB *teb, ULONG_PTR limit, SIZE_T reserve_size, SIZE_T commit_size );
@@ -270,7 +274,6 @@ extern void DECLSPEC_NORETURN abort_process( int status );
 extern void DECLSPEC_NORETURN exit_process( int status );
 extern void wait_suspend( CONTEXT *context );
 extern NTSTATUS send_debug_event( EXCEPTION_RECORD *rec, CONTEXT *context, BOOL first_chance, BOOL exception );
-extern BOOL validate_context_xstate( CONTEXT *context );
 extern NTSTATUS set_thread_context( HANDLE handle, const void *context, BOOL *self, USHORT machine );
 extern NTSTATUS get_thread_context( HANDLE handle, void *context, BOOL *self, USHORT machine );
 extern unsigned int alloc_object_attributes( const OBJECT_ATTRIBUTES *attr, struct object_attributes **ret,

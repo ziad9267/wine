@@ -158,6 +158,7 @@ void fpu_to_fpux( XMM_SAVE_AREA32 *fpux, const I386_FLOATING_SAVE_AREA *fpu )
 }
 
 
+#if defined(__i386__) || defined(__x86_64__)
 /***********************************************************************
  *           validate_context_xstate
  */
@@ -177,6 +178,7 @@ BOOL validate_context_xstate( CONTEXT *context )
 
     return TRUE;
 }
+#endif
 
 
 /***********************************************************************
@@ -1255,7 +1257,7 @@ NTSTATUS init_thread_stack( TEB *teb, ULONG_PTR limit, SIZE_T reserve_size, SIZE
         if ((status = virtual_alloc_thread_stack( &stack, limit_4g, 0, chpev2_stack_size, chpev2_stack_size, FALSE )))
             return status;
 
-        cpu_area = stack.DeallocationStack;
+        cpu_area = (char*)stack.DeallocationStack + page_size;
         cpu_area->ContextAmd64 = (ARM64EC_NT_CONTEXT *)&cpu_area->EmulatorDataInline;
         cpu_area->EmulatorStackBase  = (ULONG_PTR)stack.StackBase;
         cpu_area->EmulatorStackLimit = (ULONG_PTR)stack.StackLimit + page_size;
