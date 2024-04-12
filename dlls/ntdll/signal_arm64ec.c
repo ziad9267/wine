@@ -1726,8 +1726,12 @@ NTSTATUS call_seh_handlers( EXCEPTION_RECORD *rec, CONTEXT *orig_context )
 static NTSTATUS __attribute__((used)) dispatch_exception_arm64ec( EXCEPTION_RECORD *rec, ARM64_NT_CONTEXT *arm_ctx )
 {
     ARM64EC_NT_CONTEXT context;
+    EXCEPTION_POINTERS pointers = { rec, (CONTEXT *)&context };
+    BOOLEAN cont = FALSE;
 
-    context_arm_to_x64( &context, arm_ctx );
+    context_arm_to_x64( &context.AMD64_Context, arm_ctx );
+    arm64ec_callbacks.pResetToConsistentState( &pointers, arm_ctx, &cont);
+    if (cont) syscall_NtContinue( arm_ctx, FALSE );
     return dispatch_exception( rec, &context.AMD64_Context );
 }
 __ASM_GLOBAL_FUNC( "#KiUserExceptionDispatcher",

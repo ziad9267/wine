@@ -187,7 +187,7 @@ struct arm64ec_callbacks {
     void (WINAPI *pDispatchJump)(void);
     void (WINAPI *pExitToX64)(void);
     void (WINAPI *pProcessInit)(void);
-    NTSTATUS (WINAPI *pResetToConsistentState)( EXCEPTION_POINTERS * );
+    NTSTATUS (WINAPI *pResetToConsistentState)( EXCEPTION_POINTERS *, ARM64_NT_CONTEXT *, BOOLEAN * );
     void (WINAPI *pRetToEntryThunk)(void);
     void (WINAPI *pThreadInit)(void);
     void (WINAPI *pBTCpu64FlushInstructionCache)( const void *, SIZE_T );
