@@ -763,6 +763,12 @@ void __cdecl get_prev_context(CONTEXT *ctx, DWORD64 rip)
             rf, ctx, &data, &frame, NULL);
 }
 
+#ifdef __arm64ec__
+void __cdecl __crtCapturePreviousContext(CONTEXT *ctx)
+{
+    FIXME("not implemented\n");
+}
+#else
 __ASM_GLOBAL_FUNC( __crtCapturePreviousContext,
                    "movq %rcx,8(%rsp)\n\t"
                    "call " __ASM_NAME("RtlCaptureContext") "\n\t"
@@ -772,6 +778,7 @@ __ASM_GLOBAL_FUNC( __crtCapturePreviousContext,
                    "movq (%rsp),%rax\n\t"
                    "movq %rax,0xf8(%rcx)\n\t"  /* context->Rip */
                    "jmp " __ASM_NAME("get_prev_context") )
+#endif
 #endif
 
 #endif  /* __x86_64__ */
