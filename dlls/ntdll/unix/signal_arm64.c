@@ -204,6 +204,7 @@ struct arm64_thread_data
 {
     struct syscall_frame *syscall_frame; /* 02f0 frame pointer on syscall entry */
     SYSTEM_SERVICE_TABLE *syscall_table; /* 02f8 syscall table */
+    BOOL suspend_pending;
 };
 
 C_ASSERT( sizeof(struct arm64_thread_data) <= sizeof(((struct ntdll_thread_data *)0)->cpu_data) );
@@ -244,6 +245,11 @@ void set_process_instrumentation_callback( void *callback )
     if (callback) FIXME( "Not supported.\n" );
 }
 
+static BOOLEAN is_arm64ec_emulator_stack( void *stack_ptr )
+{
+    return (ULONG64)stack_ptr <= NtCurrentTeb()->ChpeV2CpuAreaInfo->EmulatorStackBase &&
+           (ULONG64)stack_ptr > NtCurrentTeb()->ChpeV2CpuAreaInfo->EmulatorStackLimit;
+}
 
 /***********************************************************************
  *           unwind_builtin_dll
@@ -364,7 +370,16 @@ NTSTATUS signal_set_full_context( CONTEXT *context )
     struct syscall_frame *frame = arm64_thread_data()->syscall_frame;
     NTSTATUS status = NtSetContextThread( GetCurrentThread(), context );
 
-    if (!status && (context->ContextFlags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
+    if (is_arm64ec() && arm64_thread_data()->suspend_pending) {
+        arm64_thread_data()->suspend_pending = FALSE;
+        CONTEXT suspend_context;
+        suspend_context.ContextFlags = CONTEXT_FULL | CONTEXT_EXCEPTION_REPORTING; /* TODO: check */
+        NtGetContextThread( GetCurrentThread(), &suspend_context );
+        wait_suspend( &suspend_context );
+        NtSetContextThread( GetCurrentThread(), &suspend_context );
+    }
+
+    if (!status && (context->ContextFlags & CONTEXT_INTEGER) == CONTEXT_INTEGER) /* TODO: also check with susp */
         frame->restore_flags |= CONTEXT_INTEGER;
 
     if (is_arm64ec() && !is_ec_code( frame->pc ))
@@ -455,12 +470,20 @@ NTSTATUS WINAPI NtGetContextThread( HANDLE handle, CONTEXT *context )
 {
     struct syscall_frame *frame = arm64_thread_data()->syscall_frame;
     DWORD needed_flags = context->ContextFlags & ~CONTEXT_ARM64;
-    BOOL self = (handle == GetCurrentThread());
+    THREAD_BASIC_INFORMATION info;
+    NTSTATUS ret;
+    BOOL self;
+
+    NtQueryInformationThread( handle, ThreadBasicInformation, &info, sizeof(info), NULL );
+    self = HandleToULong( info.ClientId.UniqueThread ) == GetCurrentThreadId();
 
     if (!self)
     {
-        NTSTATUS ret = get_thread_context( handle, context, &self, IMAGE_FILE_MACHINE_ARM64 );
-        if (ret || !self) return ret;
+        /* Avoid exposing JIT code pointers to other processes on ARM64EC */
+        if (is_arm64ec()) NtSuspendThread( handle, NULL );
+        ret = get_thread_context( handle, context, &self, IMAGE_FILE_MACHINE_ARM64 );
+        if (is_arm64ec()) NtResumeThread( handle, NULL );
+        return ret;
     }
 
     if (needed_flags & CONTEXT_INTEGER)
@@ -1318,6 +1341,12 @@ static void usr1_handler( int signal, siginfo_t *siginfo, void *sigcontext )
 {
     CONTEXT context;
 
+    if (is_arm64ec() && NtCurrentTeb()->ChpeV2CpuAreaInfo->InSimulation) {
+        *NtCurrentTeb()->ChpeV2CpuAreaInfo->SuspendDoorbell = 1;
+        arm64_thread_data()->suspend_pending = TRUE;
+        return;
+    }
+
     if (is_inside_syscall( sigcontext ))
     {
         context.ContextFlags = CONTEXT_FULL | CONTEXT_EXCEPTION_REQUEST;
@@ -1435,6 +1464,7 @@ void signal_init_process(void)
     void *kernel_stack = (char *)ntdll_get_thread_data()->kernel_stack + kernel_stack_size;
 
     arm64_thread_data()->syscall_frame = (struct syscall_frame *)kernel_stack - 1;
+    arm64_thread_data()->suspend_pending = FALSE;
 
     sig_act.sa_mask = server_block_set;
     sig_act.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
