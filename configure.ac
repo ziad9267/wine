@@ -849,9 +849,12 @@ do
     saved_CC=$CC
     saved_CFLAGS=$CFLAGS
     saved_LDFLAGS=$LDFLAGS
+    saved_CPPFLAGS=$CPPFLAGS
 
     CFLAGS=${CROSSCFLAGS:-"-g -O2"}
     LDFLAGS=$CROSSLDFLAGS
+    CPPFLAGS=$CROSSCPPFLAGS
+
     AS_VAR_COPY([CC],[${wine_arch}_CC])
     AS_VAR_COPY([${wine_arch}_CFLAGS],[CFLAGS])
     AS_VAR_COPY([${wine_arch}_LDFLAGS],[LDFLAGS])
@@ -914,6 +917,7 @@ This is an error since --enable-archs=$wine_arch was requested.])])
         CC=$saved_CC
         CFLAGS=$saved_CFLAGS
         LDFLAGS=$saved_LDFLAGS
+        CPPFLAGS=$saved_CPPFLAGS
         continue
     fi
 
@@ -938,6 +942,7 @@ This is an error since --enable-archs=$wine_arch was requested.])])
            CC=$saved_CC
            CFLAGS=$saved_CFLAGS
            LDFLAGS=$saved_LDFLAGS
+           CPPFLAGS=$saved_CPPFLAGS
            AS_VAR_SET_IF([enable_archs],
                 [AC_MSG_ERROR([MinGW $wine_arch compiler supporting C99 not found.
 This is an error since --enable-archs=$wine_arch was requested.])])
@@ -1032,6 +1037,7 @@ This is an error since --enable-archs=$wine_arch was requested.])])
     CC=$saved_CC
     CFLAGS=$saved_CFLAGS
     LDFLAGS=$saved_LDFLAGS
+    CPPFLAGS=$saved_CPPFLAGS
 done
 
 if test $HOST_ARCH = aarch64
