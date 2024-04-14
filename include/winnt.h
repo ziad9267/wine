@@ -6901,7 +6901,7 @@ long      _InterlockedOr(long volatile *,long);
 long      _InterlockedXor(long volatile *,long);
 DECLSPEC_NORETURN void __fastfail(unsigned int);
 
-#ifndef __i386__
+#if !defined(__i386__) || defined(__clang__)
 
 #pragma intrinsic(_InterlockedAnd64)
 #pragma intrinsic(_InterlockedDecrement64)
