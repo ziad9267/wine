@@ -803,6 +803,7 @@ AC_SUBST(MSHTML_CFLAGS,"")
 cross_archs=
 AS_VAR_SET_IF([enable_archs],
     [test "x$with_system_dllpath" = "x" || AC_MSG_ERROR("The --with-system-dllpath option is not compatible with --enable-archs")
+     x86_64_DISABLED=yes
      ac_save_IFS=$IFS
      IFS=' ,'
      set x $enable_archs
@@ -811,7 +812,14 @@ AS_VAR_SET_IF([enable_archs],
      for arch
      do
          case $arch in
-           i386|x86_64|arm|aarch64|arm64ec) cross_archs="$cross_archs $arch" ;;
+           i386|arm|aarch64) cross_archs="$cross_archs $arch" ;;
+           x86_64)
+             x86_64_DISABLED=no
+             cross_archs="$cross_archs $arch"
+             ;;
+           arm64ec)
+             cross_archs="$cross_archs $arch x86_64"
+             ;;
            *) AC_MSG_ERROR([Unknown cross-compilation architecture '$arch']) ;;
          esac
      done],
