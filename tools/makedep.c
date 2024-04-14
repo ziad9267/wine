@@ -167,6 +167,7 @@ static const char *arch_pe_dirs[MAX_ARCHS];
 static const char *arch_install_dirs[MAX_ARCHS];
 static const char *strip_progs[MAX_ARCHS];
 static const char *debug_flags[MAX_ARCHS];
+static int arch_disabled[MAX_ARCHS];
 static const char *delay_load_flags[MAX_ARCHS];
 static struct strarray target_flags[MAX_ARCHS];
 static struct strarray extra_cflags[MAX_ARCHS];
@@ -4314,9 +4315,10 @@ static void load_sources( struct makefile *make )
 
     if (make->obj_dir)
     {
-        make->disabled[0] = strarray_exists( &disabled_dirs[0], make->obj_dir );
+        make->disabled[0] = arch_disabled[0] || strarray_exists( &disabled_dirs[0], make->obj_dir );
         for (arch = 1; arch < archs.count; arch++)
-            make->disabled[arch] = make->disabled[0] || strarray_exists( &disabled_dirs[arch], make->obj_dir );
+            make->disabled[arch] = make->disabled[0] || arch_disabled[arch] ||
+                strarray_exists( &disabled_dirs[arch], make->obj_dir );
     }
     make->is_win16   = strarray_exists( &make->extradllflags, "-m16" );
     make->data_only  = strarray_exists( &make->extradllflags, "-Wb,--data-only" );
@@ -4570,6 +4572,8 @@ int main( int argc, char *argv[] )
 
     for (arch = 0; arch < archs.count; arch++)
     {
+        const char *disabled_str = get_expanded_arch_var( top_makefile, "DISABLED", arch );
+        arch_disabled[arch] = disabled_str && !strcmp( "yes", disabled_str );
         extra_cflags[arch] = get_expanded_arch_var_array( top_makefile, "EXTRACFLAGS", arch );
         extra_cflags_extlib[arch] = remove_warning_flags( extra_cflags[arch] );
         disabled_dirs[arch] = get_expanded_arch_var_array( top_makefile, "DISABLED_SUBDIRS", arch );
