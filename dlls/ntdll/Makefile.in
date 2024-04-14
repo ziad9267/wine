@@ -71,7 +71,8 @@ SOURCES = \
 	unwind.c \
 	version.c \
 	version.rc \
-	wcstring.c
+	wcstring.c \
+	chkstk_x86_64.c
 
 EXTRA_OBJS = unix/version.o
 

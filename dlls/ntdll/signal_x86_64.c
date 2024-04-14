@@ -89,15 +89,6 @@ static NTSTATUS virtual_unwind( ULONG type, DISPATCHER_CONTEXT *dispatch, CONTEX
                               NULL, NULL, NULL, &dispatch->LanguageHandler, 0 );
 }
 
-
-/**************************************************************************
- *		__chkstk (NTDLL.@)
- *
- * Supposed to touch all the stack pages, but we shouldn't need that.
- */
-__ASM_GLOBAL_FUNC( __chkstk, "ret" );
-
-
 /***********************************************************************
  *		RtlCaptureContext (NTDLL.@)
  */
