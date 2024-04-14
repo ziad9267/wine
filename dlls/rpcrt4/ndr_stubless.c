@@ -23,6 +23,10 @@
  *  - Some types of binding handles
  */
 
+#if 0
+#pragma makedep no-ec
+#endif
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>

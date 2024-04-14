@@ -47,6 +47,10 @@
  *
  */
 
+#if 0
+#pragma makedep no-ec
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
