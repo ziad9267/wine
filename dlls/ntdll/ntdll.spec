@@ -1723,6 +1723,7 @@
 @ stdcall __wine_ctrl_routine(ptr)
 @ extern -private __wine_syscall_dispatcher
 @ extern -private __wine_unix_call_dispatcher
+@ extern -arch=arm64ec -private __wine_unix_call_dispatcher_ec
 @ extern -private __wine_unixlib_handle
 @ stdcall -syscall __wine_set_unix_env(ptr ptr)
 

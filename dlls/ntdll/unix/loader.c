@@ -1741,6 +1741,7 @@ static void load_ntdll_functions( HMODULE module )
 {
     void **p__wine_syscall_dispatcher;
     void **p__wine_unix_call_dispatcher;
+    void **p__wine_unix_call_dispatcher_ec;
     unixlib_handle_t *p__wine_unixlib_handle;
     const IMAGE_EXPORT_DIRECTORY *exports;
 
@@ -1766,9 +1767,13 @@ static void load_ntdll_functions( HMODULE module )
     GET_FUNC( __wine_ctrl_routine );
     GET_FUNC( __wine_syscall_dispatcher );
     GET_FUNC( __wine_unix_call_dispatcher );
+    GET_FUNC_OPT( __wine_unix_call_dispatcher_ec );
     GET_FUNC( __wine_unixlib_handle );
     *p__wine_syscall_dispatcher = __wine_syscall_dispatcher;
-    *p__wine_unix_call_dispatcher = __wine_unix_call_dispatcher;
+    if (p__wine_unix_call_dispatcher_ec)
+        *p__wine_unix_call_dispatcher_ec = __wine_unix_call_dispatcher;
+    else
+        *p__wine_unix_call_dispatcher = __wine_unix_call_dispatcher;
     *p__wine_unixlib_handle = (UINT_PTR)unix_call_funcs;
 #undef GET_FUNC
 }

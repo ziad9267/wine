@@ -2407,6 +2407,8 @@ static int code_match( BYTE *code, const BYTE *seq, size_t len )
     return 1;
 }
 
+extern NTSTATUS (WINAPI *__wine_unix_call_dispatcher_ec)( unixlib_handle_t, unsigned int, void * );
+
 void *check_call( void **target, void *exit_thunk, void *dest )
 {
     static const BYTE jmp_sequence[] =
@@ -2436,7 +2438,7 @@ void *check_call( void **target, void *exit_thunk, void *dest )
 
     for (;;)
     {
-        if (dest == __wine_unix_call_dispatcher) return dest;
+        if (dest == __wine_unix_call_dispatcher_ec) return dest;
         if (RtlIsEcCode( (ULONG_PTR)dest )) return dest;
         if (code_match( dest, jmp_sequence, sizeof(jmp_sequence) ))
         {

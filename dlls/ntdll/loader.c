@@ -70,7 +70,19 @@ typedef DWORD (CALLBACK *DLLENTRYPROC)(HMODULE,DWORD,LPVOID);
 typedef void  (CALLBACK *LDRENUMPROC)(LDR_DATA_TABLE_ENTRY *, void *, BOOLEAN *);
 
 void (FASTCALL *pBaseThreadInitThunk)(DWORD,LPTHREAD_START_ROUTINE,void *) = NULL;
+
+#ifdef __arm64ec__
+NTSTATUS (WINAPI *__wine_unix_call_dispatcher_ec)( unixlib_handle_t, unsigned int, void * ) = __wine_unix_call;
+
+static NTSTATUS WINAPI unix_call_dispatcher_trampoline( unixlib_handle_t handle, unsigned int code, void *args )
+{
+    return __wine_unix_call_dispatcher_ec( handle, code, args );
+}
+
+NTSTATUS (WINAPI *__wine_unix_call_dispatcher)( unixlib_handle_t, unsigned int, void * ) = unix_call_dispatcher_trampoline;
+#else
 NTSTATUS (WINAPI *__wine_unix_call_dispatcher)( unixlib_handle_t, unsigned int, void * ) = __wine_unix_call;
+#endif
 
 static DWORD (WINAPI *pCtrlRoutine)(void *);
 
