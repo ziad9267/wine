@@ -200,7 +200,7 @@ case "$host_cpu" in
   x86_64)          HOST_ARCH=x86_64 ;;
 esac
 m4_set_add_all([_AC_SUBST_VARS],[HOST_ARCH]m4_foreach([cpu],[aarch64,arm,arm64ec,i386,x86_64],
-                                [m4_foreach([var],[CC,CFLAGS,EXTRACFLAGS,LDFLAGS,DEBUG,TARGET,DELAYLOADFLAG,DISABLED_SUBDIRS],[,cpu[_]var])]))
+                                [m4_foreach([var],[CC,CFLAGS,CPPFLAGS,EXTRACFLAGS,LDFLAGS,DEBUG,TARGET,DELAYLOADFLAG,DISABLED_SUBDIRS],[,cpu[_]var])]))
 
 AC_CACHE_CHECK([for the directory containing the Wine tools], wine_cv_toolsdir,
   [wine_cv_toolsdir="$with_wine_tools"
@@ -858,9 +858,12 @@ do
     saved_CC=$CC
     saved_CFLAGS=$CFLAGS
     saved_LDFLAGS=$LDFLAGS
+    saved_CPPFLAGS=$CPPFLAGS
 
     CFLAGS=${CROSSCFLAGS:-"-g -O2"}
     LDFLAGS=$CROSSLDFLAGS
+    CPPFLAGS=$CROSSCPPFLAGS
+
     AS_VAR_COPY([CC],[${wine_arch}_CC])
     AS_VAR_COPY([${wine_arch}_CFLAGS],[CFLAGS])
     AS_VAR_COPY([${wine_arch}_LDFLAGS],[LDFLAGS])
@@ -923,6 +926,7 @@ This is an error since --enable-archs=$wine_arch was requested.])])
         CC=$saved_CC
         CFLAGS=$saved_CFLAGS
         LDFLAGS=$saved_LDFLAGS
+        CPPFLAGS=$saved_CPPFLAGS
         continue
     fi
 
@@ -947,6 +951,7 @@ This is an error since --enable-archs=$wine_arch was requested.])])
            CC=$saved_CC
            CFLAGS=$saved_CFLAGS
            LDFLAGS=$saved_LDFLAGS
+           CPPFLAGS=$saved_CPPFLAGS
            AS_VAR_SET_IF([enable_archs],
                 [AC_MSG_ERROR([MinGW $wine_arch compiler supporting C99 not found.
 This is an error since --enable-archs=$wine_arch was requested.])])
@@ -1042,6 +1047,7 @@ This is an error since --enable-archs=$wine_arch was requested.])])
     CC=$saved_CC
     CFLAGS=$saved_CFLAGS
     LDFLAGS=$saved_LDFLAGS
+    CPPFLAGS=$saved_CPPFLAGS
 done
 
 if test $HOST_ARCH = aarch64

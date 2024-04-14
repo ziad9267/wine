@@ -135,7 +135,6 @@ static struct strarray linguas;
 static struct strarray dll_flags;
 static struct strarray unix_dllflags;
 static struct strarray msvcrt_flags;
-static struct strarray cpp_flags;
 static struct strarray lddll_flags;
 static struct strarray libs;
 static struct strarray enable_tests;
@@ -3199,7 +3198,7 @@ static void output_source_one_arch( struct makefile *make, struct incl_file *sou
                                     unsigned int arch )
 {
     const int is_cxx = strendswith( source->name, ".cpp" );
-    const char *obj_name, *var_cc, *var_cxx, *var_cflags, *var_cxxflags;
+    const char *obj_name, *var_cc, *var_cxx, *var_cflags, *var_cppflags, *var_cxxflags;
     struct strarray arch_cflags = empty_strarray;
 
     if (make->disabled[arch] && !(source->file->flags & FLAG_C_IMPLIB)) return;
@@ -3239,6 +3238,7 @@ static void output_source_one_arch( struct makefile *make, struct incl_file *sou
         var_cc     = "$(x86_64_CC)";
         var_cxx    = "$(x86_64_CXX)";
         var_cflags = "$(x86_64_CFLAGS)";
+        var_cppflags = "$(x86_64_CPPFLAGS)";
         var_cxxflags = "$(x86_64_CXXFLAGS)";
         strarray_add( &arch_cflags, "-D__arm64ec_x64__" );
         strarray_addall( &arch_cflags, (make->extlib || is_cxx) ? x64_extra_cflags_extlib : x64_extra_cflags );
@@ -3248,6 +3248,7 @@ static void output_source_one_arch( struct makefile *make, struct incl_file *sou
         var_cc     = arch_make_variable( "CC", arch );
         var_cxx    = arch_make_variable( "CXX", arch );
         var_cflags = arch_make_variable( "CFLAGS", arch );
+        var_cppflags = arch_make_variable( "CPPFLAGS", arch );
         var_cxxflags = arch_make_variable( "CXXFLAGS", arch );
         strarray_addall( &arch_cflags, (make->extlib || is_cxx) ? extra_cflags_extlib[arch] : extra_cflags[arch] );
     }
@@ -3279,7 +3280,7 @@ static void output_source_one_arch( struct makefile *make, struct incl_file *sou
         if (make->module && is_crt_module( make->module )) output_filename( "-fno-builtin" );
     }
 
-    output_filenames( cpp_flags );
+    output_filename( var_cppflags );
     if (is_cxx) output_filename( var_cxxflags );
     else output_filename( var_cflags );
     output( "\n" );
@@ -4546,7 +4547,6 @@ int main( int argc, char *argv[] )
     msvcrt_flags       = get_expanded_make_var_array( top_makefile, "MSVCRTFLAGS" );
     dll_flags          = get_expanded_make_var_array( top_makefile, "DLLFLAGS" );
     unix_dllflags      = get_expanded_make_var_array( top_makefile, "UNIXDLLFLAGS" );
-    cpp_flags          = get_expanded_make_var_array( top_makefile, "CPPFLAGS" );
     lddll_flags        = get_expanded_make_var_array( top_makefile, "LDDLLFLAGS" );
     libs               = get_expanded_make_var_array( top_makefile, "LIBS" );
     enable_tests       = get_expanded_make_var_array( top_makefile, "ENABLE_TESTS" );
