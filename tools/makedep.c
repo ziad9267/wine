@@ -101,6 +101,7 @@ struct incl_file
 #define FLAG_C_IMPLIB       0x040000  /* file is part of an import library */
 #define FLAG_C_UNIX         0x080000  /* file is part of a Unix library */
 #define FLAG_SFD_FONTS      0x100000  /* sfd file generated bitmap fonts */
+#define FLAG_C_NO_EC        0x200000  /* use x86_64 object on ARM64EC */
 
 static const struct
 {
@@ -601,6 +602,17 @@ static int is_native_arch_disabled( struct makefile *make )
 
 
 /*******************************************************************
+ *         find_pe_arch
+ */
+static unsigned int find_pe_arch( const char *arch )
+{
+    unsigned int i;
+    for (i = 1; i < archs.count; i++) if (!strcmp( archs.str[i], arch )) return i;
+    return 0;
+}
+
+
+/*******************************************************************
  *         get_link_arch
  */
 static int get_link_arch( struct makefile *make, unsigned int arch, unsigned int *link_arch )
@@ -990,6 +1002,7 @@ static void parse_pragma_directive( struct file *source, char *str )
         {
             if (!strcmp( flag, "implib" )) source->flags |= FLAG_C_IMPLIB;
             if (!strcmp( flag, "unix" )) source->flags |= FLAG_C_UNIX;
+            if (!strcmp( flag, "no-ec" )) source->flags |= FLAG_C_NO_EC;
         }
     }
 }
@@ -3189,6 +3202,17 @@ static void output_source_xml( struct makefile *make, struct incl_file *source, 
 
 
 /*******************************************************************
+ *         get_cc_arch
+ */
+static unsigned int get_cc_arch( struct incl_file *source, unsigned int arch )
+{
+    if ((source->file->flags & FLAG_C_NO_EC) && !strcmp( archs.str[arch], "arm64ec" ))
+        arch = find_pe_arch("x86_64");
+    return arch;
+}
+
+
+/*******************************************************************
  *         output_source_one_arch
  */
 static void output_source_one_arch( struct makefile *make, struct incl_file *source, const char *obj,
@@ -3197,9 +3221,11 @@ static void output_source_one_arch( struct makefile *make, struct incl_file *sou
 {
     const int is_cxx = strendswith( source->name, ".cpp" );
     const char *obj_name;
+    unsigned int cc_arch;
 
     if (make->disabled[arch] && !(source->file->flags & FLAG_C_IMPLIB)) return;
     make->has_cxx |= is_cxx;
+    cc_arch = get_cc_arch( source, arch );
 
     if (arch)
     {
@@ -3229,13 +3255,13 @@ static void output_source_one_arch( struct makefile *make, struct incl_file *sou
         strarray_add( &make->clean_files, obj_name );
 
     output( "%s: %s\n", obj_dir_path( make, obj_name ), source->filename );
-    if (is_cxx) output( "\t%s%s -c -o $@ %s", cmd_prefix( "CXX" ), arch_make_variable( "CXX", arch ), source->filename );
-    else output( "\t%s%s -c -o $@ %s", cmd_prefix( "CC" ), arch_make_variable( "CC", arch ), source->filename );
+    if (is_cxx) output( "\t%s%s -c -o $@ %s", cmd_prefix( "CXX" ), arch_make_variable( "CXX", cc_arch ), source->filename );
+    else output( "\t%s%s -c -o $@ %s", cmd_prefix( "CC" ), arch_make_variable( "CC", cc_arch ), source->filename );
     output_filenames( defines );
     if (source->file->flags & FLAG_C_UNIX) output_filenames( make->unix_cflags );
     else output_filenames( make->extra_cflags );
     if (!make->use_msvcrt && !make->module) output_filenames( make->unix_cflags );
-    output_filenames( make->extlib || is_cxx ? extra_cflags_extlib[arch] : extra_cflags[arch] );
+    output_filenames( make->extlib || is_cxx ? extra_cflags_extlib[cc_arch] : extra_cflags[cc_arch] );
     if (!arch)
     {
         if (source->file->flags & FLAG_C_UNIX)
@@ -3255,9 +3281,9 @@ static void output_source_one_arch( struct makefile *make, struct incl_file *sou
         if (make->module && is_crt_module( make->module )) output_filename( "-fno-builtin" );
     }
 
-    output_filename( arch_make_variable( "CPPFLAGS", arch ));
-    if (is_cxx) output_filename( arch_make_variable( "CXXFLAGS", arch ));
-    else output_filename( arch_make_variable( "CFLAGS", arch ));
+    output_filename( arch_make_variable( "CPPFLAGS", cc_arch ));
+    if (is_cxx) output_filename( arch_make_variable( "CXXFLAGS", cc_arch ));
+    else output_filename( arch_make_variable( "CFLAGS", cc_arch ));
     output( "\n" );
 
     if (make->testdll && strendswith( source->name, ".c" ) &&
@@ -4444,17 +4470,6 @@ static int parse_option( const char *opt )
         exit(1);
     }
     return 1;
-}
-
-
-/*******************************************************************
- *         find_pe_arch
- */
-static unsigned int find_pe_arch( const char *arch )
-{
-    unsigned int i;
-    for (i = 1; i < archs.count; i++) if (!strcmp( archs.str[i], arch )) return i;
-    return 0;
 }
 
 
