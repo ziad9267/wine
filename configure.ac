@@ -877,14 +877,9 @@ do
     AS_VAR_COPY([CC],[${wine_arch}_CC])
     AS_VAR_SET([${wine_arch}_EXTRACFLAGS],["-D__WINE_PE_BUILD -Wall"])
 
-    target=""
-    AS_VAR_PUSHDEF([wine_cv_crosscc],[ac_cv_${wine_arch}_crosscc])
     AS_VAR_IF([${wine_arch}_CC],[false],[],
-        [AC_CACHE_CHECK([whether $CC works],[wine_cv_crosscc],
-            [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
-                [AS_VAR_SET([wine_cv_crosscc],[yes])],[AS_VAR_SET([wine_cv_crosscc],[no])])])])
-    AS_VAR_IF([wine_cv_crosscc],[yes],
-       [set x $CC
+        [target=""
+        set x $CC
         shift
         while test $# -ge 1
         do
@@ -907,6 +902,7 @@ do
         fi
         llvm_extra_cflags="-target $llvm_target -fuse-ld=lld"
         llvm_extra_ldflags=""
+        llvm_cflags=""
         case $llvm_target in
           *windows) llvm_cflags="-Wl,-subsystem:console -Wl,-WX" ;;
         esac
@@ -922,9 +918,14 @@ do
             AS_VAR_APPEND([${wine_arch}_EXTRACFLAGS],[" $llvm_extra_cflags"])
             AS_VAR_APPEND([${wine_arch}_LDFLAGS],[" $llvm_extra_ldflags"])
             CFLAGS="$llvm_extra_cflags $llvm_cflags"
+        else
+            AS_VAR_PUSHDEF([wine_cv_crosscc], [wine_cv_${wine_arch}_crosscc])
+            AC_CACHE_CHECK([whether $CC works], wine_cv_crosscc,
+                [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])], [AS_VAR_SET([wine_cv_crosscc],[yes])], [AS_VAR_SET([wine_cv_crosscc],[no])])])
+            AS_VAR_IF([wine_cv_crosscc], [no], [AS_VAR_SET([target],[])])
+            AS_VAR_POPDEF([wine_cv_crosscc])
         fi
-        AS_VAR_SET([${wine_arch}_TARGET],[$target])])
-    AS_VAR_POPDEF([wine_cv_crosscc])
+    ])
 
     if test -z "$target"
     then
@@ -938,6 +939,7 @@ This is an error since --enable-archs=$wine_arch was requested.])])
         continue
     fi
 
+    AS_VAR_SET([${wine_arch}_TARGET],[$target])
     AS_VAR_PUSHDEF([wine_cv_crosscc_c99],[ac_cv_${wine_arch}_crosscc_c99])
     AC_MSG_CHECKING([for $CC option to enable C99 features])
     AC_CACHE_VAL([wine_cv_crosscc_c99],
