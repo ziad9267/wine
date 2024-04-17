@@ -4423,7 +4423,7 @@ static void init_xtajit64(void)
     HMODULE xtajit64;
     NTSTATUS status;
 
-    if ((status = load_dll( system_dir, L"xtajit64.dll", 0, &xtajit64_wm, FALSE )))
+    if ((status = load_dll( system_dir, L"libarm64ecfex.dll", 0, &xtajit64_wm, FALSE )))
     {
         ERR( "could not load xtajit64, status %lx\n", status );
         NtTerminateProcess( GetCurrentProcess(), status );
