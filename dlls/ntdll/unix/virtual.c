@@ -5035,6 +5035,7 @@ static NTSTATUS allocate_virtual_memory( void **ret, SIZE_T *size_ptr, ULONG typ
     {
         base = NULL;
         size = (size + page_mask) & ~page_mask;
+        if (is_wow64() && (!limit_high || limit_high > limit_4g)) limit_low = limit_4g;
     }
 
     /* Compute the alloc type flags */
