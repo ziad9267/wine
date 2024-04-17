@@ -178,7 +178,7 @@ FUNCTION_OVERRIDES = {
     # Device functions
     "vkCreateCommandPool" : {"extra_param" : "client_ptr"},
     "vkGetDeviceProcAddr" : {"dispatch" : False},
-    "vkAllocateMemory" : {"extra_param" : "pAllocateInfo"},
+    "vkAllocateMemory" : {"dispatch" : True},
     "vkGetSemaphoreCounterValue" : {"dispatch" : True},
     "vkSignalSemaphore" : {"dispatch" : True},
     "vkWaitSemaphores" : {"dispatch" : True},
@@ -353,7 +353,7 @@ STRUCT_CHAIN_CONVERSIONS = {
     # Structs which require pNext chain modification
     "VkBufferCreateInfo": [],
     "VkImageCreateInfo": [],
-    "VkMemoryAllocateInfo": ["VK_STRUCTURE_TYPE_EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR", "VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR"],
+    "VkMemoryAllocateInfo": [],
     "VkPhysicalDeviceImageFormatInfo2": [],
     "VkPhysicalDeviceExternalSemaphoreInfo": [],
     "VkSemaphoreCreateInfo": ["VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR"],
