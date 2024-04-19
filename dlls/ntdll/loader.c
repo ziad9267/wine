@@ -3079,6 +3079,7 @@ static NTSTATUS prepend_system_dir( const WCHAR *name, ULONG name_length, WCHAR 
     static const WCHAR ucrtbase[] = L"ucrtbase.dll";
     ULONG len;
 
+#ifdef __arm64ec__
     if (name_length == sizeof(ucrtbase) / sizeof(*ucrtbase) - 1 && !_wcsnicmp( name, ucrtbase, name_length ))
     {
         if (!(*fullname = RtlAllocateHeap( GetProcessHeap(), 0, (name_length + 1) * sizeof(WCHAR) )))
@@ -3087,6 +3088,7 @@ static NTSTATUS prepend_system_dir( const WCHAR *name, ULONG name_length, WCHAR 
         (*fullname)[name_length] = 0;
         return STATUS_SUCCESS;
     }
+#endif
 
     len = wcslen( system_dir ) + name_length;
     if (!(*fullname = RtlAllocateHeap( GetProcessHeap(), 0, (len + 1) * sizeof(WCHAR) )))
