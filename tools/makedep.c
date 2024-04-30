@@ -101,6 +101,7 @@ struct incl_file
 #define FLAG_C_IMPLIB       0x040000  /* file is part of an import library */
 #define FLAG_C_UNIX         0x080000  /* file is part of a Unix library */
 #define FLAG_SFD_FONTS      0x100000  /* sfd file generated bitmap fonts */
+#define FLAG_ARM64EC_X64    0x200000  /* use x86_64 object on ARM64EC */
 
 static const struct
 {
@@ -990,6 +991,7 @@ static void parse_pragma_directive( struct file *source, char *str )
         {
             if (!strcmp( flag, "implib" )) source->flags |= FLAG_C_IMPLIB;
             if (!strcmp( flag, "unix" )) source->flags |= FLAG_C_UNIX;
+            if (!strcmp( flag, "arm64ec_x64" )) source->flags |= FLAG_ARM64EC_X64;
         }
     }
 }
@@ -3196,7 +3198,8 @@ static void output_source_one_arch( struct makefile *make, struct incl_file *sou
                                     unsigned int arch )
 {
     const int is_cxx = strendswith( source->name, ".cpp" );
-    const char *obj_name;
+    const char *obj_name, *var_cc, *var_cxx, *var_cflags, *var_cxxflags;
+    struct strarray arch_cflags = empty_strarray;
 
     if (make->disabled[arch] && !(source->file->flags & FLAG_C_IMPLIB)) return;
     make->has_cxx |= is_cxx;
@@ -3228,14 +3231,34 @@ static void output_source_one_arch( struct makefile *make, struct incl_file *sou
     else
         strarray_add( &make->clean_files, obj_name );
 
+    if ((source->file->flags & FLAG_ARM64EC_X64) && !strcmp( archs.str[arch], "arm64ec" ))
+    {
+        struct strarray x64_extra_cflags = get_expanded_make_var_array( top_makefile, "x86_64_EXTRACFLAGS" );
+        struct strarray x64_extra_cflags_extlib = remove_warning_flags( x64_extra_cflags );
+        var_cc     = "$(x86_64_CC)";
+        var_cxx    = "$(x86_64_CXX)";
+        var_cflags = "$(x86_64_CFLAGS)";
+        var_cxxflags = "$(x86_64_CXXFLAGS)";
+        strarray_add( &arch_cflags, "-D__arm64ec_x64__" );
+        strarray_addall( &arch_cflags, (make->extlib || is_cxx) ? x64_extra_cflags_extlib : x64_extra_cflags );
+    }
+    else
+    {
+        var_cc     = arch_make_variable( "CC", arch );
+        var_cxx    = arch_make_variable( "CXX", arch );
+        var_cflags = arch_make_variable( "CFLAGS", arch );
+        var_cxxflags = arch_make_variable( "CXXFLAGS", arch );
+        strarray_addall( &arch_cflags, (make->extlib || is_cxx) ? extra_cflags_extlib[arch] : extra_cflags[arch] );
+    }
+
     output( "%s: %s\n", obj_dir_path( make, obj_name ), source->filename );
-    if (is_cxx) output( "\t%s%s -c -o $@ %s", cmd_prefix( "CXX" ), arch_make_variable( "CXX", arch ), source->filename );
-    else output( "\t%s%s -c -o $@ %s", cmd_prefix( "CC" ), arch_make_variable( "CC", arch ), source->filename );
+    if (is_cxx) output( "\t%s%s -c -o $@ %s", cmd_prefix( "CXX" ), var_cxx, source->filename );
+    else output( "\t%s%s -c -o $@ %s", cmd_prefix( "CC" ), var_cc, source->filename );
     output_filenames( defines );
     if (source->file->flags & FLAG_C_UNIX) output_filenames( make->unix_cflags );
     else output_filenames( make->extra_cflags );
     if (!make->use_msvcrt && !make->module) output_filenames( make->unix_cflags );
-    output_filenames( make->extlib || is_cxx ? extra_cflags_extlib[arch] : extra_cflags[arch] );
+    output_filenames( arch_cflags );
     if (!arch)
     {
         if (source->file->flags & FLAG_C_UNIX)
@@ -3256,8 +3279,8 @@ static void output_source_one_arch( struct makefile *make, struct incl_file *sou
     }
 
     output_filenames( cpp_flags );
-    if (is_cxx) output_filename( arch_make_variable( "CXXFLAGS", arch ));
-    else output_filename( arch_make_variable( "CFLAGS", arch ));
+    if (is_cxx) output_filename( var_cxxflags );
+    else output_filename( var_cflags );
     output( "\n" );
 
     if (make->testdll && strendswith( source->name, ".c" ) &&
