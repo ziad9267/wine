@@ -3662,8 +3662,6 @@ DXGI_FORMAT WINAPI MFMapDX9FormatToDXGIFormat(DWORD format)
             return DXGI_FORMAT_P8;
         case D3DFMT_A8P8:
             return DXGI_FORMAT_A8P8;
-        case D3DFMT_A8B8G8R8:
-            return DXGI_FORMAT_R8G8B8A8_UNORM;
         default:
             return DXGI_FORMAT_UNKNOWN;
     }
