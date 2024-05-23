@@ -1227,7 +1227,7 @@ static BOOL write_gpu_to_registry( const struct gpu *gpu, const struct pci_id *p
             break;
         /* Nvidia */
         case 0x10de:
-            strcpy( buffer, "31.0.15.3625" );
+            strcpy( buffer, "31.0.19.9999" );
             break;
         /* Default value for any other vendor. */
         default:
