@@ -2252,7 +2252,6 @@ enum message_type
     int          flags;
 @REPLY
     unsigned int eventmask;
-    unsigned int cookie;
     unsigned int pending_write;
 @END
 
