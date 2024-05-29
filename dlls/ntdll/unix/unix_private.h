@@ -361,7 +361,8 @@ extern void init_files(void);
 extern void init_cpu_info(void);
 extern void file_complete_async( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc_user,
                                  IO_STATUS_BLOCK *io, NTSTATUS status, ULONG_PTR information );
-extern void set_async_direct_result( HANDLE *async_handle, NTSTATUS status, ULONG_PTR information, BOOL mark_pending );
+extern void set_async_direct_result( HANDLE *async_handle, IO_STATUS_BLOCK *io,
+                                     NTSTATUS status, ULONG_PTR information, BOOL mark_pending );
 extern struct cpu_topology_override *get_cpu_topology_override(void);
 
 extern NTSTATUS unixcall_wine_dbg_write( void *args );
