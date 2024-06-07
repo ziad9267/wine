@@ -87,14 +87,12 @@ void msvcrt_init_math( void *module )
 #endif
 }
 
-#if defined(__i386__) || defined(__x86_64__)
 static inline double ret_nan( BOOL update_sw )
 {
     double x = 1.0;
     if (!update_sw) return -NAN;
     return (x - x) / (x - x);
 }
-#endif
 
 #define SET_X87_CW(MASK) \
     "subl $4, %esp\n\t" \
@@ -270,7 +268,7 @@ float CDECL MSVCRT_atanf( float x )
 }
 #endif
 
-#ifdef __x86_64__
+#ifndef __i386__
 extern short CDECL _fdclass(float x);
 
 static BOOL sqrtf_validate( float *x )
@@ -288,10 +286,21 @@ static BOOL sqrtf_validate( float *x )
     return TRUE;
 }
 
-float CDECL sse2_sqrtf(float);
-__ASM_GLOBAL_FUNC( sse2_sqrtf,
-        "sqrtss %xmm0, %xmm0\n\t"
-        "ret" )
+#ifdef __arm64ec__
+static float __attribute__((naked)) CDECL asm_sqrtf(float x)
+{
+    asm( "fsqrt s0,s0; ret" );
+}
+#elif defined __aarch64__
+float CDECL asm_sqrtf(float);
+__ASM_GLOBAL_FUNC( asm_sqrtf, "fsqrt s0,s0; ret" )
+#elif defined __arm__
+float CDECL asm_sqrtf(float);
+__ASM_GLOBAL_FUNC( asm_sqrtf, "vsqrt s0,s0; bx lr" )
+#elif defined __x86_64__
+float CDECL asm_sqrtf(float);
+__ASM_GLOBAL_FUNC( asm_sqrtf, "sqrtss %xmm0, %xmm0; ret" )
+#endif
 #endif
 
 /*********************************************************************
@@ -299,11 +308,11 @@ __ASM_GLOBAL_FUNC( sse2_sqrtf,
  */
 float CDECL MSVCRT_sqrtf( float x )
 {
-#ifdef __x86_64__
+#ifndef __i386__
     if (!sqrtf_validate(&x))
         return x;
 
-    return sse2_sqrtf(x);
+    return asm_sqrtf(x);
 #else
     return sqrtf( x );
 #endif
@@ -392,7 +401,6 @@ double CDECL MSVCRT_exp( double x )
 }
 #endif
 
-#if defined(__x86_64__) || defined(__i386__)
 extern short CDECL _dclass(double x);
 
 static BOOL sqrt_validate( double *x, BOOL update_sw )
@@ -420,15 +428,23 @@ static BOOL sqrt_validate( double *x, BOOL update_sw )
     return TRUE;
 }
 
-double CDECL sse2_sqrt(double);
-__ASM_GLOBAL_FUNC( sse2_sqrt,
-        "sqrtsd %xmm0, %xmm0\n\t"
-        "ret" )
-#endif
-
-#ifdef __i386__
-double CDECL x87_sqrt(double);
-__ASM_GLOBAL_FUNC( x87_sqrt,
+#ifdef __arm64ec__
+static double __attribute__((naked)) CDECL asm_sqrt(double x)
+{
+    asm( "fsqrt d0,d0; ret" );
+}
+#elif defined __aarch64__
+double CDECL asm_sqrt(double);
+__ASM_GLOBAL_FUNC( asm_sqrt, "fsqrt d0,d0; ret" )
+#elif defined __arm__
+double CDECL asm_sqrt(double);
+__ASM_GLOBAL_FUNC( asm_sqrt, "vsqrt d0,d0; bx lr" )
+#elif defined __x86_64__
+double CDECL asm_sqrt(double);
+__ASM_GLOBAL_FUNC( asm_sqrt, "sqrtsd %xmm0, %xmm0; ret" )
+#elif defined __i386__
+double CDECL asm_sqrt(double);
+__ASM_GLOBAL_FUNC( asm_sqrt,
         "fldl 4(%esp)\n\t"
         SET_X87_CW(0xc00)
         "fsqrt\n\t"
@@ -441,19 +457,10 @@ __ASM_GLOBAL_FUNC( x87_sqrt,
  */
 double CDECL MSVCRT_sqrt( double x )
 {
-#ifdef __x86_64__
     if (!sqrt_validate(&x, TRUE))
         return x;
 
-    return sse2_sqrt(x);
-#elif defined( __i386__ )
-    if (!sqrt_validate(&x, TRUE))
-        return x;
-
-    return x87_sqrt(x);
-#else
-    return sqrt( x );
-#endif
+    return asm_sqrt(x);
 }
 
 /*********************************************************************
@@ -2571,7 +2578,7 @@ void __cdecl __libm_sse2_sqrt_precise(void)
         __asm__ __volatile__( "movq %0,%%xmm0" : : "m" (d) );
         return;
     }
-    __asm__ __volatile__( "call " __ASM_NAME( "sse2_sqrt" ) );
+    __asm__ __volatile__( "call " __ASM_NAME( "asm_sqrt" ) );
 }
 #endif  /* __i386__ */
 
