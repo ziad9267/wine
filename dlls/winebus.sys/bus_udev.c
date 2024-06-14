@@ -1602,7 +1602,10 @@ static void udev_add_device(struct udev_device *dev, int fd)
         if (!desc.manufacturer[0]) memcpy(desc.manufacturer, evdev, sizeof(evdev));
 
         if (!desc.product[0] && ioctl(fd, EVIOCGNAME(sizeof(buffer) - 1), buffer) > 0)
+        {
+            if (sscanf(buffer, "Microsoft X-Box 360 pad %u", &desc.input) != 1) desc.input = -1;
             ntdll_umbstowcs(buffer, strlen(buffer) + 1, desc.product, ARRAY_SIZE(desc.product));
+        }
 
         if (!desc.serialnumber[0] && ioctl(fd, EVIOCGUNIQ(sizeof(buffer)), buffer) >= 0)
             ntdll_umbstowcs(buffer, strlen(buffer) + 1, desc.serialnumber, ARRAY_SIZE(desc.serialnumber));
@@ -1615,13 +1618,27 @@ static void udev_add_device(struct udev_device *dev, int fd)
         memcpy(desc.serialnumber, zeros, sizeof(zeros));
     }
 
-    if (is_xbox_gamepad(desc.vid, desc.pid))
+    if (desc.vid == 0x28de && desc.pid == 0x11ff && !strcmp(subsystem, "input"))
+    {
+        TRACE("evdev %s: detected steam input virtual controller\n", debugstr_a(devnode));
         desc.is_gamepad = TRUE;
+        desc.version = 0; /* keep version fixed as 0 so we can hardcode it in ntdll rawinput pipe redirection */
+    }
     else if (is_sdl_ignored_device(desc.vid, desc.pid))
     {
         TRACE("evdev %s: ignoring %s, in SDL ignore list\n", debugstr_a(devnode), debugstr_device_desc(&desc));
         close(fd);
         return;
+    }
+    else if (!strcmp(subsystem, "input"))
+    {
+        TRACE("evdev %s: deferring %s to a different backend\n", debugstr_a(devnode), debugstr_device_desc(&desc));
+        close(fd);
+        return;
+    }
+    else if (is_xbox_gamepad(desc.vid, desc.pid))
+    {
+        desc.is_gamepad = TRUE;
     }
 #ifdef HAS_PROPER_INPUT_HEADER
     else if (!strcmp(subsystem, "input"))
