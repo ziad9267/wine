@@ -2470,7 +2470,8 @@ static NTSTATUS map_view( struct file_view **view_ret, void *base, size_t size,
     int top_down = alloc_type & MEM_TOP_DOWN;
     void *ptr;
     NTSTATUS status;
-    const void *effective_user_space_limit = !is_win64 && wine_allocs_2g_limit ? (void *)0x7fff0000 : user_space_limit;
+    const void *effective_user_space_limit = !is_win64 && wine_allocs_2g_limit ?
+        (void *)0x7fff0000 : min( user_space_limit, host_addr_space_limit);
 
     if (alloc_type & MEM_REPLACE_PLACEHOLDER)
     {
