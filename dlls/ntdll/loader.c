@@ -3238,7 +3238,7 @@ static NTSTATUS load_dll( const WCHAR *load_path, const WCHAR *libname, DWORD fl
     HANDLE mapping = 0;
     SECTION_IMAGE_INFORMATION image_info;
     NTSTATUS nts = STATUS_DLL_NOT_FOUND;
-    ULONG64 prev;
+    void *prev;
 
     TRACE( "looking for %s in %s\n", debugstr_w(libname), debugstr_w(load_path) );
 
@@ -3264,16 +3264,8 @@ static NTSTATUS load_dll( const WCHAR *load_path, const WCHAR *libname, DWORD fl
 
     if (nts && nts != STATUS_INVALID_IMAGE_NOT_MZ) goto done;
 
-    if (NtCurrentTeb64())
-    {
-        prev = NtCurrentTeb64()->Tib.ArbitraryUserPointer;
-        NtCurrentTeb64()->Tib.ArbitraryUserPointer = (ULONG_PTR)(nt_name.Buffer + 4);
-    }
-    else
-    {
-        prev = (ULONG_PTR)NtCurrentTeb()->Tib.ArbitraryUserPointer;
-        NtCurrentTeb()->Tib.ArbitraryUserPointer = nt_name.Buffer + 4;
-    }
+    prev = NtCurrentTeb()->Tib.ArbitraryUserPointer;
+    NtCurrentTeb()->Tib.ArbitraryUserPointer = nt_name.Buffer + 4;
 
     switch (nts)
     {
@@ -3286,10 +3278,7 @@ static NTSTATUS load_dll( const WCHAR *load_path, const WCHAR *libname, DWORD fl
         break;
     }
 
-    if (NtCurrentTeb64())
-        NtCurrentTeb64()->Tib.ArbitraryUserPointer = prev;
-    else
-        NtCurrentTeb()->Tib.ArbitraryUserPointer = (void *)(ULONG_PTR)prev;
+    NtCurrentTeb()->Tib.ArbitraryUserPointer = prev;
 
 done:
     if (nts == STATUS_SUCCESS)
