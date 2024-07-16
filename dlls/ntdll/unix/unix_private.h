@@ -150,6 +150,7 @@ extern void *pKiRaiseUserExceptionDispatcher;
 extern void *pKiUserExceptionDispatcher;
 extern void *pKiUserApcDispatcher;
 extern void *pKiUserCallbackDispatcher;
+extern void *pKiUserEmulationDispatcher;
 extern void *pLdrInitializeThunk;
 extern void *pRtlUserThreadStart;
 extern void *p__wine_ctrl_routine;
@@ -440,6 +441,13 @@ static inline BOOL is_inside_syscall_stack_guard( const char *stack_ptr )
     const char *kernel_stack = ntdll_get_thread_data()->kernel_stack;
 
     return (stack_ptr >= kernel_stack && stack_ptr < kernel_stack + kernel_stack_guard_size);
+}
+
+static inline BOOL is_ec_code( ULONG_PTR ptr )
+{
+    const UINT64 *map = (const UINT64 *)peb->EcCodeBitMap;
+    ULONG_PTR page = ptr / page_size;
+    return (map[page / 64] >> (page & 63)) & 1;
 }
 
 static inline void mutex_lock( pthread_mutex_t *mutex )
