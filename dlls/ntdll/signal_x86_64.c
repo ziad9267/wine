@@ -726,6 +726,7 @@ void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec
                 rec->ExceptionFlags &= ~EXCEPTION_COLLIDED_UNWIND;
                 break;
             case ExceptionCollidedUnwind:
+                context->ContextFlags &= ~0x40; /* clear xstate flag */
                 new_context = *context;
                 RtlVirtualUnwind( UNW_FLAG_NHANDLER, dispatch.ImageBase,
                         dispatch.ControlPc, dispatch.FunctionEntry,
@@ -756,6 +757,7 @@ void WINAPI RtlUnwindEx( PVOID end_frame, PVOID target_ip, EXCEPTION_RECORD *rec
                     rec->ExceptionFlags &= ~EXCEPTION_COLLIDED_UNWIND;
                     break;
                 case ExceptionCollidedUnwind:
+                    context->ContextFlags &= ~0x40; /* clear xstate flag */
                     new_context = *context;
                     RtlVirtualUnwind( UNW_FLAG_NHANDLER, dispatch.ImageBase,
                                       dispatch.ControlPc, dispatch.FunctionEntry,
