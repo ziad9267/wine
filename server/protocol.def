@@ -972,6 +972,12 @@ struct cpu_topology_override
     unsigned char host_cpu_id[64];
 };
 
+struct directory_file_entry
+{
+    data_size_t name_len;
+    /* VARARG(name,unicode_str,name_len); */
+};
+
 struct shared_cursor
 {
     int                  x;                /* cursor position */
@@ -3623,6 +3629,13 @@ struct handle_info
     VARARG(entries,directory_entries);
 @END
 
+@REQ(query_directory_file)
+    obj_handle_t   handle;
+    unsigned int   restart_scan;
+@REPLY
+    data_size_t    total_len;          /* total length needed for strings */
+    VARARG(entries,directory_file_entries);
+@END
 
 /* Create a symbolic link object */
 @REQ(create_symlink)
