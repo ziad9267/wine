@@ -44,7 +44,7 @@ static void     (WINAPI *pBTCpu64FlushInstructionCache)(const void*,SIZE_T);
 static BOOLEAN  (WINAPI *pBTCpu64IsProcessorFeaturePresent)(UINT);
 static void     (WINAPI *pBTCpu64NotifyMemoryDirty)(void*,SIZE_T);
 static void     (WINAPI *pBTCpu64NotifyReadFile)(HANDLE,void*,SIZE_T,BOOL,NTSTATUS);
-static void     (WINAPI *pBeginSimulation)(void);
+static void     (WINAPI *pBeginSimulation)(CONTEXT*);
 static void     (WINAPI *pFlushInstructionCacheHeavy)(const void*,SIZE_T);
 static NTSTATUS (WINAPI *pNotifyMapViewOfSection)(void*,void*,void*,SIZE_T,ULONG,ULONG);
 static void     (WINAPI *pNotifyMemoryAlloc)(void*,SIZE_T,ULONG,ULONG,BOOL,NTSTATUS);
@@ -1037,8 +1037,9 @@ NTSTATUS call_seh_handlers( EXCEPTION_RECORD *rec, CONTEXT *orig_context )
  */
 void dispatch_emulation( ARM64_NT_CONTEXT *arm_ctx )
 {
-    context_arm_to_x64( get_arm64ec_cpu_area()->ContextAmd64, arm_ctx );
-    pBeginSimulation();
+    ARM64EC_NT_CONTEXT *context = get_arm64ec_cpu_area()->ContextAmd64;
+    context_arm_to_x64( context, arm_ctx );
+    pBeginSimulation( &context->AMD64_Context );
 }
 __ASM_GLOBAL_FUNC( "#KiUserEmulationDispatcher",
                    ".seh_context\n\t"
