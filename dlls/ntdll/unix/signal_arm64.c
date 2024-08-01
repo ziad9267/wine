@@ -128,12 +128,13 @@ static DWORD64 get_fault_esr( ucontext_t *sigcontext )
 struct exc_stack_layout
 {
     CONTEXT              context;        /* 000 */
-    EXCEPTION_RECORD     rec;            /* 390 */
-    ULONG64              align;          /* 428 */
-    ULONG64              redzone[2];     /* 430 */
+    ULONG64              pad[4];         /* 390 */
+    EXCEPTION_RECORD     rec;            /* 3b0 */
+    ULONG64              align;          /* 448 */
+    ULONG64              redzone[2];     /* 450 */
 };
-C_ASSERT( offsetof(struct exc_stack_layout, rec) == 0x390 );
-C_ASSERT( sizeof(struct exc_stack_layout) == 0x440 );
+C_ASSERT( offsetof(struct exc_stack_layout, rec) == 0x3b0 );
+C_ASSERT( sizeof(struct exc_stack_layout) == 0x460 );
 
 /* stack layout when calling KiUserApcDispatcher */
 struct apc_stack_layout

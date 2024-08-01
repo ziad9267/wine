@@ -1061,7 +1061,7 @@ static NTSTATUS __attribute__((used)) dispatch_exception_arm64ec( EXCEPTION_RECO
 __ASM_GLOBAL_FUNC( "#KiUserExceptionDispatcher",
                    ".seh_context\n\t"
                    ".seh_endprologue\n\t"
-                   "add x0, sp, #0x390\n\t"       /* rec (context + 1) */
+                   "add x0, sp, #0x3b0\n\t"       /* rec */
                    "mov x1, sp\n\t"               /* context */
                    "bl \"#dispatch_exception_arm64ec\"\n\t"
                    "brk #1" )
