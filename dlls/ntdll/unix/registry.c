@@ -72,6 +72,39 @@ NTSTATUS open_hkcu_key( const char *path, HANDLE *key )
     return NtCreateKey( key, KEY_ALL_ACCESS, &attr, 0, NULL, 0, NULL );
 }
 
+NTSTATUS create_key_recursive( HANDLE *key, ACCESS_MASK access, const OBJECT_ATTRIBUTES *attr,
+                               ULONG index, const UNICODE_STRING *class, ULONG options, ULONG *dispos )
+{
+    NTSTATUS status;
+    HANDLE own_key;
+    OBJECT_ATTRIBUTES own_attr;
+    UNICODE_STRING own_name;
+    DWORD len;
+
+    status = NtCreateKey( key, access, attr, index, class, options, dispos );
+    if (!status || status != STATUS_OBJECT_NAME_NOT_FOUND) return status;
+
+    own_attr = *attr;
+    own_attr.ObjectName = &own_name;
+    own_name = *attr->ObjectName;
+    len = own_name.Length / sizeof(WCHAR);
+
+    while (len && own_name.Buffer[len - 1] != '\\') len--;
+    if (!len--) return STATUS_OBJECT_PATH_INVALID;
+
+    own_name.Length = len * sizeof(WCHAR);
+    status = create_key_recursive( &own_key, access, &own_attr, index, class, options & ~REG_OPTION_CREATE_LINK, dispos );
+    if (status) return status;
+
+    own_attr.RootDirectory = own_key;
+    own_name.Buffer += len + 1;
+    own_name.Length = attr->ObjectName->Length - own_name.Length - sizeof(WCHAR);
+
+    status = NtCreateKey( key, access, &own_attr, index, class, options, dispos );
+    NtClose(own_key);
+    return status;
+}
+
 /* dump a Unicode string with proper escaping */
 int dump_strW( const WCHAR *str, data_size_t len, FILE *f, const char escape[2] )
 {
