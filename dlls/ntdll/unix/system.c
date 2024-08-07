@@ -1476,6 +1476,91 @@ static NTSTATUS create_logical_proc_info(void)
 }
 #endif
 
+#ifdef __aarch64__
+#ifdef linux
+static NTSTATUS fill_arm64_id_reg_keys(void)
+{
+    static const char midr_el1_path[] = "/sys/devices/system/cpu/cpu%u/regs/identification/midr_el1";
+    static const char processor_key[] = "\\Registry\\Machine\\Hardware\\Description\\System\\CentralProcessor\\%u";
+    static const char reg_value_name[] = "CP %04X";
+    NTSTATUS status = STATUS_SUCCESS;
+    OBJECT_ATTRIBUTES attr;
+    UNICODE_STRING name;
+    WCHAR bufferW[256];
+    char buffer[256];
+    unsigned int i;
+
+    InitializeObjectAttributes( &attr, &name, OBJ_CASE_INSENSITIVE, 0, NULL );
+    for (i = 0; i < peb->NumberOfProcessors; i++)
+    {
+        unsigned long long value;
+        HANDLE key;
+        FILE *fp;
+
+        snprintf( buffer, sizeof(buffer), processor_key, i );
+        ascii_to_unicode( bufferW, buffer, strlen(buffer) + 1 );
+        init_unicode_string( &name, bufferW );
+        if ((status = create_key_recursive( &key, KEY_ALL_ACCESS, &attr, 0, NULL, REG_OPTION_VOLATILE, NULL )))
+            return status;
+
+        /* MIDR_EL1 can vary across cores, so read it from sysfs. */
+        snprintf( buffer, sizeof(buffer), midr_el1_path, i );
+        if ((fp = fopen( buffer, "r" )))
+        {
+            fscanf( fp, "%llx", &value );
+            fclose( fp );
+            snprintf( buffer, sizeof(buffer), reg_value_name, 0x4000 );
+            ascii_to_unicode( bufferW, buffer, strlen(buffer) + 1 );
+            init_unicode_string( &name, bufferW );
+            NtSetValueKey( key, &name, 0, REG_QWORD, &value, sizeof(value) );
+        }
+
+#define STR(a) #a
+#define READ_ID_REG(reg_id) \
+    snprintf( buffer, sizeof(buffer), reg_value_name, reg_id ); \
+    ascii_to_unicode( bufferW, buffer, strlen(buffer) + 1 ); \
+    init_unicode_string( &name, bufferW ); \
+    /* mrs x0, #reg_id */ \
+    __asm__ __volatile__( ".inst " STR(0xd5300000 | reg_id << 5) "\n\t" \
+                          "mov %0, x0" : "=r"(value) :: "x0" ); \
+    NtSetValueKey( key, &name, 0, REG_QWORD, &value, sizeof(UINT64) )
+
+        /* Linux traps reads to these ID registers and emulates them. They do not vary across cores,
+         * if the kernel doesn't support a specific ID register it will read as zero. */
+        READ_ID_REG( 0x4020 ); /* ID_AA64PFR0_EL1 */
+        READ_ID_REG( 0x4021 ); /* ID_AA64PFR1_EL1 */
+        READ_ID_REG( 0x4024 ); /* ID_AA64ZFR0_EL1 */
+        READ_ID_REG( 0x4025 ); /* ID_AA64SMFR0_EL1 */
+        READ_ID_REG( 0x4028 ); /* ID_AA64DFR0_EL1 */
+        READ_ID_REG( 0x4029 ); /* ID_AA64DFR1_EL1 */
+        READ_ID_REG( 0x402C ); /* ID_AA64AFR0_EL1 */
+        READ_ID_REG( 0x402D ); /* ID_AA64AFR1_EL1 */
+        READ_ID_REG( 0x4030 ); /* ID_AA64ISAR0_EL1 */
+        READ_ID_REG( 0x4031 ); /* ID_AA64ISAR1_EL1 */
+        READ_ID_REG( 0x4032 ); /* ID_AA64ISAR2_EL1 */
+        READ_ID_REG( 0x4038 ); /* ID_AA64MMFR0_EL1 */
+        READ_ID_REG( 0x4039 ); /* ID_AA64MMFR1_EL1 */
+        READ_ID_REG( 0x403A ); /* ID_AA64MMFR2_EL1 */
+        READ_ID_REG( 0x5801 ); /* CTR_EL0 */
+        /* Windows also creates keys for SCTLR_EL1, ACTLR_EL1, TTBR0_EL1 and MAIR_EL1, but these are
+         * inaccessible under linux so leave them unpopulated. */
+
+#undef READ_ID_REG
+#undef STR
+        NtClose( key );
+    }
+
+    return status;
+}
+#else
+static void fill_arm64_id_reg_keys(void)
+{
+    FIXME("stub\n");
+    return STATUS_NOT_IMPLEMENTED;
+}
+#endif
+#endif
+
 /******************************************************************
  *		init_cpu_info
  *
@@ -1537,6 +1622,11 @@ void init_cpu_info(void)
         logical_proc_info_ex = realloc( logical_proc_info_ex, logical_proc_info_ex_size );
         logical_proc_info_ex_alloc_size = logical_proc_info_ex_size;
     }
+
+#ifdef __aarch64__
+    if ((status = fill_arm64_id_reg_keys()))
+        ERR( "Failed to populate ARM64 ID register registry keys, status %#x.\n", status );
+#endif
 }
 
 static NTSTATUS create_cpuset_info(SYSTEM_CPU_SET_INFORMATION *info)
