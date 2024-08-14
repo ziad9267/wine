@@ -3253,13 +3253,13 @@ static void output_source_one_arch( struct makefile *make, struct incl_file *sou
             if (!unix_lib_supported && make->module && is_crt_module( make->module ))
                 output_filename( "-fno-builtin" );
         }
+        output_filenames( cpp_flags );
     }
     else
     {
         if (make->module && is_crt_module( make->module )) output_filename( "-fno-builtin" );
     }
 
-    output_filenames( cpp_flags );
     output_filename( var_cflags );
     output( "\n" );
 
