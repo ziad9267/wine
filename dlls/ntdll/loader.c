@@ -1141,6 +1141,14 @@ static BOOL import_dll( HMODULE module, const IMAGE_IMPORT_DESCRIPTOR *descr, LP
         return TRUE;
     }
 
+    if ((!strcmp(name, "tier0_s64.dll") || !strcmp(name, "vstdlib_s64.dll")) && current_modref->ldr.BaseDllName.Buffer
+        && (!wcscmp(current_modref->ldr.BaseDllName.Buffer, L"steamclient64.dll")
+            || !wcscmp(current_modref->ldr.BaseDllName.Buffer, L"gameoverlayrenderer64.dll")))
+    {
+        TRACE("%s -> ntdll.\n", name);
+        name = "ntdll.dll";
+    }
+
     status = build_import_name( buffer, name, len );
     if (!status) status = load_dll( load_path, buffer, 0, &wmImp, system );
 
@@ -2313,6 +2321,11 @@ static NTSTATUS build_module( LPCWSTR load_path, const UNICODE_STRING *nt_name, 
             NtClose( file );
             TRACE( "steamclient ImageBase %#Ix.\n", nt->OptionalHeader.ImageBase );
             NtProtectVirtualMemory( NtCurrentProcess(), &addr, &size, protect_old, &protect_old );
+        }
+        else
+        {
+            fixup_imports( wm, load_path );
+            wm->ldr.Flags |= LDR_DONT_RESOLVE_REFS;
         }
     }
 
