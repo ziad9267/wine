@@ -42,7 +42,7 @@ struct asyncdataloader
         } resource;
     } u;
     void *data;
-    SIZE_T size;
+    DWORD size;
 };
 
 static inline struct asyncdataloader *impl_from_ID3DX11DataLoader(ID3DX11DataLoader *iface)
@@ -88,35 +88,15 @@ static const ID3DX11DataLoaderVtbl memorydataloadervtbl =
 static HRESULT WINAPI filedataloader_Load(ID3DX11DataLoader *iface)
 {
     struct asyncdataloader *loader = impl_from_ID3DX11DataLoader(iface);
-    DWORD size, read_len;
-    HANDLE file;
     void *data;
-    BOOL ret;
+    DWORD size;
+    HRESULT hr;
 
     TRACE("iface %p.\n", iface);
 
     /* Always buffer file contents, even if Load() was already called. */
-    file = CreateFileW(loader->u.file.path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
-            NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (file == INVALID_HANDLE_VALUE)
-        return D3D11_ERROR_FILE_NOT_FOUND;
-
-    size = GetFileSize(file, NULL);
-    data = malloc(size);
-    if (!data)
-    {
-        CloseHandle(file);
-        return E_OUTOFMEMORY;
-    }
-
-    ret = ReadFile(file, data, size, &read_len, NULL);
-    CloseHandle(file);
-    if (!ret)
-    {
-        ERR("Failed to read file contents.\n");
-        free(data);
-        return E_FAIL;
-    }
+    if (FAILED((hr = load_file(loader->u.file.path, &data, &size))))
+        return hr;
 
     free(loader->data);
     loader->data = data;

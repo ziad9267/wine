@@ -18,7 +18,6 @@
 
 #include "../d3dx9_36/d3dx_helpers.h"
 
-extern HRESULT load_file(const WCHAR *path, void **data, DWORD *size);
 extern HRESULT load_resourceA(HMODULE module, const char *resource,
         void **data, DWORD *size);
 extern HRESULT load_resourceW(HMODULE module, const WCHAR *resource,

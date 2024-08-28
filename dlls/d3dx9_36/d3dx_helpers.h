@@ -29,6 +29,7 @@
 #include "d3dx9.h"
 
 #define D3DX_ERROR_INVALID_DATA D3DXERR_INVALIDDATA;
+#define D3DX_HELPER_ERR_FILE_NOT_FOUND ERROR_FILE_NOT_FOUND
 
 #define ID3DXBlob                              ID3DXBuffer
 #define d3dx_create_blob(size, blob)           D3DXCreateBuffer(size, blob)
@@ -42,6 +43,8 @@
 
 #define D3DERR_INVALIDCALL      0x8876086c
 #define D3DX_ERROR_INVALID_DATA D3DX10_ERR_INVALID_DATA
+
+#define D3DX_HELPER_ERR_FILE_NOT_FOUND D3D10_ERROR_FILE_NOT_FOUND
 
 #define D3DX_DEFAULT                  D3DX10_DEFAULT
 
@@ -77,6 +80,8 @@ DXGI_FORMAT dxgi_format_from_dxt10_dds_d3dx_pixel_format_id(enum d3dx_pixel_form
 
 #define D3DERR_INVALIDCALL      0x8876086c
 #define D3DX_ERROR_INVALID_DATA D3DX11_ERR_INVALID_DATA
+
+#define D3DX_HELPER_ERR_FILE_NOT_FOUND D3D11_ERROR_FILE_NOT_FOUND
 
 #define D3DX_DEFAULT                  D3DX11_DEFAULT
 
@@ -542,4 +547,6 @@ unsigned short float_32_to_16(const float in);
 float float_16_to_32(const unsigned short in);
 /* debug helpers */
 const char *debug_d3dx_image_file_format(enum d3dx_image_file_format format);
+
+HRESULT load_file(const WCHAR *path, void **data, DWORD *size);
 #endif /* __WINE_D3DX_HELPERS_H */
