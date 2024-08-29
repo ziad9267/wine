@@ -143,63 +143,6 @@ static const ID3DX10DataLoaderVtbl filedataloadervtbl =
     filedataloader_Destroy
 };
 
-static HRESULT load_resource_initA(HMODULE module, const char *resource, HRSRC *rsrc)
-{
-    if (!(*rsrc = FindResourceA(module, resource, (const char *)RT_RCDATA)))
-        *rsrc = FindResourceA(module, resource, (const char *)RT_BITMAP);
-    if (!*rsrc)
-    {
-        WARN("Failed to find resource.\n");
-        return D3DX10_ERR_INVALID_DATA;
-    }
-    return S_OK;
-}
-
-static HRESULT load_resource_initW(HMODULE module, const WCHAR *resource, HRSRC *rsrc)
-{
-    if (!(*rsrc = FindResourceW(module, resource, (const WCHAR *)RT_RCDATA)))
-        *rsrc = FindResourceW(module, resource, (const WCHAR *)RT_BITMAP);
-    if (!*rsrc)
-    {
-        WARN("Failed to find resource.\n");
-        return D3DX10_ERR_INVALID_DATA;
-    }
-    return S_OK;
-}
-
-static HRESULT load_resource(HMODULE module, HRSRC rsrc, void **data, DWORD *size)
-{
-    HGLOBAL hglobal;
-
-    if (!(*size = SizeofResource(module, rsrc)))
-        return D3DX10_ERR_INVALID_DATA;
-    if (!(hglobal = LoadResource(module, rsrc)))
-        return D3DX10_ERR_INVALID_DATA;
-    if (!(*data = LockResource(hglobal)))
-        return D3DX10_ERR_INVALID_DATA;
-    return S_OK;
-}
-
-HRESULT load_resourceA(HMODULE module, const char *resource, void **data, DWORD *size)
-{
-    HRESULT hr;
-    HRSRC rsrc;
-
-    if (FAILED((hr = load_resource_initA(module, resource, &rsrc))))
-        return hr;
-    return load_resource(module, rsrc, data, size);
-}
-
-HRESULT load_resourceW(HMODULE module, const WCHAR *resource, void **data, DWORD *size)
-{
-    HRESULT hr;
-    HRSRC rsrc;
-
-    if ((FAILED(hr = load_resource_initW(module, resource, &rsrc))))
-        return hr;
-    return load_resource(module, rsrc, data, size);
-}
-
 static HRESULT WINAPI resourcedataloader_Load(ID3DX10DataLoader *iface)
 {
     struct asyncdataloader *loader = impl_from_ID3DX10DataLoader(iface);

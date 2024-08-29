@@ -549,4 +549,9 @@ float float_16_to_32(const unsigned short in);
 const char *debug_d3dx_image_file_format(enum d3dx_image_file_format format);
 
 HRESULT load_file(const WCHAR *path, void **data, DWORD *size);
+HRESULT load_resource(HMODULE module, HRSRC rsrc, void **data, DWORD *size);
+HRESULT load_resourceW(HMODULE module, const WCHAR *resource, void **data, DWORD *size);
+HRESULT load_resourceA(HMODULE module, const char *resource, void **data, DWORD *size);
+HRESULT load_resource_initA(HMODULE module, const char *resource, HRSRC *rsrc);
+HRESULT load_resource_initW(HMODULE module, const WCHAR *resource, HRSRC *rsrc);
 #endif /* __WINE_D3DX_HELPERS_H */

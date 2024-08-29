@@ -18,11 +18,6 @@
 
 #include "../d3dx9_36/d3dx_helpers.h"
 
-extern HRESULT load_resourceA(HMODULE module, const char *resource,
-        void **data, DWORD *size);
-extern HRESULT load_resourceW(HMODULE module, const WCHAR *resource,
-        void **data, DWORD *size);
-
 extern HRESULT get_image_info(const void *data, SIZE_T size, D3DX10_IMAGE_INFO *img_info);
 
 extern void init_load_info(const D3DX10_IMAGE_LOAD_INFO *load_info,
