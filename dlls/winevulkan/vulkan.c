@@ -100,6 +100,24 @@ static uint32_t wine_vk_count_struct_(void *s, VkStructureType t)
     return result;
 }
 
+#define wine_vk_find_unlink_struct(s, t) wine_vk_find_unlink_struct_((void *)s, VK_STRUCTURE_TYPE_##t)
+static void *wine_vk_find_unlink_struct_(void *s, VkStructureType t)
+{
+    VkBaseInStructure *prev = s;
+    VkBaseInStructure *header;
+
+    for (header = (VkBaseInStructure *)prev->pNext; header; prev = header, header = (VkBaseInStructure *)header->pNext)
+    {
+        if (header->sType == t) {
+            prev->pNext = header->pNext;
+            header->pNext = NULL;
+            return header;
+        }
+    }
+
+    return NULL;
+}
+
 static const struct vulkan_funcs *vk_funcs;
 
 #define WINE_VK_ADD_DISPATCHABLE_MAPPING(instance, client_handle, host_handle, object) \
@@ -3145,11 +3163,9 @@ static VkResult release_keyed_mutex(struct wine_device *device, struct wine_devi
 }
 
 VkResult wine_vkAllocateMemory(VkDevice handle, const VkMemoryAllocateInfo *alloc_info,
-                               const VkAllocationCallbacks *allocator, VkDeviceMemory *ret,
-                               void *win_pAllocateInfo)
+                               const VkAllocationCallbacks *allocator, VkDeviceMemory *ret)
 {
     struct wine_device *device = wine_device_from_handle(handle);
-    const VkMemoryAllocateInfo *win_alloc_info = win_pAllocateInfo;
     struct wine_device_memory *memory;
     VkMemoryAllocateInfo info = *alloc_info;
     VkImportMemoryHostPointerInfoEXT host_pointer_info;
@@ -3172,8 +3188,8 @@ VkResult wine_vkAllocateMemory(VkDevice handle, const VkMemoryAllocateInfo *allo
     fd_import_info.pNext = NULL;
 
     /* find and process handle import/export info and grab it */
-    handle_import_info = wine_vk_find_struct(win_alloc_info, IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR);
-    handle_export_info = wine_vk_find_struct(win_alloc_info, EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR);
+    handle_import_info = wine_vk_find_unlink_struct(&info, IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR);
+    handle_export_info = wine_vk_find_unlink_struct(&info, EXPORT_MEMORY_WIN32_HANDLE_INFO_KHR);
     if (handle_export_info && handle_export_info->pAttributes && handle_export_info->pAttributes->lpSecurityDescriptor)
         FIXME("Support for custom security descriptor not implemented.\n");
 
