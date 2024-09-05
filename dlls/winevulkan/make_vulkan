@@ -197,7 +197,7 @@ FUNCTION_OVERRIDES = {
     "vkGetPhysicalDeviceExternalSemaphorePropertiesKHR" : {"dispatch" : True},
 
     # VK_KHR_external_semaphore_win32
-    "vkCreateSemaphore" : {"dispatch" : True, "extra_param" : "pCreateInfo"},
+    "vkCreateSemaphore" : {"dispatch" : True },
     "vkGetSemaphoreWin32HandleKHR" : {"dispatch" : True},
     "vkImportSemaphoreWin32HandleKHR" : {"dispatch" : True},
 
@@ -356,7 +356,7 @@ STRUCT_CHAIN_CONVERSIONS = {
     "VkMemoryAllocateInfo": [],
     "VkPhysicalDeviceImageFormatInfo2": [],
     "VkPhysicalDeviceExternalSemaphoreInfo": [],
-    "VkSemaphoreCreateInfo": ["VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR"],
+    "VkSemaphoreCreateInfo": [],
     "VkSubmitInfo": [],
     "VkSubmitInfo2": [],
     "VkBindSparseInfo" : [],

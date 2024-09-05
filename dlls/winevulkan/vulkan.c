@@ -4759,11 +4759,11 @@ static void add_sem_signal_op(struct wine_device *device, struct wine_semaphore 
 }
 
 VkResult wine_vkCreateSemaphore(VkDevice device_handle, const VkSemaphoreCreateInfo *create_info,
-        const VkAllocationCallbacks *allocator, VkSemaphore *semaphore, void *win_create_info)
+        const VkAllocationCallbacks *allocator, VkSemaphore *semaphore)
 {
     struct wine_device *device = wine_device_from_handle(device_handle);
 
-    VkExportSemaphoreWin32HandleInfoKHR *export_handle_info = wine_vk_find_struct(win_create_info, EXPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR);
+    VkExportSemaphoreWin32HandleInfoKHR *export_handle_info = wine_vk_find_unlink_struct(create_info, EXPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR);
     VkExportSemaphoreCreateInfo *export_semaphore_info, timeline_export_info;
     VkSemaphoreCreateInfo create_info_dup = *create_info;
     VkSemaphoreTypeCreateInfo *found_type_info, type_info;
