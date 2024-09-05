@@ -2200,7 +2200,9 @@ static void start_main_thread(void)
     init_cpu_info();
     init_files();
 
+#if defined(__x86_64__) || defined(__i386__)
     set_thread_teb( teb );
+#endif
 
     init_startup_info();
     *(ULONG_PTR *)&peb->CloudFileFlags = get_image_address();
