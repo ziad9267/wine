@@ -136,7 +136,7 @@ extern void murmur3_x86_128_state_reset(struct murmur3_x86_128_state *state);
 extern bool murmur3_x86_128_full(void *data_src, data_read_callback read_callback,
         struct murmur3_x86_128_state* state, void *out);
 extern bool murmur3_x86_128(void *data_src, data_read_callback read_callback, uint32_t seed, void *out);
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__aarch64__)
 #define murmur3_128_state       murmur3_x64_128_state
 #define murmur3_128_state_init  murmur3_x64_128_state_init
 #define murmur3_128_state_reset murmur3_x64_128_state_reset
