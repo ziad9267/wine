@@ -126,7 +126,6 @@ UNSUPPORTED_EXTENSIONS = [
 # but not expose to applications (useful for test commits)
 UNEXPOSED_EXTENSIONS = {
     "VK_EXT_map_memory_placed",
-    "VK_KHR_external_memory_win32",
 }
 
 # The Vulkan loader provides entry-points for core functionality and important
