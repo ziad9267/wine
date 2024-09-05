@@ -819,7 +819,7 @@ static int msvcrt_flush_buffer(FILE* file)
 /*********************************************************************
  *		_isatty (MSVCRT.@)
  */
-#ifdef __x86_64__
+#if defined(__x86_64__) && !defined(__arm64ec__)
 int CDECL MSVCRT__isatty(int fd)
 {
     TRACE(":fd (%d)\n",fd);
