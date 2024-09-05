@@ -615,7 +615,7 @@ static VkResult wine_vk_device_convert_create_info(struct wine_phys_dev *phys_de
     static const char *wine_xr_extension_name = "VK_WINE_openxr_device_extensions";
     unsigned int i, append_xr = 0, have_ext_mem32 = 0, have_ext_sem32 = 0, have_keyed_mutex = 0, append_timeline = 1;
     VkBaseOutStructure *header;
-    char **xr_extensions_list;
+    char **xr_extensions_list = NULL;
 
     *dst = *src;
     if ((header = (VkBaseOutStructure *)dst->pNext) && header->sType == VK_STRUCTURE_TYPE_CREATE_INFO_WINE_DEVICE_CALLBACK)
@@ -5332,7 +5332,7 @@ static VkResult process_keyed_mutexes(struct conversion_context *ctx, struct win
     for (i = 0; i < submit_count; ++i)
     {
         ptr = (char *)submits_win + i * submit_size;
-        if (!(keyed_mutex_info = wine_vk_find_struct(ptr, WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR)))
+        if (!(keyed_mutex_info = wine_vk_find_unlink_struct(ptr, WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR)))
         {
             (*signal_counts)[i] = 0;
             continue;
@@ -5364,7 +5364,7 @@ error:
     {
         --i;
         ptr = (char *)submits_win + i * submit_size;
-        if (!(keyed_mutex_info = wine_vk_find_struct(ptr, WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR)))
+        if (!(keyed_mutex_info = wine_vk_find_unlink_struct(ptr, WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR)))
             continue;
         for (j = 0; j < keyed_mutex_info->acquireCount; ++j)
         {
@@ -5389,13 +5389,11 @@ static void duplicate_array_for_unwrapping_copy_size(struct conversion_context *
     *ptr = out;
 }
 
-VkResult wine_vkQueueSubmit(VkQueue queue_handle, uint32_t submit_count, const VkSubmitInfo *submits_orig, VkFence fence,
-        void *submits_win_ptr)
+VkResult wine_vkQueueSubmit(VkQueue queue_handle, uint32_t submit_count, const VkSubmitInfo *submits_orig, VkFence fence)
 {
     struct wine_queue *queue = wine_queue_from_handle(queue_handle);
     struct wine_device *device = queue->device;
     VkTimelineSemaphoreSubmitInfo *timeline_submit_info, ts_info_copy;
-    const VkSubmitInfo *submits_win = submits_win_ptr;
     VkD3D12FenceSubmitInfoKHR *d3d12_submit_info;
     const uint64_t **values;
     struct conversion_context ctx;
@@ -5409,13 +5407,13 @@ VkResult wine_vkQueueSubmit(VkQueue queue_handle, uint32_t submit_count, const V
 
     init_conversion_context(&ctx);
     MEMDUP(&ctx, submits, submits_orig, submit_count);
-    if ((ret = process_keyed_mutexes(&ctx, device, submit_count, submits_win_ptr, sizeof(*submits), &km_counts, &km_infos)))
+    if ((ret = process_keyed_mutexes(&ctx, device, submit_count, submits, sizeof(*submits), &km_counts, &km_infos)))
         return ret;
 
     for (i = 0; i < submit_count; ++i)
     {
         timeline_submit_info = wine_vk_find_struct(&submits[i], TIMELINE_SEMAPHORE_SUBMIT_INFO);
-        d3d12_submit_info = wine_vk_find_struct(&submits_win[i], D3D12_FENCE_SUBMIT_INFO_KHR);
+        d3d12_submit_info = wine_vk_find_unlink_struct(&submits[i], D3D12_FENCE_SUBMIT_INFO_KHR);
         if (d3d12_submit_info && timeline_submit_info)
             WARN("Both TIMELINE_SEMAPHORE_SUBMIT_INFO and D3D12_FENCE_SUBMIT_INFO_KHR specified.\n");
         if (d3d12_submit_info && !timeline_submit_info)
@@ -5493,7 +5491,7 @@ static void duplicate_array_for_unwrapping(struct conversion_context *ctx, void 
 }
 
 static VkResult vk_queue_submit_2(VkQueue queue_handle, uint32_t submit_count, const VkSubmitInfo2 *submits_orig,
-        VkFence fence, bool khr, void *submits_win_ptr)
+        VkFence fence, bool khr)
 {
     struct wine_queue *queue = wine_queue_from_handle(queue_handle);
     struct wine_device *device = queue->device;
@@ -5508,7 +5506,7 @@ static VkResult vk_queue_submit_2(VkQueue queue_handle, uint32_t submit_count, c
 
     init_conversion_context(&ctx);
     MEMDUP(&ctx, submits, submits_orig, submit_count);
-    if ((ret = process_keyed_mutexes(&ctx, device, submit_count, submits_win_ptr, sizeof(*submits), &km_counts, &km_infos)))
+    if ((ret = process_keyed_mutexes(&ctx, device, submit_count, submits, sizeof(*submits), &km_counts, &km_infos)))
         return ret;
     for (i = 0; i < submit_count; ++i)
     {
@@ -5547,16 +5545,14 @@ static VkResult vk_queue_submit_2(VkQueue queue_handle, uint32_t submit_count, c
     return ret;
 }
 
-VkResult wine_vkQueueSubmit2(VkQueue queue, uint32_t submit_count, const VkSubmitInfo2 *submits, VkFence fence,
-        void *submits_win)
+VkResult wine_vkQueueSubmit2(VkQueue queue, uint32_t submit_count, const VkSubmitInfo2 *submits, VkFence fence)
 {
-    return vk_queue_submit_2(queue, submit_count, submits, fence, false, submits_win);
+    return vk_queue_submit_2(queue, submit_count, submits, fence, false);
 }
 
-VkResult wine_vkQueueSubmit2KHR(VkQueue queue, uint32_t submit_count, const VkSubmitInfo2 *submits, VkFence fence,
-        void *submits_win)
+VkResult wine_vkQueueSubmit2KHR(VkQueue queue, uint32_t submit_count, const VkSubmitInfo2 *submits, VkFence fence)
 {
-    return vk_queue_submit_2(queue, submit_count, submits, fence, true, submits_win);
+    return vk_queue_submit_2(queue, submit_count, submits, fence, true);
 }
 
 VkResult wine_vkQueuePresentKHR(VkQueue queue_handle, const VkPresentInfoKHR *present_info)

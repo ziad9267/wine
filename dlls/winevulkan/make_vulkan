@@ -183,8 +183,8 @@ FUNCTION_OVERRIDES = {
     "vkSignalSemaphore" : {"dispatch" : True},
     "vkWaitSemaphores" : {"dispatch" : True},
     "vkQueueBindSparse" : {"dispatch" : True},
-    "vkQueueSubmit" : {"dispatch" : True, "extra_param" : "pSubmits"},
-    "vkQueueSubmit2" : {"dispatch" : True, "extra_param" : "pSubmits"},
+    "vkQueueSubmit" : {"dispatch" : True},
+    "vkQueueSubmit2" : {"dispatch" : True},
     "vkDestroySemaphore" : {"dispatch" : True},
 
     # VK_KHR_external_fence_capabilities
@@ -211,7 +211,7 @@ FUNCTION_OVERRIDES = {
     "vkWaitSemaphoresKHR" : {"dispatch" : True},
 
     # VK_KHR_synchronization2
-    "vkQueueSubmit2KHR" : {"dispatch" : True, "extra_param" : "pSubmits"},
+    "vkQueueSubmit2KHR" : {"dispatch" : True},
 
     # Custom functions
     "wine_vkAcquireKeyedMutex" : {"dispatch": True},
@@ -357,15 +357,12 @@ STRUCT_CHAIN_CONVERSIONS = {
     "VkPhysicalDeviceImageFormatInfo2": [],
     "VkPhysicalDeviceExternalSemaphoreInfo": [],
     "VkSemaphoreCreateInfo": ["VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR"],
-    "VkSubmitInfo": ["VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHR", "VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR"],
-    "VkSubmitInfo2": ["VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR"],
+    "VkSubmitInfo": [],
+    "VkSubmitInfo2": [],
     "VkBindSparseInfo" : [],
 }
 
-STRUCT_COPY = {
-    "VkSubmitInfo",
-    "VkSubmitInfo2",
-};
+STRUCT_COPY = {};
 
 # Some struct members are conditionally ignored and callers are free to leave them uninitialized.
 # We can't deduce that from XML, so we allow expressing it here.
