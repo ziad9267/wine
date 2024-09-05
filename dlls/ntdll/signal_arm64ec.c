@@ -475,6 +475,7 @@ DEFINE_SYSCALL(NtWriteVirtualMemory, (HANDLE process, void *addr, const void *bu
 DEFINE_SYSCALL(NtYieldExecution, (void))
 DEFINE_SYSCALL(wine_nt_to_unix_file_name, (const OBJECT_ATTRIBUTES *attr, char *nameA, ULONG *size, UINT disposition))
 DEFINE_SYSCALL(wine_unix_to_nt_file_name, (const char *name, WCHAR *buffer, ULONG *size))
+DEFINE_SYSCALL_(unsigned int, __wine_dbg_ftrace, (char *str, unsigned int str_size, unsigned int ctx))
 
 NTSTATUS SYSCALL_API NtAllocateVirtualMemory( HANDLE process, PVOID *ret, ULONG_PTR zero_bits,
                                               SIZE_T *size_ptr, ULONG type, ULONG protect )
