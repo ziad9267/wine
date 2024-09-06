@@ -158,6 +158,8 @@ void fpu_to_fpux( XMM_SAVE_AREA32 *fpux, const I386_FLOATING_SAVE_AREA *fpu )
 }
 
 
+#if defined(__i386__) || defined(__x86_64__)
+
 /***********************************************************************
  *           validate_context_xstate
  */
@@ -178,6 +180,7 @@ BOOL validate_context_xstate( CONTEXT *context )
     return TRUE;
 }
 
+#endif
 
 /***********************************************************************
  *           get_server_context_flags
