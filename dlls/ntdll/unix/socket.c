@@ -1137,7 +1137,7 @@ static void sock_save_icmp_id( struct async_send_ioctl *async )
 }
 
 static NTSTATUS sock_send( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, void *apc_user,
-                           IO_STATUS_BLOCK *io, int fd, struct async_send_ioctl *async, int force_async )
+                           IO_STATUS_BLOCK *io, int fd, struct async_send_ioctl *async, unsigned int server_flags )
 {
     HANDLE wait_handle;
     BOOL nonblocking;
@@ -1146,7 +1146,7 @@ static NTSTATUS sock_send( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, voi
 
     SERVER_START_REQ( send_socket )
     {
-        req->force_async = force_async;
+        req->flags = server_flags;
         req->async  = server_async( handle, &async->io, event, apc, apc_user, iosb_client_ptr(io) );
         status = wine_server_call( req );
         wait_handle = wine_server_ptr_handle( reply->wait );
@@ -1166,7 +1166,7 @@ static NTSTATUS sock_send( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, voi
         status = try_send( fd, async );
         hack_update_status( handle, &status );
 
-        if (status == STATUS_DEVICE_NOT_READY && (force_async || !nonblocking))
+        if (status == STATUS_DEVICE_NOT_READY && ((server_flags & SERVER_SOCKET_IO_FORCE_ASYNC) || !nonblocking))
             status = STATUS_PENDING;
 
         /* If we had a short write and the socket is nonblocking (and we are
@@ -1218,7 +1218,8 @@ static NTSTATUS sock_send( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc, voi
                 rem_async->sent_len = 0;
                 rem_io = (IO_STATUS_BLOCK *)p;
                 p += sizeof(IO_STATUS_BLOCK);
-                status = sock_send( handle, NULL, NULL, NULL, rem_io, fd, rem_async, TRUE );
+                status = sock_send( handle, NULL, NULL, NULL, rem_io, fd, rem_async,
+                                    SERVER_SOCKET_IO_FORCE_ASYNC | SERVER_SOCKET_IO_SYSTEM );
                 if (status == STATUS_PENDING) status = STATUS_SUCCESS;
                 if (!status)
                 {
@@ -1283,7 +1284,7 @@ static NTSTATUS sock_ioctl_send( HANDLE handle, HANDLE event, PIO_APC_ROUTINE ap
     async->iov_cursor = 0;
     async->sent_len = 0;
 
-    return sock_send( handle, event, apc, apc_user, io, fd, async, force_async );
+    return sock_send( handle, event, apc, apc_user, io, fd, async, force_async ? SERVER_SOCKET_IO_FORCE_ASYNC : 0 );
 }
 
 NTSTATUS sock_write( HANDLE handle, int fd, HANDLE event, PIO_APC_ROUTINE apc,
@@ -1305,7 +1306,7 @@ NTSTATUS sock_write( HANDLE handle, int fd, HANDLE event, PIO_APC_ROUTINE apc,
     async->iov_cursor = 0;
     async->sent_len = 0;
 
-    return sock_send( handle, event, apc, apc_user, io, fd, async, 1 );
+    return sock_send( handle, event, apc, apc_user, io, fd, async, SERVER_SOCKET_IO_FORCE_ASYNC );
 }
 
 
@@ -1469,7 +1470,7 @@ static NTSTATUS sock_transmit( HANDLE handle, HANDLE event, PIO_APC_ROUTINE apc,
 
     SERVER_START_REQ( send_socket )
     {
-        req->force_async = 1;
+        req->flags = SERVER_SOCKET_IO_FORCE_ASYNC;
         req->async  = server_async( handle, &async->io, event, apc, apc_user, iosb_client_ptr(io) );
         status = wine_server_call( req );
         wait_handle = wine_server_ptr_handle( reply->wait );
