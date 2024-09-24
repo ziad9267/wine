@@ -66,6 +66,8 @@ extern EXCEPTION_DISPOSITION WINAPI nested_exception_handler( EXCEPTION_RECORD *
                                                               CONTEXT *context, void *dispatch );
 extern void DECLSPEC_NORETURN raise_status( NTSTATUS status, EXCEPTION_RECORD *rec );
 extern LONG WINAPI call_unhandled_exception_filter( PEXCEPTION_POINTERS eptr );
+extern void register_module_exception_directory( void *module );
+extern void unregister_module_exception_directory( void *module );
 extern void WINAPI process_breakpoint(void);
 
 static inline BOOL is_valid_frame( ULONG_PTR frame )
