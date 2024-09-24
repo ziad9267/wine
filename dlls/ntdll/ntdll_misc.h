@@ -75,6 +75,9 @@ static inline BOOL is_valid_frame( ULONG_PTR frame )
             (void *)frame <= NtCurrentTeb()->Tib.StackBase);
 }
 
+extern void register_module_exception_directory( void *module );
+extern void unregister_module_exception_directory( void *module );
+
 extern void WINAPI LdrInitializeThunk(CONTEXT*,ULONG_PTR,ULONG_PTR,ULONG_PTR);
 extern void WINAPI KiUserExceptionDispatcher(EXCEPTION_RECORD*,CONTEXT*);
 extern void WINAPI KiUserApcDispatcher(CONTEXT*,ULONG_PTR,ULONG_PTR,ULONG_PTR,PNTAPCFUNC);
