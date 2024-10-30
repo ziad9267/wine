@@ -392,6 +392,259 @@ static void test_D3DXLoadVolumeFromFileInMemory(IDirect3DDevice9 *device)
     IDirect3DVolumeTexture9_Release(volume_texture);
 }
 
+static void set_vec3(D3DXVECTOR3 *v, float x, float y, float z)
+{
+    v->x = x;
+    v->y = y;
+    v->z = z;
+}
+
+static const D3DXVECTOR4 quadrant_color[] = {
+    { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f },
+    { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 1.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f, 1.0f },
+};
+
+static void WINAPI fill_func_volume(D3DXVECTOR4 *value, const D3DXVECTOR3 *texcoord,
+                                   const D3DXVECTOR3 *texelsize, void *data)
+{
+    D3DXVECTOR3 vec = *texcoord;
+    uint32_t idx;
+
+    if (data)
+    {
+        *value = *(D3DXVECTOR4 *)data;
+        return;
+    }
+
+    set_vec3(&vec, (vec.x / texelsize->x) - 0.5f, (vec.y / texelsize->y) - 0.5f, (vec.z / texelsize->z) - 0.5f);
+    if (vec.x < 8.0f)
+        idx = vec.y < 8.0f ? 0 : 2;
+    else
+        idx = vec.y < 8.0f ? 1 : 3;
+    idx += vec.z < 1.0f ? 0 : 4;
+
+    *value = quadrant_color[idx];
+}
+
+static void test_d3dx_save_volume_to_file(IDirect3DDevice9 *device)
+{
+    static const struct
+    {
+        D3DXIMAGE_FILEFORMAT file_format;
+        const char *file_name_a;
+        const WCHAR *file_name_w;
+        D3DFORMAT save_format;
+    } save_files[] = {
+        { D3DXIFF_BMP, "saved_volume_a.bmp", L"saved_volume_w.bmp", D3DFMT_A8R8G8B8 },
+        { D3DXIFF_JPG, "saved_volume_a.jpg", L"saved_volume_w.jpg", D3DFMT_X8R8G8B8 },
+        { D3DXIFF_TGA, "saved_volume_a.tga", L"saved_volume_w.tga", D3DFMT_A8R8G8B8 },
+        { D3DXIFF_PNG, "saved_volume_a.png", L"saved_volume_w.png", D3DFMT_A8R8G8B8 },
+        { D3DXIFF_DIB, "saved_volume_a.dib", L"saved_volume_w.dib", D3DFMT_A8R8G8B8 },
+        { D3DXIFF_DDS, "saved_volume_a.dds", L"saved_volume_w.dds", D3DFMT_A8R8G8B8 },
+    };
+    static const struct dds_pixel_format d3dfmt_a8r8g8b8_pf = { 32, DDS_PF_RGB | DDS_PF_ALPHA, 0, 32,
+                                                                0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000 };
+    struct
+    {
+         DWORD magic;
+         struct dds_header header;
+         BYTE *data;
+    } *dds;
+    static const uint32_t front_expected[] = { 0xffff0000, 0xff00ff00, 0xff0000ff, 0xffffffff };
+    static const uint32_t back_expected[] = { 0xffffffff, 0xff0000ff, 0xffff0000, 0xff00ff00 };
+    static const uint32_t coords[][2] = { { 0, 0 }, { 15, 0 }, { 0, 15 }, { 15, 15 } };
+    const D3DXVECTOR4 clear_val = { 0.0f, 0.0f, 0.0f, 0.0f };
+    IDirect3DVolumeTexture9 *volume_texture;
+    struct volume_readback volume_rb;
+    ID3DXBuffer *buffer = NULL;
+    IDirect3DVolume9 *volume;
+    D3DXIMAGE_INFO info;
+    uint32_t i, j, k;
+    D3DBOX box;
+    HRESULT hr;
+
+    hr = IDirect3DDevice9_CreateVolumeTexture(device, 16, 16, 2, 1, D3DUSAGE_DYNAMIC, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,
+            &volume_texture, NULL);
+    if (FAILED(hr))
+    {
+        skip("Failed to create volume texture.\n");
+        return;
+    }
+
+    hr = D3DXFillVolumeTexture(volume_texture, fill_func_volume, NULL);
+    ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+
+    IDirect3DVolumeTexture9_GetVolumeLevel(volume_texture, 0, &volume);
+
+    set_box(&box, 0, 0, 16, 16, 1, 2);
+    hr = D3DXSaveVolumeToFileInMemory(&buffer, D3DXIFF_DDS, volume, NULL, NULL);
+    todo_wine ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+    if (SUCCEEDED(hr))
+    {
+        dds = ID3DXBuffer_GetBufferPointer(buffer);
+        check_dds_header(&dds->header, DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_DEPTH | DDSD_PIXELFORMAT, 16, 16, 0,
+                2, 0, &d3dfmt_a8r8g8b8_pf, DDSCAPS_TEXTURE | DDSCAPS_ALPHA, DDSCAPS2_VOLUME, FALSE);
+        ID3DXBuffer_Release(buffer);
+    }
+
+    /*
+     * Box only has a depth of 1, saves like a regular surface. E.g no depth
+     * flags/fields set.
+     */
+    set_box(&box, 0, 0, 16, 16, 1, 2);
+    hr = D3DXSaveVolumeToFileInMemory(&buffer, D3DXIFF_DDS, volume, NULL, &box);
+    todo_wine ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+    if (SUCCEEDED(hr))
+    {
+        dds = ID3DXBuffer_GetBufferPointer(buffer);
+        check_dds_header(&dds->header, DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT, 16, 16, 0, 0, 0,
+                &d3dfmt_a8r8g8b8_pf, DDSCAPS_TEXTURE | DDSCAPS_ALPHA, 0, FALSE);
+        ID3DXBuffer_Release(buffer);
+    }
+
+    for (i = 0; i < ARRAY_SIZE(save_files); ++i)
+    {
+        winetest_push_context("Test %u", i);
+
+        /* ASCII string. */
+        for (j = 0; j < 2; ++j)
+        {
+            const uint32_t *expected_colors = !j ? front_expected : back_expected;
+
+            hr = D3DXFillVolumeTexture(volume_texture, fill_func_volume, NULL);
+            ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+
+            hr = D3DXSaveVolumeToFileA(save_files[i].file_name_a, save_files[i].file_format, volume, NULL, !j ? NULL : &box);
+            todo_wine ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+
+            hr = D3DXFillVolumeTexture(volume_texture, fill_func_volume, (void *)&clear_val);
+            ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+
+            memset(&info, 0, sizeof(info));
+            hr = D3DXLoadVolumeFromFileA(volume, NULL, NULL, save_files[i].file_name_a, NULL, D3DX_FILTER_NONE, 0, &info);
+            todo_wine ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+            if (SUCCEEDED(hr))
+            {
+                get_texture_volume_readback(device, volume_texture, 0, &volume_rb);
+                if (save_files[i].file_format == D3DXIFF_DDS)
+                {
+                    check_image_info(&info, 16, 16, !j ? 2 : 1, 1, save_files[i].save_format, !j ? D3DRTYPE_VOLUMETEXTURE : D3DRTYPE_TEXTURE,
+                            D3DXIFF_DDS, TRUE);
+                    for (k = 0; k < ARRAY_SIZE(coords); ++k)
+                        check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 0, expected_colors[k], 4, FALSE);
+                    for (k = 0; k < ARRAY_SIZE(coords); ++k)
+                        check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 1, !j ? back_expected[k] : 0, 4, FALSE);
+                }
+                else
+                {
+                    const D3DXIMAGE_FILEFORMAT iff = save_files[i].file_format == D3DXIFF_DIB ? D3DXIFF_BMP : save_files[i].file_format;
+                    const uint8_t max_diff = iff == D3DXIFF_JPG ? 40 : 0;
+
+                    check_image_info(&info, 16, 16, 1, 1, save_files[i].save_format, D3DRTYPE_TEXTURE, iff, FALSE);
+                    for (k = 0; k < ARRAY_SIZE(coords); ++k)
+                        check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 0, expected_colors[k], max_diff, FALSE);
+                }
+                release_volume_readback(&volume_rb);
+            }
+            DeleteFileA(save_files[i].file_name_a);
+        }
+
+        /* Wide string. */
+        for (j = 0; j < 2; ++j)
+        {
+            const uint32_t *expected_colors = !j ? front_expected : back_expected;
+
+            hr = D3DXFillVolumeTexture(volume_texture, fill_func_volume, NULL);
+            ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+
+            hr = D3DXSaveVolumeToFileW(save_files[i].file_name_w, save_files[i].file_format, volume, NULL, !j ? NULL : &box);
+            todo_wine ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+
+            hr = D3DXFillVolumeTexture(volume_texture, fill_func_volume, (void *)&clear_val);
+            ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+
+            memset(&info, 0, sizeof(info));
+            hr = D3DXLoadVolumeFromFileW(volume, NULL, NULL, save_files[i].file_name_w, NULL, D3DX_FILTER_NONE, 0, &info);
+            todo_wine ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+            if (SUCCEEDED(hr))
+            {
+                get_texture_volume_readback(device, volume_texture, 0, &volume_rb);
+                if (save_files[i].file_format == D3DXIFF_DDS)
+                {
+                    check_image_info(&info, 16, 16, !j ? 2 : 1, 1, save_files[i].save_format, !j ? D3DRTYPE_VOLUMETEXTURE : D3DRTYPE_TEXTURE,
+                            D3DXIFF_DDS, TRUE);
+                    for (k = 0; k < ARRAY_SIZE(coords); ++k)
+                        check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0], coords[k][1], 0, expected_colors[k], 0, FALSE);
+                    for (k = 0; k < ARRAY_SIZE(coords); ++k)
+                        check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0], coords[k][1], 1, !j ? back_expected[k] : 0, 0, FALSE);
+                }
+                else
+                {
+                    const D3DXIMAGE_FILEFORMAT iff = save_files[i].file_format == D3DXIFF_DIB ? D3DXIFF_BMP : save_files[i].file_format;
+                    const uint8_t max_diff = iff == D3DXIFF_JPG ? 40 : 0;
+
+                    check_image_info(&info, 16, 16, 1, 1, save_files[i].save_format, D3DRTYPE_TEXTURE, iff, FALSE);
+                    for (k = 0; k < ARRAY_SIZE(coords); ++k)
+                        check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 0, expected_colors[k], max_diff, FALSE);
+                }
+                release_volume_readback(&volume_rb);
+            }
+
+            DeleteFileW(save_files[i].file_name_w);
+        }
+
+        /* InMemory. */
+        for (j = 0; j < 2; ++j)
+        {
+            const uint32_t *expected_colors = !j ? front_expected : back_expected;
+            ID3DXBuffer *buffer = NULL;
+
+            hr = D3DXFillVolumeTexture(volume_texture, fill_func_volume, NULL);
+            ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+
+            hr = D3DXSaveVolumeToFileInMemory(&buffer, save_files[i].file_format, volume, NULL, !j ? NULL : &box);
+            todo_wine ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+            if (!buffer)
+                continue;
+
+            hr = D3DXFillVolumeTexture(volume_texture, fill_func_volume, (void *)&clear_val);
+            ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+
+            memset(&info, 0, sizeof(info));
+            hr = D3DXLoadVolumeFromFileInMemory(volume, NULL, NULL, ID3DXBuffer_GetBufferPointer(buffer),
+                    ID3DXBuffer_GetBufferSize(buffer), NULL, D3DX_FILTER_NONE, 0, &info);
+            ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+            ID3DXBuffer_Release(buffer);
+
+            get_texture_volume_readback(device, volume_texture, 0, &volume_rb);
+            if (save_files[i].file_format == D3DXIFF_DDS)
+            {
+                check_image_info(&info, 16, 16, !j ? 2 : 1, 1, save_files[i].save_format, !j ? D3DRTYPE_VOLUMETEXTURE : D3DRTYPE_TEXTURE,
+                        D3DXIFF_DDS, FALSE);
+                for (k = 0; k < ARRAY_SIZE(coords); ++k)
+                    check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 0, expected_colors[k], 4, FALSE);
+                for (k = 0; k < ARRAY_SIZE(coords); ++k)
+                    check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 1, !j ? back_expected[k] : 0, 4, FALSE);
+            }
+            else
+            {
+                const D3DXIMAGE_FILEFORMAT iff = save_files[i].file_format == D3DXIFF_DIB ? D3DXIFF_BMP : save_files[i].file_format;
+                const uint8_t max_diff = iff == D3DXIFF_JPG ? 40 : 0;
+
+                check_image_info(&info, 16, 16, 1, 1, save_files[i].save_format, D3DRTYPE_TEXTURE, iff, FALSE);
+                for (k = 0; k < ARRAY_SIZE(coords); ++k)
+                    check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 0, expected_colors[k], max_diff, TRUE);
+            }
+            release_volume_readback(&volume_rb);
+        }
+
+        winetest_pop_context();
+    }
+
+    IDirect3DVolume9_Release(volume);
+    IDirect3DVolumeTexture9_Release(volume_texture);
+}
+
 START_TEST(volume)
 {
     HWND wnd;
@@ -428,6 +681,7 @@ START_TEST(volume)
 
     test_D3DXLoadVolumeFromMemory(device);
     test_D3DXLoadVolumeFromFileInMemory(device);
+    test_d3dx_save_volume_to_file(device);
 
     IDirect3DDevice9_Release(device);
     IDirect3D9_Release(d3d);

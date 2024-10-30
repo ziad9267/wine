@@ -181,6 +181,9 @@ HRESULT WINAPI D3DXLoadVolumeFromMemory(struct IDirect3DVolume9 *destvolume,
         D3DFORMAT srcformat, UINT srcrowpitch, UINT srcslicepitch, const PALETTEENTRY *srcpalette,
         const D3DBOX *srcbox, DWORD filter, D3DCOLOR colorkey);
 
+HRESULT WINAPI D3DXSaveVolumeToFileInMemory(struct ID3DXBuffer **destbuffer, D3DXIMAGE_FILEFORMAT destformat,
+        struct IDirect3DVolume9 *srcvolume, const PALETTEENTRY *srcpalette, const D3DBOX *srcbox);
+
 HRESULT WINAPI D3DXSaveVolumeToFileA(const char *destfile, D3DXIMAGE_FILEFORMAT destformat,
         struct IDirect3DVolume9 *srcvolume, const PALETTEENTRY *srcpalette, const D3DBOX *srcbox);
 HRESULT WINAPI D3DXSaveVolumeToFileW(const WCHAR *destfile, D3DXIMAGE_FILEFORMAT destformat,
