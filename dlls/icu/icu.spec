@@ -31,7 +31,7 @@
 #@ stub u_digit
 #@ stub u_enumCharNames
 #@ stub u_enumCharTypes
-@ cdecl u_errorName(long)
+#@ stub u_errorName
 #@ stub u_foldCase
 #@ stub u_forDigit
 #@ stub u_formatMessage
