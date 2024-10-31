@@ -3134,7 +3134,7 @@ static void test_save_texture_to_dds_file(IDirect3DDevice9 *device)
           { 32, DDS_PF_INDEXED, 0, 8, 0, 0, 0, 0 },
           (DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT | DDSD_MIPMAPCOUNT | DDSD_DEPTH), 4, 4, 0, 4, 3,
           (DDSCAPS_TEXTURE | DDSCAPS_PALETTE | DDSCAPS_MIPMAP | DDSCAPS_COMPLEX), (DDSCAPS2_VOLUME),
-          PALETTED_DDS_FILE_HEADER_SIZE + 73, .todo_hr = TRUE
+          PALETTED_DDS_FILE_HEADER_SIZE + 73
         },
         /* D3DFMT_A8R8G8B8 textures with multiple levels. */
         { D3DRTYPE_TEXTURE, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, 4, 4, 0, 3, NULL, D3D_OK,
@@ -3152,13 +3152,12 @@ static void test_save_texture_to_dds_file(IDirect3DDevice9 *device)
          * Volume texture with D3DPOOL default. Can't be mapped for read,
          * can't be saved.
          */
-        { D3DRTYPE_VOLUMETEXTURE, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, 4, 4, 4, 3, NULL, D3DERR_INVALIDCALL, .todo_hr = TRUE },
+        { D3DRTYPE_VOLUMETEXTURE, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, 4, 4, 4, 3, NULL, D3DERR_INVALIDCALL },
         /* D3DPOOL_SYSTEMMEM can be saved. */
         { D3DRTYPE_VOLUMETEXTURE, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, 4, 4, 4, 3, NULL, D3D_OK,
           { 32, DDS_PF_RGB | DDS_PF_ALPHA, 0, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000 },
           (DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT | DDSD_DEPTH | DDSD_MIPMAPCOUNT), 4, 4, 0, 4, 3,
           (DDSCAPS_TEXTURE | DDSCAPS_MIPMAP | DDSCAPS_ALPHA | DDSCAPS_COMPLEX ), (DDSCAPS2_VOLUME), DDS_FILE_HEADER_SIZE + 292,
-          .todo_hr = TRUE
         },
         /* Single mip level, no mip flags. */
         { D3DRTYPE_TEXTURE, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, 4, 4, 0, 1, NULL, D3D_OK,
@@ -3177,14 +3176,12 @@ static void test_save_texture_to_dds_file(IDirect3DDevice9 *device)
           { 32, DDS_PF_RGB | DDS_PF_ALPHA, 0, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000 },
           (DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT | DDSD_DEPTH), 4, 4, 0, 4, 0,
           (DDSCAPS_TEXTURE | DDSCAPS_ALPHA), (DDSCAPS2_VOLUME), DDS_FILE_HEADER_SIZE + 256,
-          .todo_hr = TRUE
         },
         /* Volume texture with a depth of 1. */
         { D3DRTYPE_VOLUMETEXTURE, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, 4, 4, 1, 1, NULL, D3D_OK,
           { 32, DDS_PF_RGB | DDS_PF_ALPHA, 0, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000 },
           (DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT), 4, 4, 0, 0, 0,
           (DDSCAPS_TEXTURE | DDSCAPS_ALPHA), 0, DDS_FILE_HEADER_SIZE + 64,
-          .todo_hr = TRUE
         },
     };
     struct
@@ -3403,25 +3400,21 @@ static void test_D3DXSaveTextureToFileInMemory(IDirect3DDevice9 *device)
         ID3DXBuffer_Release(buffer);
     }
 
-    todo_wine {
     hr = D3DXSaveTextureToFileInMemory(&buffer, D3DXIFF_DDS, (IDirect3DBaseTexture9 *)volume_texture, NULL);
     ok(hr == D3D_OK, "D3DXSaveTextureToFileInMemory returned %#lx, expected %#lx\n", hr, D3D_OK);
-    if (SUCCEEDED(hr))
-    {
-        buffer_pointer = ID3DXBuffer_GetBufferPointer(buffer);
-        buffer_size = ID3DXBuffer_GetBufferSize(buffer);
-        hr = D3DXGetImageInfoFromFileInMemory(buffer_pointer, buffer_size, &info);
-        ok(hr == D3D_OK, "D3DXGetImageInfoFromFileInMemory returned %#lx, expected %#lx\n", hr, D3D_OK);
 
-        ok(info.Width == 256, "Got width %u, expected %u\n", info.Width, 256);
-        ok(info.Height == 256, "Got height %u, expected %u\n", info.Height, 256);
-        ok(info.Depth == 256, "Got depth %u, expected %u\n", info.Depth, 256);
-        ok(info.MipLevels == 9, "Got miplevels %u, expected %u\n", info.MipLevels, 9);
-        ok(info.ResourceType == D3DRTYPE_VOLUMETEXTURE, "Got resource type %#x, expected %#x\n", info.ResourceType, D3DRTYPE_VOLUMETEXTURE);
-        ok(info.ImageFileFormat == D3DXIFF_DDS, "Got file format %#x, expected %#x\n", info.ImageFileFormat, D3DXIFF_DDS);
-        ID3DXBuffer_Release(buffer);
-    }
-    }
+    buffer_pointer = ID3DXBuffer_GetBufferPointer(buffer);
+    buffer_size = ID3DXBuffer_GetBufferSize(buffer);
+    hr = D3DXGetImageInfoFromFileInMemory(buffer_pointer, buffer_size, &info);
+    ok(hr == D3D_OK, "D3DXGetImageInfoFromFileInMemory returned %#lx, expected %#lx\n", hr, D3D_OK);
+
+    ok(info.Width == 256, "Got width %u, expected %u\n", info.Width, 256);
+    ok(info.Height == 256, "Got height %u, expected %u\n", info.Height, 256);
+    ok(info.Depth == 256, "Got depth %u, expected %u\n", info.Depth, 256);
+    ok(info.MipLevels == 9, "Got miplevels %u, expected %u\n", info.MipLevels, 9);
+    ok(info.ResourceType == D3DRTYPE_VOLUMETEXTURE, "Got resource type %#x, expected %#x\n", info.ResourceType, D3DRTYPE_VOLUMETEXTURE);
+    ok(info.ImageFileFormat == D3DXIFF_DDS, "Got file format %#x, expected %#x\n", info.ImageFileFormat, D3DXIFF_DDS);
+    ID3DXBuffer_Release(buffer);
 
     IDirect3DVolumeTexture9_Release(volume_texture);
     test_save_texture_to_dds_file(device);
