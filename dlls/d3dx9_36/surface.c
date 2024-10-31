@@ -645,6 +645,11 @@ HRESULT d3dx_init_dds_header(struct dds_header *header, D3DRESOURCETYPE resource
     header->height = size->height;
     header->width = size->width;
     header->caps = DDS_CAPS_TEXTURE;
+    if (header->pixel_format.flags & DDS_PF_ALPHA || header->pixel_format.flags & DDS_PF_ALPHA_ONLY)
+        header->caps |= DDSCAPS_ALPHA;
+    if (header->pixel_format.flags & DDS_PF_INDEXED)
+        header->caps |= DDSCAPS_PALETTE;
+
     if (size->depth > 1)
     {
         header->flags |= DDS_DEPTH;
@@ -659,10 +664,11 @@ HRESULT d3dx_init_dds_header(struct dds_header *header, D3DRESOURCETYPE resource
         header->miplevels = mip_levels;
     }
 
-    if (header->pixel_format.flags & DDS_PF_ALPHA || header->pixel_format.flags & DDS_PF_ALPHA_ONLY)
-        header->caps |= DDSCAPS_ALPHA;
-    if (header->pixel_format.flags & DDS_PF_INDEXED)
-        header->caps |= DDSCAPS_PALETTE;
+    if (resource_type == D3DRTYPE_CUBETEXTURE)
+    {
+        header->caps |= DDS_CAPS_COMPLEX;
+        header->caps2 |= (DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES);
+    }
 
     return D3D_OK;
 }
