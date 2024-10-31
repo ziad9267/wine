@@ -78,80 +78,6 @@ static const GUID *wic_guid_from_d3dx_pixel_format_id(enum d3dx_pixel_format_id 
     return NULL;
 }
 
-#define DDS_PALETTE_SIZE (sizeof(PALETTEENTRY) * 256)
-
-/* dds_header.flags */
-#define DDS_CAPS 0x1
-#define DDS_HEIGHT 0x2
-#define DDS_WIDTH 0x4
-#define DDS_PITCH 0x8
-#define DDS_PIXELFORMAT 0x1000
-#define DDS_MIPMAPCOUNT 0x20000
-#define DDS_LINEARSIZE 0x80000
-#define DDS_DEPTH 0x800000
-
-/* dds_header.caps */
-#define DDSCAPS_ALPHA    0x2
-#define DDS_CAPS_COMPLEX 0x8
-#define DDSCAPS_PALETTE  0x100
-#define DDS_CAPS_TEXTURE 0x1000
-#define DDS_CAPS_MIPMAP 0x400000
-
-/* dds_header.caps2 */
-#define DDS_CAPS2_CUBEMAP 0x200
-#define DDS_CAPS2_CUBEMAP_POSITIVEX 0x400
-#define DDS_CAPS2_CUBEMAP_NEGATIVEX 0x800
-#define DDS_CAPS2_CUBEMAP_POSITIVEY 0x1000
-#define DDS_CAPS2_CUBEMAP_NEGATIVEY 0x2000
-#define DDS_CAPS2_CUBEMAP_POSITIVEZ 0x4000
-#define DDS_CAPS2_CUBEMAP_NEGATIVEZ 0x8000
-#define DDS_CAPS2_CUBEMAP_ALL_FACES ( DDS_CAPS2_CUBEMAP_POSITIVEX | DDS_CAPS2_CUBEMAP_NEGATIVEX \
-                                    | DDS_CAPS2_CUBEMAP_POSITIVEY | DDS_CAPS2_CUBEMAP_NEGATIVEY \
-                                    | DDS_CAPS2_CUBEMAP_POSITIVEZ | DDS_CAPS2_CUBEMAP_NEGATIVEZ )
-#define DDS_CAPS2_VOLUME 0x200000
-
-/* dds_pixel_format.flags */
-#define DDS_PF_ALPHA 0x1
-#define DDS_PF_ALPHA_ONLY 0x2
-#define DDS_PF_FOURCC 0x4
-#define DDS_PF_INDEXED 0x20
-#define DDS_PF_RGB 0x40
-#define DDS_PF_YUV 0x200
-#define DDS_PF_LUMINANCE 0x20000
-#define DDS_PF_BUMPLUMINANCE 0x40000
-#define DDS_PF_BUMPDUDV 0x80000
-
-struct dds_pixel_format
-{
-    DWORD size;
-    DWORD flags;
-    DWORD fourcc;
-    DWORD bpp;
-    DWORD rmask;
-    DWORD gmask;
-    DWORD bmask;
-    DWORD amask;
-};
-
-struct dds_header
-{
-    DWORD signature;
-    DWORD size;
-    DWORD flags;
-    DWORD height;
-    DWORD width;
-    DWORD pitch_or_linear_size;
-    DWORD depth;
-    DWORD miplevels;
-    DWORD reserved[11];
-    struct dds_pixel_format pixel_format;
-    DWORD caps;
-    DWORD caps2;
-    DWORD caps3;
-    DWORD caps4;
-    DWORD reserved2;
-};
-
 #define IMAGETYPE_COLORMAPPED 1
 #define IMAGETYPE_TRUECOLOR 2
 #define IMAGETYPE_GRAYSCALE 3
@@ -474,7 +400,7 @@ static HRESULT d3dx_calculate_pixels_size(enum d3dx_pixel_format_id format, uint
     return D3D_OK;
 }
 
-static uint32_t d3dx_calculate_layer_pixels_size(enum d3dx_pixel_format_id format, uint32_t width, uint32_t height, uint32_t depth,
+uint32_t d3dx_calculate_layer_pixels_size(enum d3dx_pixel_format_id format, uint32_t width, uint32_t height, uint32_t depth,
         uint32_t mip_levels)
 {
     uint32_t layer_size, row_pitch, slice_pitch, i;
@@ -702,7 +628,7 @@ HRESULT d3dx_get_save_pixel_format_from_image_file_format(const struct pixel_for
     return (*save_fmt == D3DX_PIXEL_FORMAT_COUNT) ? D3DERR_INVALIDCALL : D3D_OK;
 }
 
-static HRESULT d3dx_init_dds_header(struct dds_header *header, D3DRESOURCETYPE resource_type,
+HRESULT d3dx_init_dds_header(struct dds_header *header, D3DRESOURCETYPE resource_type,
         enum d3dx_pixel_format_id format, const struct volume *size, uint32_t mip_levels)
 {
     HRESULT hr;
@@ -725,6 +651,14 @@ static HRESULT d3dx_init_dds_header(struct dds_header *header, D3DRESOURCETYPE r
         header->depth = size->depth;
         header->caps2 |= DDS_CAPS2_VOLUME;
     }
+
+    if (mip_levels > 1)
+    {
+        header->flags |= DDS_MIPMAPCOUNT;
+        header->caps |= (DDS_CAPS_MIPMAP | DDS_CAPS_COMPLEX);
+        header->miplevels = mip_levels;
+    }
+
     if (header->pixel_format.flags & DDS_PF_ALPHA || header->pixel_format.flags & DDS_PF_ALPHA_ONLY)
         header->caps |= DDSCAPS_ALPHA;
     if (header->pixel_format.flags & DDS_PF_INDEXED)
