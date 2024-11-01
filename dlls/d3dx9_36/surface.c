@@ -1482,7 +1482,7 @@ static HRESULT d3dx_image_tga_decode(const void *src_data, uint32_t src_data_siz
         if (FAILED(hr))
             goto exit;
 
-        dst_desc = get_format_info(D3DFMT_A8B8G8R8);
+        dst_desc = get_d3dx_pixel_format_info(D3DX_PIXEL_FORMAT_R8G8B8A8_UNORM);
         d3dx_calculate_pixels_size(dst_desc->format, 256, 1, &dst_row_pitch, &dst_slice_pitch);
         convert_argb_pixels(src_palette, src_row_pitch, src_slice_pitch, &image_map_size, src_desc, (BYTE *)palette,
                 dst_row_pitch, dst_slice_pitch, &image_map_size, dst_desc, 0, NULL, D3DX_FILTER_NONE);
@@ -2511,7 +2511,7 @@ static void convert_argb_pixels(const BYTE *src, UINT src_row_pitch, UINT src_sl
     if (color_key)
     {
         /* Color keys are always represented in D3DFMT_A8R8G8B8 format. */
-        ck_format = get_format_info(D3DFMT_A8R8G8B8);
+        ck_format = get_d3dx_pixel_format_info(D3DX_PIXEL_FORMAT_B8G8R8A8_UNORM);
         init_argb_conversion_info(src_format, ck_format, &ck_conv_info);
     }
 
@@ -2613,7 +2613,7 @@ static void point_filter_argb_pixels(const BYTE *src, UINT src_row_pitch, UINT s
     if (color_key)
     {
         /* Color keys are always represented in D3DFMT_A8R8G8B8 format. */
-        ck_format = get_format_info(D3DFMT_A8R8G8B8);
+        ck_format = get_d3dx_pixel_format_info(D3DX_PIXEL_FORMAT_B8G8R8A8_UNORM);
         init_argb_conversion_info(src_format, ck_format, &ck_conv_info);
     }
 
