@@ -1973,8 +1973,8 @@ HRESULT WINAPI D3DXSaveTextureToFileInMemory(ID3DXBuffer **dst_buffer, D3DXIMAGE
     if (FAILED(hr))
         return hr;
 
-    hr = d3dx_init_dds_header((struct dds_header *)ID3DXBuffer_GetBufferPointer(buffer), type, fmt_desc->format, &size,
-            mip_levels);
+    hr = d3dx_init_dds_header((struct dds_header *)ID3DXBuffer_GetBufferPointer(buffer),
+            d3dx_resource_type_from_d3dresourcetype(type), fmt_desc->format, &size, mip_levels);
     if (FAILED(hr))
         goto exit;
 

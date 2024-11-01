@@ -631,7 +631,7 @@ HRESULT d3dx_get_save_pixel_format_from_image_file_format(const struct pixel_for
     return (*save_fmt == D3DX_PIXEL_FORMAT_COUNT) ? D3DERR_INVALIDCALL : D3D_OK;
 }
 
-HRESULT d3dx_init_dds_header(struct dds_header *header, D3DRESOURCETYPE resource_type,
+HRESULT d3dx_init_dds_header(struct dds_header *header, enum d3dx_resource_type resource_type,
         enum d3dx_pixel_format_id format, const struct volume *size, uint32_t mip_levels)
 {
     HRESULT hr;
@@ -667,7 +667,7 @@ HRESULT d3dx_init_dds_header(struct dds_header *header, D3DRESOURCETYPE resource
         header->miplevels = mip_levels;
     }
 
-    if (resource_type == D3DRTYPE_CUBETEXTURE)
+    if (resource_type == D3DX_RESOURCE_TYPE_CUBE_TEXTURE)
     {
         header->caps |= DDS_CAPS_COMPLEX;
         header->caps2 |= (DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES);
@@ -862,7 +862,7 @@ HRESULT d3dx_save_pixels_to_memory(struct d3dx_pixels *src_pixels, const struct 
 
             header = ID3DXBuffer_GetBufferPointer(buffer);
             pixels = (uint8_t *)ID3DXBuffer_GetBufferPointer(buffer) + header_size;
-            hr = d3dx_init_dds_header(header, D3DRTYPE_TEXTURE, dst_format, &src_pixels->size, 1);
+            hr = d3dx_init_dds_header(header, D3DX_RESOURCE_TYPE_TEXTURE_2D, dst_format, &src_pixels->size, 1);
             if (FAILED(hr))
                 goto exit;
             if (is_index_format(dst_fmt_desc))
@@ -1042,7 +1042,7 @@ static HRESULT d3dx_initialize_image_from_dds(const void *src_data, uint32_t src
     if (header->flags & DDS_DEPTH)
     {
         image->size.depth = max(header->depth, 1);
-        image->resource_type = D3DRTYPE_VOLUMETEXTURE;
+        image->resource_type = D3DX_RESOURCE_TYPE_TEXTURE_3D;
     }
     else if (header->caps2 & DDS_CAPS2_CUBEMAP)
     {
@@ -1053,10 +1053,12 @@ static HRESULT d3dx_initialize_image_from_dds(const void *src_data, uint32_t src
         }
 
         image->layer_count = 6;
-        image->resource_type = D3DRTYPE_CUBETEXTURE;
+        image->resource_type = D3DX_RESOURCE_TYPE_CUBE_TEXTURE;
     }
     else
-        image->resource_type = D3DRTYPE_TEXTURE;
+    {
+        image->resource_type = D3DX_RESOURCE_TYPE_TEXTURE_2D;
+    }
 
     image->layer_pitch = d3dx_calculate_layer_pixels_size(image->format, image->size.width, image->size.height,
             image->size.depth, image->mip_levels);
@@ -1371,7 +1373,7 @@ static HRESULT d3dx_initialize_image_from_wic(const void *src_data, uint32_t src
     image->size.depth = 1;
     image->mip_levels = 1;
     image->layer_count = 1;
-    image->resource_type = D3DRTYPE_TEXTURE;
+    image->resource_type = D3DX_RESOURCE_TYPE_TEXTURE_2D;
 
 exit:
     if (bitmap_frame)
@@ -1611,7 +1613,7 @@ static HRESULT d3dx_initialize_image_from_tga(const void *src_data, uint32_t src
     set_volume_struct(&image->size, header->width, header->height, 1);
     image->mip_levels = 1;
     image->layer_count = 1;
-    image->resource_type = D3DRTYPE_TEXTURE;
+    image->resource_type = D3DX_RESOURCE_TYPE_TEXTURE_2D;
     image->image_file_format = D3DXIFF_TGA;
 
     if (!(flags & D3DX_IMAGE_INFO_ONLY))
@@ -1753,7 +1755,12 @@ void d3dximage_info_from_d3dx_image(D3DXIMAGE_INFO *info, struct d3dx_image *ima
             info->Format = d3dformat_from_d3dx_pixel_format_id(image->format);
             break;
     }
-    info->ResourceType = image->resource_type;
+    if (image->resource_type == D3DX_RESOURCE_TYPE_TEXTURE_3D)
+        info->ResourceType = D3DRTYPE_VOLUMETEXTURE;
+    else if (image->resource_type == D3DX_RESOURCE_TYPE_CUBE_TEXTURE)
+        info->ResourceType = D3DRTYPE_CUBETEXTURE;
+    else
+        info->ResourceType = D3DRTYPE_TEXTURE;
 }
 
 /************************************************************

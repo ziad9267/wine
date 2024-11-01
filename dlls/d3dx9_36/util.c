@@ -189,6 +189,19 @@ enum d3dx_pixel_format_id d3dx_pixel_format_id_from_d3dformat(D3DFORMAT format)
     }
 }
 
+enum d3dx_resource_type d3dx_resource_type_from_d3dresourcetype(D3DRESOURCETYPE type)
+{
+    switch (type)
+    {
+        case D3DRTYPE_TEXTURE:       return D3DX_RESOURCE_TYPE_TEXTURE_2D;
+        case D3DRTYPE_VOLUMETEXTURE: return D3DX_RESOURCE_TYPE_TEXTURE_3D;
+        case D3DRTYPE_CUBETEXTURE:   return D3DX_RESOURCE_TYPE_CUBE_TEXTURE;
+        default:
+            FIXME("No d3dx_resource_type for D3DRESOURCETYPE %d.\n", type);
+            return D3DX_RESOURCE_TYPE_COUNT;
+    }
+}
+
 /************************************************************
  * map_view_of_file
  *
