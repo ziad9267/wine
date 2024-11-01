@@ -124,6 +124,10 @@ struct dds_header
     DWORD reserved2;
 };
 
+/* These are custom Wine only filter flags. */
+#define D3DX_FILTER_PMA_IN  0x00800000
+#define D3DX_FILTER_PMA_OUT 0x01000000
+#define D3DX_FILTER_PMA     0x01800000
 
 struct vec4
 {
@@ -233,6 +237,7 @@ enum format_flag
     FMT_FLAG_PACKED = 0x02,
     /* Internal only format, has no exact D3DFORMAT equivalent. */
     FMT_FLAG_INTERNAL = 0x04,
+    FMT_FLAG_PM_ALPHA = 0x08,
 };
 
 struct pixel_format_desc {
@@ -350,6 +355,14 @@ static inline BOOL is_internal_format(const struct pixel_format_desc *format)
     return !!(format->flags & FMT_FLAG_INTERNAL);
 }
 
+static inline BOOL filter_flags_match(uint32_t filter_flags)
+{
+    if (!!(filter_flags & D3DX_FILTER_PMA_IN) != !!((filter_flags & D3DX_FILTER_PMA_OUT)))
+        return FALSE;
+
+    return TRUE;
+}
+
 static inline BOOL is_conversion_from_supported(const struct pixel_format_desc *format)
 {
     return !is_packed_format(format) && !is_unknown_format(format);
@@ -375,17 +388,6 @@ void format_to_d3dx_color(const struct pixel_format_desc *format, const BYTE *sr
         struct d3dx_color *dst);
 void format_from_d3dx_color(const struct pixel_format_desc *format, const struct d3dx_color *src, BYTE *dst);
 
-void copy_pixels(const BYTE *src, UINT src_row_pitch, UINT src_slice_pitch,
-    BYTE *dst, UINT dst_row_pitch, UINT dst_slice_pitch, const struct volume *size,
-    const struct pixel_format_desc *format);
-void convert_argb_pixels(const BYTE *src, UINT src_row_pitch, UINT src_slice_pitch,
-    const struct volume *src_size, const struct pixel_format_desc *src_format,
-    BYTE *dst, UINT dst_row_pitch, UINT dst_slice_pitch, const struct volume *dst_size,
-    const struct pixel_format_desc *dst_format, D3DCOLOR color_key, const PALETTEENTRY *palette);
-void point_filter_argb_pixels(const BYTE *src, UINT src_row_pitch, UINT src_slice_pitch,
-    const struct volume *src_size, const struct pixel_format_desc *src_format,
-    BYTE *dst, UINT dst_row_pitch, UINT dst_slice_pitch, const struct volume *dst_size,
-    const struct pixel_format_desc *dst_format, D3DCOLOR color_key, const PALETTEENTRY *palette);
 
 HRESULT lock_surface(IDirect3DSurface9 *surface, const RECT *surface_rect, D3DLOCKED_RECT *lock,
         IDirect3DSurface9 **temp_surface, BOOL write);

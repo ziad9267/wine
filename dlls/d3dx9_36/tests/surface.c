@@ -1029,6 +1029,13 @@ static inline void _check_pixel_4bpp(unsigned int line, const D3DLOCKED_RECT *lo
    ok_(__FILE__, line)(color == expected_color, "Got color 0x%08lx, expected 0x%08lx\n", color, expected_color);
 }
 
+#define check_pixel_4bpp_diff(lockrect, x, y, color, max_diff) _check_pixel_4bpp_diff(__LINE__, lockrect, x, y, color, max_diff)
+static inline void _check_pixel_4bpp_diff(unsigned int line, const D3DLOCKED_RECT *lockrect, int x, int y, DWORD expected_color, uint8_t max_diff)
+{
+   DWORD color = ((DWORD*)lockrect->pBits)[x + y * lockrect->Pitch / 4];
+   ok_(__FILE__, line)(compare_color_4bpp(color, expected_color, max_diff), "Got color 0x%08lx, expected 0x%08lx.\n", color, expected_color);
+}
+
 #define check_pixel_8bpp(lockrect, x, y, color) _check_pixel_8bpp(__LINE__, lockrect, x, y, color)
 static inline void _check_pixel_8bpp(unsigned int line, const D3DLOCKED_RECT *lockrect, int x, int y, uint64_t expected_color)
 {
@@ -1348,7 +1355,7 @@ static void test_dxt_premultiplied_alpha(IDirect3DDevice9 *device)
             {
                 const uint32_t expected_pixel = !(x & 0x01) ? 0xffffffff : 0x00000000;
 
-                check_readback_pixel_4bpp(&surface_rb, x, y, expected_pixel, !expected_pixel);
+                check_readback_pixel_4bpp(&surface_rb, x, y, expected_pixel, FALSE);
             }
         }
         release_surface_readback(&surface_rb);
@@ -1376,9 +1383,8 @@ static void test_dxt_premultiplied_alpha(IDirect3DDevice9 *device)
             for (x = 0; x < 4; ++x)
             {
                 const uint32_t expected_pixel = dxt_pma_decompressed_expected[(y * 4) + x];
-                const BOOL todo = ((expected_pixel >> 24) & 0xff) != 0xff;
 
-                todo_wine_if(todo) check_pixel_4bpp(&lock_rect, x, y, expected_pixel);
+                check_pixel_4bpp_diff(&lock_rect, x, y, expected_pixel, 1);
             }
         }
         IDirect3DSurface9_UnlockRect(decomp_surf);
