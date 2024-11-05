@@ -36,6 +36,35 @@
 #define d3dx_blob_release(blob)                ID3DXBuffer_Release(blob)
 #endif /* D3DX_D3D_VERSION == 9 */
 
+#if D3DX_D3D_VERSION == 10
+#define COBJMACROS
+#include "d3dx10.h"
+
+#define D3DERR_INVALIDCALL      0x8876086c
+#define D3DX_ERROR_INVALID_DATA D3DX10_ERR_INVALID_DATA
+
+#define D3DX_FILTER_NONE              D3DX10_FILTER_NONE
+#define D3DX_FILTER_POINT             D3DX10_FILTER_POINT
+#define D3DX_FILTER_LINEAR            D3DX10_FILTER_LINEAR
+#define D3DX_FILTER_TRIANGLE          D3DX10_FILTER_TRIANGLE
+#define D3DX_FILTER_BOX               D3DX10_FILTER_BOX
+#define D3DX_FILTER_MIRROR_U          D3DX10_FILTER_MIRROR_U
+#define D3DX_FILTER_MIRROR_V          D3DX10_FILTER_MIRROR_V
+#define D3DX_FILTER_MIRROR_W          D3DX10_FILTER_MIRROR_W
+#define D3DX_FILTER_MIRROR            D3DX10_FILTER_MIRROR
+#define D3DX_FILTER_DITHER            D3DX10_FILTER_DITHER
+#define D3DX_FILTER_DITHER_DIFFUSION  D3DX10_FILTER_DITHER_DIFFUSION
+#define D3DX_FILTER_SRGB_IN           D3DX10_FILTER_SRGB_IN
+#define D3DX_FILTER_SRGB_OUT          D3DX10_FILTER_SRGB_OUT
+#define D3DX_FILTER_SRGB              D3DX10_FILTER_SRGB
+
+#define ID3DXBlob                          ID3D10Blob
+#define d3dx_create_blob(size, blob)       D3D10CreateBlob(size, blob)
+#define d3dx_blob_get_buffer_pointer(blob) ID3D10Blob_GetBufferPointer(blob)
+#define d3dx_blob_release(blob)            ID3D10Blob_Release(blob)
+
+#endif /* D3DX_D3D_VERSION == 10 */
+
 #ifndef MAKEFOURCC
 #define MAKEFOURCC(ch0, ch1, ch2, ch3)  \
     ((DWORD)(BYTE)(ch0) | ((DWORD)(BYTE)(ch1) << 8) |  \
