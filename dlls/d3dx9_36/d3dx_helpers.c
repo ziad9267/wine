@@ -927,7 +927,9 @@ static HRESULT d3dx_initialize_image_from_dds(const void *src_data, uint32_t src
     if (src_data_size < expected_src_data_size)
     {
         WARN("File is too short %u, expected at least %u bytes.\n", src_data_size, expected_src_data_size);
-        return D3DX_ERROR_INVALID_DATA;
+        /* d3dx10/d3dx11 do not validate the size of the pixels. */
+        if (!(flags & D3DX_IMAGE_SUPPORT_DXT10))
+            return D3DX_ERROR_INVALID_DATA;
     }
 
     image->palette = (is_indexed_fmt) ? (PALETTEENTRY *)(((uint8_t *)src_data) + sizeof(*header)) : NULL;
