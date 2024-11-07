@@ -82,6 +82,10 @@ static DXGI_FORMAT dxgi_format_from_legacy_dds_d3dx_pixel_format_id(enum d3dx_pi
         case D3DX_PIXEL_FORMAT_DXT3_UNORM:               return DXGI_FORMAT_BC2_UNORM;
         case D3DX_PIXEL_FORMAT_DXT4_UNORM:               return DXGI_FORMAT_BC3_UNORM;
         case D3DX_PIXEL_FORMAT_DXT5_UNORM:               return DXGI_FORMAT_BC3_UNORM;
+        case D3DX_PIXEL_FORMAT_BC4_UNORM:                return DXGI_FORMAT_BC4_UNORM;
+        case D3DX_PIXEL_FORMAT_BC4_SNORM:                return DXGI_FORMAT_BC4_SNORM;
+        case D3DX_PIXEL_FORMAT_BC5_UNORM:                return DXGI_FORMAT_BC5_UNORM;
+        case D3DX_PIXEL_FORMAT_BC5_SNORM:                return DXGI_FORMAT_BC5_SNORM;
 
         /* These formats are known and explicitly unsupported on d3dx10+. */
         case D3DX_PIXEL_FORMAT_U8V8W8Q8_SNORM:
@@ -108,6 +112,9 @@ static DXGI_FORMAT dxgi_format_from_d3dx_pixel_format_id(enum d3dx_pixel_format_
         case D3DX_PIXEL_FORMAT_B8G8R8X8_UNORM:          return DXGI_FORMAT_B8G8R8X8_UNORM;
         case D3DX_PIXEL_FORMAT_R10G10B10A2_UNORM:       return DXGI_FORMAT_R10G10B10A2_UNORM;
         case D3DX_PIXEL_FORMAT_R16G16B16A16_UNORM:      return DXGI_FORMAT_R16G16B16A16_UNORM;
+        case D3DX_PIXEL_FORMAT_R8_UNORM:                return DXGI_FORMAT_R8_UNORM;
+        case D3DX_PIXEL_FORMAT_R8G8_UNORM:              return DXGI_FORMAT_R8G8_UNORM;
+        case D3DX_PIXEL_FORMAT_R16_UNORM:               return DXGI_FORMAT_R16_UNORM;
         case D3DX_PIXEL_FORMAT_R16G16_UNORM:            return DXGI_FORMAT_R16G16_UNORM;
         case D3DX_PIXEL_FORMAT_A8_UNORM:                return DXGI_FORMAT_A8_UNORM;
         case D3DX_PIXEL_FORMAT_R16_FLOAT:               return DXGI_FORMAT_R16_FLOAT;
@@ -115,12 +122,17 @@ static DXGI_FORMAT dxgi_format_from_d3dx_pixel_format_id(enum d3dx_pixel_format_
         case D3DX_PIXEL_FORMAT_R16G16B16A16_FLOAT:      return DXGI_FORMAT_R16G16B16A16_FLOAT;
         case D3DX_PIXEL_FORMAT_R32_FLOAT:               return DXGI_FORMAT_R32_FLOAT;
         case D3DX_PIXEL_FORMAT_R32G32_FLOAT:            return DXGI_FORMAT_R32G32_FLOAT;
+        case D3DX_PIXEL_FORMAT_R32G32B32_FLOAT:         return DXGI_FORMAT_R32G32B32_FLOAT;
         case D3DX_PIXEL_FORMAT_R32G32B32A32_FLOAT:      return DXGI_FORMAT_R32G32B32A32_FLOAT;
         case D3DX_PIXEL_FORMAT_G8R8_G8B8_UNORM:         return DXGI_FORMAT_G8R8_G8B8_UNORM;
         case D3DX_PIXEL_FORMAT_R8G8_B8G8_UNORM:         return DXGI_FORMAT_R8G8_B8G8_UNORM;
         case D3DX_PIXEL_FORMAT_BC1_UNORM:               return DXGI_FORMAT_BC1_UNORM;
         case D3DX_PIXEL_FORMAT_BC2_UNORM:               return DXGI_FORMAT_BC2_UNORM;
         case D3DX_PIXEL_FORMAT_BC3_UNORM:               return DXGI_FORMAT_BC3_UNORM;
+        case D3DX_PIXEL_FORMAT_BC4_UNORM:               return DXGI_FORMAT_BC4_UNORM;
+        case D3DX_PIXEL_FORMAT_BC4_SNORM:               return DXGI_FORMAT_BC4_SNORM;
+        case D3DX_PIXEL_FORMAT_BC5_UNORM:               return DXGI_FORMAT_BC5_UNORM;
+        case D3DX_PIXEL_FORMAT_BC5_SNORM:               return DXGI_FORMAT_BC5_SNORM;
         case D3DX_PIXEL_FORMAT_R16G16B16A16_SNORM:      return DXGI_FORMAT_R16G16B16A16_SNORM;
         case D3DX_PIXEL_FORMAT_R8G8B8A8_SNORM:          return DXGI_FORMAT_R8G8B8A8_SNORM;
         case D3DX_PIXEL_FORMAT_R8G8_SNORM:              return DXGI_FORMAT_R8G8_SNORM;
@@ -206,22 +218,6 @@ static const GUID *dxgi_format_to_wic_guid(DXGI_FORMAT format)
     }
 
     return NULL;
-}
-
-static D3D10_RESOURCE_DIMENSION wic_dimension_to_d3dx10_dimension(WICDdsDimension wic_dimension)
-{
-    switch (wic_dimension)
-    {
-        case WICDdsTexture1D:
-            return D3D10_RESOURCE_DIMENSION_TEXTURE1D;
-        case WICDdsTexture2D:
-        case WICDdsTextureCube:
-            return D3D10_RESOURCE_DIMENSION_TEXTURE2D;
-        case WICDdsTexture3D:
-            return D3D10_RESOURCE_DIMENSION_TEXTURE3D;
-        default:
-            return D3D10_RESOURCE_DIMENSION_UNKNOWN;
-    }
 }
 
 static unsigned int get_bpp_from_format(DXGI_FORMAT format)
@@ -356,36 +352,6 @@ static unsigned int get_bpp_from_format(DXGI_FORMAT format)
         default:
             return 0;
     }
-}
-
-static DXGI_FORMAT get_d3dx10_dds_format(DXGI_FORMAT format)
-{
-    static const struct
-    {
-        DXGI_FORMAT src;
-        DXGI_FORMAT dst;
-    }
-    format_map[] =
-    {
-        {DXGI_FORMAT_UNKNOWN,           DXGI_FORMAT_R8G8B8A8_UNORM},
-        {DXGI_FORMAT_R8_UNORM,          DXGI_FORMAT_R8G8B8A8_UNORM},
-        {DXGI_FORMAT_R8G8_UNORM,        DXGI_FORMAT_R8G8B8A8_UNORM},
-        {DXGI_FORMAT_B5G6R5_UNORM,      DXGI_FORMAT_R8G8B8A8_UNORM},
-        {DXGI_FORMAT_B4G4R4A4_UNORM,    DXGI_FORMAT_R8G8B8A8_UNORM},
-        {DXGI_FORMAT_B5G5R5A1_UNORM,    DXGI_FORMAT_R8G8B8A8_UNORM},
-        {DXGI_FORMAT_B8G8R8X8_UNORM,    DXGI_FORMAT_R8G8B8A8_UNORM},
-        {DXGI_FORMAT_B8G8R8A8_UNORM,    DXGI_FORMAT_R8G8B8A8_UNORM},
-        {DXGI_FORMAT_R16_UNORM,         DXGI_FORMAT_R16G16B16A16_UNORM},
-    };
-
-    unsigned int i;
-
-    for (i = 0; i < ARRAY_SIZE(format_map); ++i)
-    {
-        if (format == format_map[i].src)
-            return format_map[i].dst;
-    }
-    return format;
 }
 
 HRESULT WINAPI D3DX10GetImageInfoFromFileA(const char *src_file, ID3DX10ThreadPump *pump, D3DX10_IMAGE_INFO *info,
@@ -598,9 +564,7 @@ HRESULT get_image_info(const void *data, SIZE_T size, D3DX10_IMAGE_INFO *img_inf
 {
     IWICBitmapFrameDecode *frame = NULL;
     IWICImagingFactory *factory = NULL;
-    IWICDdsDecoder *dds_decoder = NULL;
     IWICBitmapDecoder *decoder = NULL;
-    WICDdsParameters dds_params;
     IWICStream *stream = NULL;
     unsigned int frame_count;
     struct d3dx_image image;
@@ -614,11 +578,7 @@ HRESULT get_image_info(const void *data, SIZE_T size, D3DX10_IMAGE_INFO *img_inf
             && (image.image_file_format == D3DX_IMAGE_FILE_FORMAT_DDS
                 || (image.image_file_format == D3DX_IMAGE_FILE_FORMAT_DDS_DXT10)))
     {
-        if (SUCCEEDED(d3dx10_image_info_from_d3dx_image(img_info, &image)))
-        {
-            TRACE("Successfully retrieved image info from shared code.\n");
-            return S_OK;
-        }
+        return d3dx10_image_info_from_d3dx_image(img_info, &image);
     }
 
     WICCreateImagingFactory_Proxy(WINCODEC_SDK_VERSION, &factory);
@@ -656,37 +616,18 @@ HRESULT get_image_info(const void *data, SIZE_T size, D3DX10_IMAGE_INFO *img_inf
 
     if (img_info->ImageFileFormat == D3DX10_IFF_DDS)
     {
-        hr = IWICBitmapDecoder_QueryInterface(decoder, &IID_IWICDdsDecoder, (void **)&dds_decoder);
-        if (FAILED(hr))
-            goto end;
-        hr = IWICDdsDecoder_GetParameters(dds_decoder, &dds_params);
-        if (FAILED(hr))
-            goto end;
-        img_info->ArraySize = dds_params.ArraySize;
-        img_info->Depth = dds_params.Depth;
-        img_info->MipLevels = dds_params.MipLevels;
-        img_info->ResourceDimension = wic_dimension_to_d3dx10_dimension(dds_params.Dimension);
-        img_info->Format = get_d3dx10_dds_format(dds_params.DxgiFormat);
-        img_info->MiscFlags = 0;
-        if (dds_params.Dimension == WICDdsTextureCube)
-        {
-            img_info->MiscFlags = D3D10_RESOURCE_MISC_TEXTURECUBE;
-            img_info->ArraySize *= 6;
-        }
-    }
-    else
-    {
-        img_info->ArraySize = 1;
-        img_info->Depth = 1;
-        img_info->MipLevels = 1;
-        img_info->ResourceDimension = D3D10_RESOURCE_DIMENSION_TEXTURE2D;
-        img_info->Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        img_info->MiscFlags = 0;
+        hr = E_FAIL;
+        goto end;
     }
 
+    img_info->ArraySize = 1;
+    img_info->Depth = 1;
+    img_info->MipLevels = 1;
+    img_info->ResourceDimension = D3D10_RESOURCE_DIMENSION_TEXTURE2D;
+    img_info->Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    img_info->MiscFlags = 0;
+
 end:
-    if (dds_decoder)
-        IWICDdsDecoder_Release(dds_decoder);
     if (frame)
         IWICBitmapFrameDecode_Release(frame);
     if (decoder)
