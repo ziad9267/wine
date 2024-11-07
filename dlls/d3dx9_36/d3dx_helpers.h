@@ -43,6 +43,8 @@
 #define D3DERR_INVALIDCALL      0x8876086c
 #define D3DX_ERROR_INVALID_DATA D3DX10_ERR_INVALID_DATA
 
+#define D3DX_DEFAULT                  D3DX10_DEFAULT
+
 #define D3DX_FILTER_NONE              D3DX10_FILTER_NONE
 #define D3DX_FILTER_POINT             D3DX10_FILTER_POINT
 #define D3DX_FILTER_LINEAR            D3DX10_FILTER_LINEAR
@@ -63,7 +65,25 @@
 #define d3dx_blob_get_buffer_pointer(blob) ID3D10Blob_GetBufferPointer(blob)
 #define d3dx_blob_release(blob)            ID3D10Blob_Release(blob)
 
+enum d3dx_pixel_format_id d3dx_pixel_format_id_from_dxgi_format(DXGI_FORMAT format);
 #endif /* D3DX_D3D_VERSION == 10 */
+
+#define D3DX_FILTER_INVALID_BITS 0xff80fff8
+static inline HRESULT d3dx_validate_filter(uint32_t filter)
+{
+    if ((filter & D3DX_FILTER_INVALID_BITS) || !(filter & 0x7) || ((filter & 0x7) > D3DX_FILTER_BOX))
+        return D3DERR_INVALIDCALL;
+
+    return S_OK;
+}
+
+static inline HRESULT d3dx_handle_filter(UINT *filter)
+{
+    if (*filter == D3DX_DEFAULT)
+        *filter = D3DX_FILTER_TRIANGLE | D3DX_FILTER_DITHER;
+
+    return d3dx_validate_filter(*filter);
+}
 
 #ifndef MAKEFOURCC
 #define MAKEFOURCC(ch0, ch1, ch2, ch3)  \
@@ -452,6 +472,9 @@ void format_to_d3dx_color(const struct pixel_format_desc *format, const BYTE *sr
         struct d3dx_color *dst);
 void format_from_d3dx_color(const struct pixel_format_desc *format, const struct d3dx_color *src, BYTE *dst);
 
+void d3dx_get_next_mip_level_size(struct volume *size);
+HRESULT d3dx_calculate_pixels_size(enum d3dx_pixel_format_id format, uint32_t width, uint32_t height,
+    uint32_t *pitch, uint32_t *size);
 uint32_t d3dx_calculate_layer_pixels_size(enum d3dx_pixel_format_id format, uint32_t width, uint32_t height, uint32_t depth,
         uint32_t mip_levels);
 HRESULT d3dx_init_dds_header(struct dds_header *header, enum d3dx_resource_type resource_type,

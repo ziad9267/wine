@@ -59,7 +59,7 @@ HRESULT WINAPI D3DXFilterTexture(IDirect3DBaseTexture9 *texture,
     if (!texture)
         return D3DERR_INVALIDCALL;
 
-    if (filter != D3DX_DEFAULT && FAILED(hr = d3dx9_validate_filter(filter)))
+    if (filter != D3DX_DEFAULT && FAILED(hr = d3dx_validate_filter(filter)))
         return hr;
 
     if (srclevel == D3DX_DEFAULT)
@@ -567,7 +567,7 @@ static D3DFORMAT get_alpha_replacement_format(D3DFORMAT format)
 
 static uint32_t d3dx9_get_mip_filter_value(uint32_t mip_filter, uint32_t *skip_levels)
 {
-    uint32_t filter = (mip_filter == D3DX_DEFAULT) ? D3DX_FILTER_BOX : mip_filter & ~D3DX9_FILTER_INVALID_BITS;
+    uint32_t filter = (mip_filter == D3DX_DEFAULT) ? D3DX_FILTER_BOX : mip_filter & ~D3DX_FILTER_INVALID_BITS;
 
     *skip_levels = mip_filter != D3DX_DEFAULT ? mip_filter >> D3DX_SKIP_DDS_MIP_LEVELS_SHIFT : 0;
     *skip_levels &= D3DX_SKIP_DDS_MIP_LEVELS_MASK;

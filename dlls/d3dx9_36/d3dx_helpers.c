@@ -346,7 +346,7 @@ HRESULT dds_pixel_format_from_d3dx_pixel_format_id(struct dds_pixel_format *pixe
     return S_OK;
 }
 
-static enum d3dx_pixel_format_id d3dx_pixel_format_id_from_dxgi_format(DXGI_FORMAT format)
+enum d3dx_pixel_format_id d3dx_pixel_format_id_from_dxgi_format(DXGI_FORMAT format)
 {
     switch (format)
     {
@@ -390,7 +390,7 @@ static enum d3dx_pixel_format_id d3dx_pixel_format_id_from_dxgi_format(DXGI_FORM
     }
 }
 
-static void d3dx_get_next_mip_level_size(struct volume *size)
+void d3dx_get_next_mip_level_size(struct volume *size)
 {
     size->width  = max(size->width  / 2, 1);
     size->height = max(size->height / 2, 1);
@@ -404,7 +404,7 @@ static const char *debug_volume(const struct volume *volume)
     return wine_dbg_sprintf("(%ux%ux%u)", volume->width, volume->height, volume->depth);
 }
 
-static HRESULT d3dx_calculate_pixels_size(enum d3dx_pixel_format_id format, uint32_t width, uint32_t height,
+HRESULT d3dx_calculate_pixels_size(enum d3dx_pixel_format_id format, uint32_t width, uint32_t height,
     uint32_t *pitch, uint32_t *size)
 {
     const struct pixel_format_desc *format_desc = get_d3dx_pixel_format_info(format);
