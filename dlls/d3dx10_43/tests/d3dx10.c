@@ -3151,7 +3151,7 @@ static void test_dxt10_dds_header_image_info(void)
         /* Depth field value is ignored if DDS_DEPTH isn't set. */
         { 0, 4, 4, 2, (4 * 4), 1, 0, 0,
           { DXGI_FORMAT_R8G8B8A8_UNORM, D3D10_RESOURCE_DIMENSION_TEXTURE3D, 0, 1, 0, },
-          { S_OK, 4, 4, 1, 1, 1, 0, DXGI_FORMAT_R8G8B8A8_UNORM, D3D10_RESOURCE_DIMENSION_TEXTURE3D, }, (4 * 4 * 4 * 2), .todo_info = TRUE },
+          { S_OK, 4, 4, 1, 1, 1, 0, DXGI_FORMAT_R8G8B8A8_UNORM, D3D10_RESOURCE_DIMENSION_TEXTURE3D, }, (4 * 4 * 4 * 2) },
         /*
          * 3D texture with an array size larger than 1. Technically there's no
          * such thing as a 3D texture array, but it succeeds.
@@ -3412,8 +3412,8 @@ static void test_get_image_info(void)
     check_dds_dxt10_format(DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, TRUE);
     check_dds_dxt10_format(DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_UNORM, TRUE);
     check_dds_dxt10_format(DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, TRUE);
-    check_dds_dxt10_format(DXGI_FORMAT_B8G8R8X8_UNORM, DXGI_FORMAT_B8G8R8X8_UNORM, TRUE);
-    check_dds_dxt10_format(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_B8G8R8A8_UNORM, TRUE);
+    check_dds_dxt10_format(DXGI_FORMAT_B8G8R8X8_UNORM, DXGI_FORMAT_B8G8R8X8_UNORM, FALSE);
+    check_dds_dxt10_format(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_B8G8R8A8_UNORM, FALSE);
 
     test_legacy_dds_header_image_info();
     test_dxt10_dds_header_image_info();
