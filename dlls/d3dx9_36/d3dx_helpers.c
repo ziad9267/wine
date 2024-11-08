@@ -1896,6 +1896,20 @@ static void undo_premultiplied_alpha(struct vec4 *vec)
     vec->z = (vec->w == 0.0f) ? 0.0f : vec->z / vec->w;
 }
 
+static void vec4_to_sRGB(struct vec4 *vec)
+{
+    vec->x = (vec->x <= 0.0031308f) ? (12.92f * vec->x) : (1.055f * powf(vec->x, 1.0f / 2.4f) - 0.055f);
+    vec->y = (vec->y <= 0.0031308f) ? (12.92f * vec->y) : (1.055f * powf(vec->y, 1.0f / 2.4f) - 0.055f);
+    vec->z = (vec->z <= 0.0031308f) ? (12.92f * vec->z) : (1.055f * powf(vec->z, 1.0f / 2.4f) - 0.055f);
+}
+
+static void vec4_from_sRGB(struct vec4 *vec)
+{
+    vec->x = (vec->x <= 0.04045f) ? vec->x / 12.92f : powf((vec->x + 0.055f) / 1.055f, 2.4f);
+    vec->y = (vec->y <= 0.04045f) ? vec->y / 12.92f : powf((vec->y + 0.055f) / 1.055f, 2.4f);
+    vec->z = (vec->z <= 0.04045f) ? vec->z / 12.92f : powf((vec->z + 0.055f) / 1.055f, 2.4f);
+}
+
 /* It doesn't work for components bigger than 32 bits (or somewhat smaller but unaligned). */
 void format_to_d3dx_color(const struct pixel_format_desc *format, const BYTE *src, const PALETTEENTRY *palette,
         struct d3dx_color *dst)
@@ -2106,7 +2120,7 @@ static void convert_argb_pixels(const BYTE *src, UINT src_row_pitch, UINT src_sl
 {
     struct argb_conversion_info conv_info, ck_conv_info;
     const struct pixel_format_desc *ck_format;
-    BOOL src_pma, dst_pma;
+    BOOL src_pma, dst_pma, src_srgb, dst_srgb;
     DWORD channels[4];
     UINT min_width, min_height, min_depth;
     UINT x, y, z;
@@ -2121,6 +2135,8 @@ static void convert_argb_pixels(const BYTE *src, UINT src_row_pitch, UINT src_sl
 
     src_pma = !!(filter_flags & D3DX_FILTER_PMA_IN);
     dst_pma = !!(filter_flags & D3DX_FILTER_PMA_OUT);
+    src_srgb = !!(filter_flags & D3DX_FILTER_SRGB_IN);
+    dst_srgb = !!(filter_flags & D3DX_FILTER_SRGB_OUT);
     min_width = min(src_size->width, dst_size->width);
     min_height = min(src_size->height, dst_size->height);
     min_depth = min(src_size->depth, dst_size->depth);
@@ -2167,6 +2183,8 @@ static void convert_argb_pixels(const BYTE *src, UINT src_row_pitch, UINT src_sl
                     format_to_d3dx_color(src_format, src_ptr, palette, &color);
                     if (src_pma && src_pma != dst_pma)
                         undo_premultiplied_alpha(&color.value);
+                    if (src_srgb && src_srgb != dst_srgb)
+                        vec4_from_sRGB(&color.value);
                     tmp = color;
 
                     if (color_key)
@@ -2179,6 +2197,8 @@ static void convert_argb_pixels(const BYTE *src, UINT src_row_pitch, UINT src_sl
                     }
 
                     color = tmp;
+                    if (dst_srgb && src_srgb != dst_srgb)
+                        vec4_to_sRGB(&color.value);
                     if (dst_pma && src_pma != dst_pma)
                         premultiply_alpha(&color.value);
                     format_from_d3dx_color(dst_format, &color, dst_ptr);
@@ -2213,7 +2233,7 @@ static void point_filter_argb_pixels(const BYTE *src, UINT src_row_pitch, UINT s
 {
     struct argb_conversion_info conv_info, ck_conv_info;
     const struct pixel_format_desc *ck_format;
-    BOOL src_pma, dst_pma;
+    BOOL src_pma, dst_pma, src_srgb, dst_srgb;
     DWORD channels[4];
     UINT x, y, z;
 
@@ -2222,6 +2242,8 @@ static void point_filter_argb_pixels(const BYTE *src, UINT src_row_pitch, UINT s
             src, src_row_pitch, src_slice_pitch, src_size, src_format, dst, dst_row_pitch, dst_slice_pitch, dst_size,
             dst_format, color_key, palette);
 
+    src_srgb = !!(filter_flags & D3DX_FILTER_SRGB_IN);
+    dst_srgb = !!(filter_flags & D3DX_FILTER_SRGB_OUT);
     src_pma = !!(filter_flags & D3DX_FILTER_PMA_IN);
     dst_pma = !!(filter_flags & D3DX_FILTER_PMA_OUT);
     ZeroMemory(channels, sizeof(channels));
@@ -2274,6 +2296,8 @@ static void point_filter_argb_pixels(const BYTE *src, UINT src_row_pitch, UINT s
                     format_to_d3dx_color(src_format, src_ptr, palette, &color);
                     if (src_pma && src_pma != dst_pma)
                         undo_premultiplied_alpha(&color.value);
+                    if (src_srgb && src_srgb != dst_srgb)
+                        vec4_from_sRGB(&color.value);
                     tmp = color;
 
                     if (color_key)
@@ -2286,6 +2310,8 @@ static void point_filter_argb_pixels(const BYTE *src, UINT src_row_pitch, UINT s
                     }
 
                     color = tmp;
+                    if (dst_srgb && src_srgb != dst_srgb)
+                        vec4_to_sRGB(&color.value);
                     if (dst_pma && src_pma != dst_pma)
                         premultiply_alpha(&color.value);
                     format_from_d3dx_color(dst_format, &color, dst_ptr);
@@ -2634,7 +2660,7 @@ HRESULT d3dx_load_pixels_from_pixels(struct d3dx_pixels *dst_pixels,
        const struct pixel_format_desc *src_desc, uint32_t filter_flags, uint32_t color_key)
 {
     struct volume src_size, dst_size, dst_size_aligned;
-    BOOL src_pma, dst_pma;
+    BOOL src_pma, dst_pma, src_srgb, dst_srgb;
     HRESULT hr = S_OK;
 
     TRACE("dst_pixels %s, dst_desc %p, src_pixels %s, src_desc %p, filter_flags %#x, color_key %#x.\n",
@@ -2647,6 +2673,8 @@ HRESULT d3dx_load_pixels_from_pixels(struct d3dx_pixels *dst_pixels,
     if (dst_desc->flags & FMT_FLAG_PM_ALPHA)
         filter_flags |= D3DX_FILTER_PMA_OUT;
 
+    src_srgb = !!(filter_flags & D3DX_FILTER_SRGB_IN);
+    dst_srgb = !!(filter_flags & D3DX_FILTER_SRGB_OUT);
     src_pma = !!(filter_flags & D3DX_FILTER_PMA_IN);
     dst_pma = !!(filter_flags & D3DX_FILTER_PMA_OUT);
 
@@ -2669,6 +2697,7 @@ HRESULT d3dx_load_pixels_from_pixels(struct d3dx_pixels *dst_pixels,
             && (dst_size.height == src_size.height && !(dst_size.height % dst_desc->block_height))
             && (dst_size.depth == src_size.depth)
             && (src_pma == dst_pma)
+            && (src_srgb == dst_srgb)
             && color_key == 0
             && !(src_pixels->unaligned_rect.left & (src_desc->block_width - 1))
             && !(src_pixels->unaligned_rect.top & (src_desc->block_height - 1))
