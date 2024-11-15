@@ -2000,9 +2000,13 @@ static const IMFAsyncCallbackVtbl stream_handler_callback_vtbl =
 HRESULT gstreamer_byte_stream_handler_2_create(REFIID riid, void **obj)
 {
     struct stream_handler *handler;
+    const char *sgi;
     HRESULT hr;
 
     TRACE("%s, %p.\n", debugstr_guid(riid), obj);
+
+    if ((sgi = getenv("SteamGameId")) && (!strcmp(sgi, "418370") || !strcmp(sgi, "1196590")))
+        return gstreamer_byte_stream_handler_create(riid, obj);
 
     if (!(handler = calloc(1, sizeof(*handler))))
         return E_OUTOFMEMORY;
