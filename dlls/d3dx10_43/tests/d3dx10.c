@@ -7517,7 +7517,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_RGB | DDS_PF_ALPHA, 0, 32, 0xff, 0xff00, 0xff0000, 0xff000000 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7531,14 +7530,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_RGB | DDS_PF_ALPHA, 0, 32, 0xff, 0xff00, 0xff0000, 0xff000000 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 1, 8, 32, 1, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7561,7 +7558,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_RGB | DDS_PF_ALPHA, 0, 32, 0x3ff00000, 0xffc00, 0x3ff, 0xc0000000 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7575,14 +7571,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_RGB | DDS_PF_ALPHA, 0, 32, 0x3ff00000, 0xffc00, 0x3ff, 0xc0000000 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 1, 8, 32, 1, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7605,7 +7599,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_FOURCC, 0x24, 64, 0, 0, 0, 0 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 64, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7619,14 +7612,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 64, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, 0x24, 64, 0, 0, 0, 0 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 1, 8, 64, 1, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7649,7 +7640,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_RGB, 0, 32, 0xffff, 0xffff0000, 0, 0 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7663,14 +7653,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_RGB, 0, 32, 0xffff, 0xffff0000, 0, 0 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 1, 8, 32, 1, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7693,7 +7681,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_ALPHA_ONLY, 0, 8, 0, 0, 0, 0xff },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 8, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7707,14 +7694,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 8, 0, 4, { 0 },
                 { 32, DDS_PF_ALPHA_ONLY, 0, 8, 0, 0, 0, 0xff },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 1, 8, 8, 1, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7738,7 +7723,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_FOURCC, 0x6f, 16, 0, 0, 0, 0 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 16, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7752,14 +7736,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 16, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, 0x6f, 16, 0, 0, 0, 0 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 1, 8, 16, 1, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7782,7 +7764,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_FOURCC, 0x70, 32, 0, 0, 0, 0 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7796,14 +7777,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, 0x70, 32, 0, 0, 0, 0 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 1, 8, 32, 1, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7826,7 +7805,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_FOURCC, 0x71, 64, 0, 0, 0, 0 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 64, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7840,14 +7818,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 64, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, 0x71, 64, 0, 0, 0, 0 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 1, 8, 64, 1, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7870,7 +7846,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_FOURCC, 0x72, 32, 0, 0, 0, 0 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7884,14 +7859,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, 0x72, 32, 0, 0, 0, 0 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 1, 8, 32, 1, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7914,7 +7887,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_FOURCC, 0x73, 64, 0, 0, 0, 0 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 64, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7928,14 +7900,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 64, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, 0x73, 64, 0, 0, 0, 0 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 1, 8, 64, 1, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7959,7 +7929,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_FOURCC, 0x74, 128, 0, 0, 0, 0 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 128, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -7973,14 +7942,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 128, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, 0x74, 128, 0, 0, 0, 0 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 1, 8, 128, 1, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -8091,7 +8058,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','T','1'), 4, 0, 0, 0, 0 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 16, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -8105,14 +8071,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 16, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','T','1'), 4, 0, 0, 0, 0 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
           }
         },
@@ -8121,7 +8085,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','T','3'), 4, 0, 0, 0, 0 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -8135,14 +8098,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','T','3'), 4, 0, 0, 0, 0 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
           }
         },
@@ -8152,7 +8113,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','T','5'), 8, 0, 0, 0, 0 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -8166,14 +8126,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','T','5'), 8, 0, 0, 0, 0 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
           }
         },
@@ -8182,7 +8140,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('B','C','4','U'), 8, 0, 0, 0, 0 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 16, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -8196,14 +8153,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 16, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('B','C','4','U'), 8, 0, 0, 0, 0 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
           }
         },
@@ -8212,7 +8167,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('B','C','4','S'), 8, 0, 0, 0, 0 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 16, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -8226,14 +8180,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 16, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('B','C','4','S'), 8, 0, 0, 0, 0 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
           }
         },
@@ -8242,7 +8194,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('A','T','I','2'), 8, 0, 0, 0, 0 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -8256,14 +8207,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('A','T','I','2'), 8, 0, 0, 0, 0 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
           }
         },
@@ -8272,7 +8221,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('B','C','5','S'), 8, 0, 0, 0, 0 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -8286,14 +8234,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 32, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('B','C','5','S'), 8, 0, 0, 0, 0 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
           }
         },
@@ -8303,7 +8249,6 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 { 32, DDS_PF_FOURCC, 0x6e, 64, 0, 0, 0, 0 },
                 DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 64, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -8317,14 +8262,12 @@ static void test_save_texture_to_dds(ID3D10Device *device)
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_VOLUME, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 8, 8, 64, 0, 4, { 0 },
                 { 32, DDS_PF_FOURCC, 0x6e, 64, 0, 0, 0, 0 },
                 DDS_CAPS_COMPLEX | DDS_CAPS_TEXTURE | DDSCAPS_MIPMAP,
                 DDS_CAPS2_CUBEMAP | DDS_CAPS2_CUBEMAP_ALL_FACES, 0, 0
               },
-              .todo = TRUE
             },
             { { 124, DDS_HEIGHT | DDS_WIDTH, 1, 8, 64, 1, 4, { 0 },
                 { 32, DDS_PF_FOURCC, MAKEFOURCC('D','X','1','0'), 0, 0, 0, 0, 0 },
@@ -9027,17 +8970,14 @@ static void test_save_texture(void)
     ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
 
     hr = D3DX10SaveTextureToMemory((ID3D10Resource *)tex_2d, D3DX10_IFF_DDS, &buffer, 0);
-    todo_wine ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
-    if (SUCCEEDED(hr))
-    {
-        hr = D3DX10GetImageInfoFromMemory(ID3D10Blob_GetBufferPointer(buffer), ID3D10Blob_GetBufferSize(buffer), NULL,
-                &img_info, NULL);
-        ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
-        check_image_info_values(&img_info, 8, 8, 1, 1, 4, 0, DXGI_FORMAT_R8G8B8A8_UNORM, D3D10_RESOURCE_DIMENSION_TEXTURE2D,
-                D3DX10_IFF_DDS, FALSE);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
 
-        ID3D10Blob_Release(buffer);
-    }
+    hr = D3DX10GetImageInfoFromMemory(ID3D10Blob_GetBufferPointer(buffer), ID3D10Blob_GetBufferSize(buffer), NULL,
+            &img_info, NULL);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+    check_image_info_values(&img_info, 8, 8, 1, 1, 4, 0, DXGI_FORMAT_R8G8B8A8_UNORM, D3D10_RESOURCE_DIMENSION_TEXTURE2D,
+            D3DX10_IFF_DDS, FALSE);
+    ID3D10Blob_Release(buffer);
 
     ID3D10Texture2D_Release(tex_2d);
 

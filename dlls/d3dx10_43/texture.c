@@ -1172,6 +1172,7 @@ struct d3d10_texture
     const struct pixel_format_desc *fmt_desc;
     D3D10_MAP map_flags;
     D3D10_BOX texture_box;
+    BOOL is_cubemap;
 
     uint32_t first_layer;
     uint32_t first_mip_level;
@@ -1296,6 +1297,7 @@ static HRESULT d3dx_d3d10_texture_init(ID3D10Resource *tex_rsrc, uint32_t first_
 
         texture->first_mip_level = min((desc.MipLevels - 1), first_mip_level);
         texture->first_layer = first_layer >= desc.ArraySize ? 0 : first_layer;
+        texture->is_cubemap = !!(desc.MiscFlags & D3D10_RESOURCE_MISC_TEXTURECUBE);
 
         staging_tex_rsrc->texture_dimension = src_tex_rsrc->texture_dimension;
         staging_tex_rsrc->size = src_tex_rsrc->size;
@@ -1621,7 +1623,101 @@ HRESULT WINAPI D3DX10SaveTextureToFileA(ID3D10Resource *texture, D3DX10_IMAGE_FI
 HRESULT WINAPI D3DX10SaveTextureToMemory(ID3D10Resource *texture, D3DX10_IMAGE_FILE_FORMAT format, ID3D10Blob **buffer,
         UINT flags)
 {
-    FIXME("texture %p, format %u, buffer %p, flags %#x stub!\n", texture, format, buffer, flags);
+    const struct pixel_format_desc *fmt_desc = NULL;
+    struct d3d10_texture src_tex = { 0 };
+    enum d3dx_resource_type d3dx_rtype;
+    D3D10_RESOURCE_DIMENSION rsrc_dim;
+    struct d3dx_image image = { 0 };
+    ID3D10Blob *out_buffer;
+    unsigned int i, j;
+    HRESULT hr;
 
-    return E_NOTIMPL;
+    TRACE("texture %p, format %u, buffer %p, flags %#x.\n", texture, format, buffer, flags);
+
+    if (!texture || !buffer)
+        return E_INVALIDARG;
+
+    out_buffer = *buffer = NULL;
+    if (format != D3DX10_IFF_DDS)
+    {
+        FIXME("Saving to file format %u is currently unimplemented.\n", format);
+        return E_NOTIMPL;
+    }
+
+    ID3D10Resource_GetType(texture, &rsrc_dim);
+    switch (rsrc_dim)
+    {
+        case D3D10_RESOURCE_DIMENSION_TEXTURE2D:
+            d3dx_rtype = D3DX_RESOURCE_TYPE_TEXTURE_2D;
+            break;
+
+        case D3D10_RESOURCE_DIMENSION_TEXTURE3D:
+            d3dx_rtype = D3DX_RESOURCE_TYPE_TEXTURE_3D;
+            break;
+
+        default:
+            FIXME("Currently only 2D and 3D texture saving is supported.\n");
+            return E_NOTIMPL;
+    }
+
+    hr = d3dx_d3d10_texture_init(texture, 0, 0, D3D10_MAP_READ, NULL, &src_tex);
+    if (FAILED(hr))
+        return hr;
+
+    if ((src_tex.texture.layer_count > 1 && !src_tex.is_cubemap) || (src_tex.is_cubemap && src_tex.texture.layer_count > 6))
+    {
+        FIXME("Texture arrays are currently unimplemented.\n");
+        hr = E_NOTIMPL;
+        goto exit;
+    }
+
+    if (src_tex.is_cubemap)
+        d3dx_rtype = D3DX_RESOURCE_TYPE_CUBE_TEXTURE;
+
+    hr = d3dx_create_dds_file_blob(src_tex.fmt_desc->format, NULL, d3dx_rtype, &src_tex.texture.size,
+            src_tex.texture.mip_levels, src_tex.texture.layer_count, TRUE, &out_buffer);
+    if (FAILED(hr))
+    {
+        FIXME("Failed to create dds file with hr %#lx.\n", hr);
+        goto exit;
+    }
+
+    hr = d3dx_image_init(ID3D10Blob_GetBufferPointer(out_buffer), ID3D10Blob_GetBufferSize(out_buffer), &image, 0,
+            D3DX_IMAGE_SUPPORT_DXT10);
+    if (FAILED(hr))
+        goto exit;
+
+    fmt_desc = get_d3dx_pixel_format_info(image.format);
+    for (i = 0; i < image.layer_count; ++i)
+    {
+        for (j = 0; j < image.mip_levels; ++j)
+        {
+            struct d3dx_pixels src_pixels, dst_pixels;
+
+            hr = d3dx_image_get_pixels(&image, i, j, &dst_pixels);
+            if (FAILED(hr))
+                goto exit;
+
+            hr = d3dx_d3d10_texture_map(&src_tex, i, j, &src_pixels);
+            if (FAILED(hr))
+                goto exit;
+
+            hr = d3dx_load_pixels_from_pixels(&dst_pixels, fmt_desc, &src_pixels, src_tex.fmt_desc, D3DX_FILTER_NONE, 0);
+            d3dx_d3d10_texture_unmap(&src_tex, i, j);
+            if (FAILED(hr))
+            {
+                WARN("Failed with hr %#lx.\n", hr);
+                goto exit;
+            }
+        }
+    }
+
+    if (SUCCEEDED(hr))
+        *buffer = out_buffer;
+
+exit:
+    if (out_buffer && *buffer != out_buffer)
+        ID3D10Blob_Release(out_buffer);
+    d3dx_d3d10_texture_release(&src_tex);
+    return SUCCEEDED(hr) ? S_OK : hr;
 }

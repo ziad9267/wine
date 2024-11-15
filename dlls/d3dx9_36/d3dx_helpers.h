@@ -487,8 +487,9 @@ HRESULT d3dx_calculate_pixels_size(enum d3dx_pixel_format_id format, uint32_t wi
     uint32_t *pitch, uint32_t *size);
 uint32_t d3dx_calculate_layer_pixels_size(enum d3dx_pixel_format_id format, uint32_t width, uint32_t height, uint32_t depth,
         uint32_t mip_levels);
-HRESULT d3dx_init_dds_header(struct dds_header *header, enum d3dx_resource_type resource_type,
-        enum d3dx_pixel_format_id format, const struct volume *size, uint32_t mip_levels);
+HRESULT d3dx_create_dds_file_blob(enum d3dx_pixel_format_id format, const PALETTEENTRY *palette,
+        enum d3dx_resource_type resource_type, const struct volume *size, uint32_t mip_levels, uint32_t layers,
+        BOOL support_dxt10, ID3DXBlob **out_blob);
 HRESULT d3dx_save_pixels_to_memory(struct d3dx_pixels *src_pixels, const struct pixel_format_desc *src_fmt_desc,
         enum d3dx_image_file_format file_format, enum d3dx_pixel_format_id dst_format, ID3DXBlob **dst_blob);
 HRESULT d3dx_pixels_init(const void *data, uint32_t row_pitch, uint32_t slice_pitch,
