@@ -222,6 +222,7 @@ static void hid_device_queue_input( DEVICE_OBJECT *device, HID_XFER_PACKET *pack
     HIDP_COLLECTION_DESC *desc = ext->u.pdo.collection_desc;
     ULONG size, report_len = polled ? packet->reportBufferLen : desc->InputLength;
     struct hid_report *last_report, *report;
+    BOOL steam_overlay_open = FALSE;
     struct hid_queue *queue;
     LIST_ENTRY completed, *entry;
     KIRQL irql;
@@ -229,7 +230,10 @@ static void hid_device_queue_input( DEVICE_OBJECT *device, HID_XFER_PACKET *pack
 
     TRACE("device %p, packet %p\n", device, packet);
 
-    if (IsEqualGUID( ext->class_guid, &GUID_DEVINTERFACE_HID ))
+    if (WaitForSingleObject(ext->steam_overlay_event, 0) == WAIT_OBJECT_0) /* steam overlay is open */
+        steam_overlay_open = TRUE;
+
+    if (IsEqualGUID( ext->class_guid, &GUID_DEVINTERFACE_HID ) && !steam_overlay_open)
     {
         struct hid_packet *hid;
 
