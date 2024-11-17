@@ -1617,6 +1617,12 @@ static void udev_add_device(struct udev_device *dev, int fd)
 
     if (is_xbox_gamepad(desc.vid, desc.pid))
         desc.is_gamepad = TRUE;
+    else if (is_sdl_ignored_device(desc.vid, desc.pid))
+    {
+        TRACE("evdev %s: ignoring %s, in SDL ignore list\n", debugstr_a(devnode), debugstr_device_desc(&desc));
+        close(fd);
+        return;
+    }
 #ifdef HAS_PROPER_INPUT_HEADER
     else if (!strcmp(subsystem, "input"))
     {
