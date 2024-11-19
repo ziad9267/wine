@@ -608,15 +608,23 @@ static BOOL bezier_fits_deviation(const bezier_vector *p, FLOAT max_deviation)
     base.x = p[2].x - p[0].x;
     base.y = p[2].y - p[0].y;
 
-    base_length = sqrt(base.x*base.x + base.y*base.y);
-    if (base_length <= max_deviation) return TRUE;
-    base.x /= base_length;
-    base.y /= base_length;
+    base_length = base.x * base.x + base.y * base.y;
+    if (base_length <= max_deviation)
+    {
+        base.x = 0.0;
+        base.y = 0.0;
+    }
+    else
+    {
+        base_length = sqrt(base_length);
+        base.x /= base_length;
+        base.y /= base_length;
 
-    dot = base.x*vertex.x + base.y*vertex.y;
-    dot = min(max(dot, 0.0), base_length);
-    base.x *= dot;
-    base.y *= dot;
+        dot = base.x*vertex.x + base.y*vertex.y;
+        dot = min(max(dot, 0.0), base_length);
+        base.x *= dot;
+        base.y *= dot;
+    }
 
     deviation.x = vertex.x-base.x;
     deviation.y = vertex.y-base.y;
