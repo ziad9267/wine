@@ -377,9 +377,9 @@ static HRESULT WINAPI BindStatusCallback_GetBindInfo(IBindStatusCallback *iface,
         pbindinfo->dwBindVerb = BINDVERB_POST;
 
         pbindinfo->stgmedData.tymed = TYMED_HGLOBAL;
-        if (!(pbindinfo->stgmedData.hGlobal = GlobalAlloc(0, This->request_data.post_data_len)))
-            return E_OUTOFMEMORY;
-        memcpy(pbindinfo->stgmedData.hGlobal, This->request_data.post_data, This->request_data.post_data_len);
+        pbindinfo->stgmedData.hGlobal = This->request_data.post_data;
+        pbindinfo->stgmedData.pUnkForRelease = (IUnknown*)&This->IBindStatusCallback_iface;
+        IBindStatusCallback_AddRef(&This->IBindStatusCallback_iface);
     }
 
     return S_OK;
