@@ -182,7 +182,7 @@ static NTSTATUS find_shared_session_block( SIZE_T offset, SIZE_T size, struct se
 static const shared_object_t *find_shared_session_object( struct obj_locator locator )
 {
     const shared_object_t *object;
-    struct session_block *block;
+    struct session_block *block = NULL;
     NTSTATUS status;
 
     if (locator.id && !(status = find_shared_session_block( locator.offset, sizeof(*object), &block )))
