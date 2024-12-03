@@ -2276,6 +2276,8 @@ static BOOL lock_display_devices( BOOL force )
 
     init_display_driver(); /* make sure to load the driver before anything else */
 
+    if (user_driver->pHasWindowManager( "steamcompmgr" )) emulate_modeset = FALSE;
+
     pthread_mutex_lock( &display_lock );
 
     serial = get_monitor_update_serial();
