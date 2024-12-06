@@ -41,13 +41,6 @@ static inline struct wine_cmd_buffer *wine_cmd_buffer_from_handle(VkCommandBuffe
     return (struct wine_cmd_buffer *)(UINT_PTR)client->unix_handle;
 }
 
-struct wine_device
-{
-    struct vulkan_device obj;
-    uint64_t queue_count;
-    struct vulkan_queue *queues;
-};
-
 struct wine_debug_utils_messenger;
 
 struct wine_debug_report_callback

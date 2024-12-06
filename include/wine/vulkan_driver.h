@@ -109,6 +109,8 @@ struct vulkan_device
 #define USE_VK_FUNC(x) PFN_ ## x p_ ## x;
     ALL_VK_DEVICE_FUNCS
 #undef USE_VK_FUNC
+    uint64_t queue_count;
+    struct vulkan_queue *queues;
 };
 
 static inline struct vulkan_device *vulkan_device_from_handle( VkDevice handle )

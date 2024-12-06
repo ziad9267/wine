@@ -48,12 +48,6 @@ static struct wine_phys_dev *wine_phys_dev_from_handle(VkPhysicalDevice handle)
     return CONTAINING_RECORD(object, struct wine_phys_dev, obj);
 }
 
-static struct wine_device *wine_device_from_handle(VkDevice handle)
-{
-    struct vulkan_device *object = vulkan_device_from_handle(handle);
-    return CONTAINING_RECORD(object, struct wine_device, obj);
-}
-
 static void vulkan_object_init_ptr( struct vulkan_object *obj, UINT64 host_handle, struct vulkan_client_object *client )
 {
     obj->host_handle = host_handle;
@@ -485,11 +479,10 @@ static void wine_vk_free_command_buffers(struct vulkan_device *device,
     }
 }
 
-static void wine_vk_device_init_queues(struct wine_device *object, const VkDeviceQueueCreateInfo *info)
+static void wine_vk_device_init_queues(struct vulkan_device *device, const VkDeviceQueueCreateInfo *info)
 {
-    struct vulkan_queue *queues = object->queues + object->queue_count;
-    struct vulkan_device *device = &object->obj;
-    VkQueue client_queues = device->client.device->queues + object->queue_count;
+    struct vulkan_queue *queues = device->queues + device->queue_count;
+    VkQueue client_queues = device->client.device->queues + device->queue_count;
     VkDeviceQueueInfo2 queue_info;
     UINT i;
 
@@ -528,7 +521,7 @@ static void wine_vk_device_init_queues(struct wine_device *object, const VkDevic
         TRACE("Got device %p queue %p, host_queue %p.\n", device, queue, queue->host.queue);
     }
 
-    object->queue_count += info->queueCount;
+    device->queue_count += info->queueCount;
 }
 
 static char *cc_strdup(struct conversion_context *ctx, const char *s)
@@ -924,7 +917,7 @@ VkResult wine_vkCreateDevice(VkPhysicalDevice client_physical_device, const VkDe
     VkDevice host_device, client_device = client_ptr;
     VkDeviceCreateInfo create_info_host;
     struct conversion_context ctx;
-    struct wine_device *device;
+    struct vulkan_device *device;
     unsigned int queue_count, i;
     VkResult res;
     size_t size;
@@ -987,16 +980,16 @@ VkResult wine_vkCreateDevice(VkPhysicalDevice client_physical_device, const VkDe
         return res;
     }
 
-    vulkan_object_init_ptr(&device->obj.obj, (UINT_PTR)host_device, &client_device->obj);
-    device->obj.physical_device = physical_device;
+    vulkan_object_init_ptr(&device->obj, (UINT_PTR)host_device, &client_device->obj);
+    device->physical_device = physical_device;
 
     /* Just load all function pointers we are aware off. The loader takes care of filtering.
      * We use vkGetDeviceProcAddr as opposed to vkGetInstanceProcAddr for efficiency reasons
      * as functions pass through fewer dispatch tables within the loader.
      */
 #define USE_VK_FUNC(name)                                                                          \
-    device->obj.p_##name = (void *)vk_funcs->p_vkGetDeviceProcAddr(device->obj.host.device, #name);  \
-    if (device->obj.p_##name == NULL) TRACE("Not found '%s'.\n", #name);
+    device->p_##name = (void *)vk_funcs->p_vkGetDeviceProcAddr(device->host.device, #name);  \
+    if (device->p_##name == NULL) TRACE("Not found '%s'.\n", #name);
     ALL_VK_DEVICE_FUNCS
 #undef USE_VK_FUNC
 
@@ -1005,13 +998,13 @@ VkResult wine_vkCreateDevice(VkPhysicalDevice client_physical_device, const VkDe
 
     client_device->quirks = CONTAINING_RECORD(instance, struct wine_instance, obj)->quirks;
 
-    TRACE("Created device %p, host_device %p.\n", device, device->obj.host.device);
+    TRACE("Created device %p, host_device %p.\n", device, device->host.device);
     for (i = 0; i < device->queue_count; i++)
     {
         struct vulkan_queue *queue = device->queues + i;
         vulkan_instance_insert_object(instance, &queue->obj);
     }
-    vulkan_instance_insert_object(instance, &device->obj.obj);
+    vulkan_instance_insert_object(instance, &device->obj);
 
     *ret = client_device;
     return VK_SUCCESS;
@@ -1122,8 +1115,8 @@ VkResult wine_vkCreateInstance(const VkInstanceCreateInfo *create_info,
 
 void wine_vkDestroyDevice(VkDevice client_device, const VkAllocationCallbacks *allocator)
 {
-    struct wine_device *device = wine_device_from_handle(client_device);
-    struct vulkan_instance *instance = device->obj.physical_device->instance;
+    struct vulkan_device *device = vulkan_device_from_handle(client_device);
+    struct vulkan_instance *instance = device->physical_device->instance;
     unsigned int i;
 
     if (allocator)
@@ -1131,10 +1124,10 @@ void wine_vkDestroyDevice(VkDevice client_device, const VkAllocationCallbacks *a
     if (!device)
         return;
 
-    device->obj.p_vkDestroyDevice(device->obj.host.device, NULL /* pAllocator */);
+    device->p_vkDestroyDevice(device->host.device, NULL /* pAllocator */);
     for (i = 0; i < device->queue_count; i++)
         vulkan_instance_remove_object(instance, &device->queues[i].obj);
-    vulkan_instance_remove_object(instance, &device->obj.obj);
+    vulkan_instance_remove_object(instance, &device->obj);
 
     free(device);
 }
@@ -1310,7 +1303,7 @@ void wine_vkFreeCommandBuffers(VkDevice client_device, VkCommandPool command_poo
 
 static VkQueue wine_vk_device_find_queue(VkDevice client_device, const VkDeviceQueueInfo2 *info)
 {
-    struct wine_device *device = wine_device_from_handle(client_device);
+    struct vulkan_device *device = vulkan_device_from_handle(client_device);
     struct vulkan_queue *queue;
     uint32_t i;
 
