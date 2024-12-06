@@ -121,6 +121,9 @@ struct vulkan_queue
 {
     VULKAN_OBJECT_HEADER( VkQueue, queue );
     struct vulkan_device *device;
+    uint32_t family_index;
+    uint32_t queue_index;
+    VkDeviceQueueCreateFlags flags;
 };
 
 static inline struct vulkan_queue *vulkan_queue_from_handle( VkQueue handle )

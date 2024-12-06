@@ -487,7 +487,7 @@ static void wine_vk_free_command_buffers(struct vulkan_device *device,
 
 static void wine_vk_device_init_queues(struct wine_device *object, const VkDeviceQueueCreateInfo *info)
 {
-    struct wine_queue *queues = object->queues + object->queue_count;
+    struct vulkan_queue *queues = object->queues + object->queue_count;
     struct vulkan_device *device = &object->obj;
     VkQueue client_queues = device->client.device->queues + object->queue_count;
     VkDeviceQueueInfo2 queue_info;
@@ -497,7 +497,7 @@ static void wine_vk_device_init_queues(struct wine_device *object, const VkDevic
 
     for (i = 0; i < info->queueCount; i++)
     {
-        struct wine_queue *queue = queues + i;
+        struct vulkan_queue *queue = queues + i;
         VkQueue host_queue, client_queue = client_queues + i;
 
         /* The Vulkan spec says:
@@ -519,13 +519,13 @@ static void wine_vk_device_init_queues(struct wine_device *object, const VkDevic
             device->p_vkGetDeviceQueue(device->host.device, info->queueFamilyIndex, i, &host_queue);
         }
 
-        vulkan_object_init_ptr(&queue->obj.obj, (UINT_PTR)host_queue, &client_queue->obj);
-        queue->obj.device = device;
+        vulkan_object_init_ptr(&queue->obj, (UINT_PTR)host_queue, &client_queue->obj);
+        queue->device = device;
         queue->family_index = info->queueFamilyIndex;
         queue->queue_index = i;
         queue->flags = info->flags;
 
-        TRACE("Got device %p queue %p, host_queue %p.\n", device, queue, queue->obj.host.queue);
+        TRACE("Got device %p queue %p, host_queue %p.\n", device, queue, queue->host.queue);
     }
 
     object->queue_count += info->queueCount;
@@ -1001,8 +1001,8 @@ VkResult wine_vkCreateDevice(VkPhysicalDevice client_physical_device, const VkDe
     TRACE("Created device %p, host_device %p.\n", device, device->obj.host.device);
     for (i = 0; i < device->queue_count; i++)
     {
-        struct wine_queue *queue = device->queues + i;
-        vulkan_instance_insert_object(instance, &queue->obj.obj);
+        struct vulkan_queue *queue = device->queues + i;
+        vulkan_instance_insert_object(instance, &queue->obj);
     }
     vulkan_instance_insert_object(instance, &device->obj.obj);
 
@@ -1126,7 +1126,7 @@ void wine_vkDestroyDevice(VkDevice client_device, const VkAllocationCallbacks *a
 
     device->obj.p_vkDestroyDevice(device->obj.host.device, NULL /* pAllocator */);
     for (i = 0; i < device->queue_count; i++)
-        vulkan_instance_remove_object(instance, &device->queues[i].obj.obj);
+        vulkan_instance_remove_object(instance, &device->queues[i].obj);
     vulkan_instance_remove_object(instance, &device->obj.obj);
 
     free(device);
@@ -1304,7 +1304,7 @@ void wine_vkFreeCommandBuffers(VkDevice client_device, VkCommandPool command_poo
 static VkQueue wine_vk_device_find_queue(VkDevice client_device, const VkDeviceQueueInfo2 *info)
 {
     struct wine_device *device = wine_device_from_handle(client_device);
-    struct wine_queue *queue;
+    struct vulkan_queue *queue;
     uint32_t i;
 
     for (i = 0; i < device->queue_count; i++)
@@ -1314,7 +1314,7 @@ static VkQueue wine_vk_device_find_queue(VkDevice client_device, const VkDeviceQ
                 && queue->queue_index == info->queueIndex
                 && queue->flags == info->flags)
         {
-            return queue->obj.client.queue;
+            return queue->client.queue;
         }
     }
 
