@@ -45,10 +45,8 @@ struct wine_device
 {
     struct vulkan_device obj;
     uint64_t queue_count;
-    struct vulkan_queue queues[];
+    struct vulkan_queue *queues;
 };
-
-C_ASSERT(sizeof(struct wine_device) == offsetof(struct wine_device, queues[0]));
 
 struct wine_debug_utils_messenger;
 

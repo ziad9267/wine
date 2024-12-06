@@ -927,6 +927,8 @@ VkResult wine_vkCreateDevice(VkPhysicalDevice client_physical_device, const VkDe
     struct wine_device *device;
     unsigned int queue_count, i;
     VkResult res;
+    size_t size;
+    void *ptr;
 
     PFN_native_vkCreateDevice native_create_device = NULL;
     void *native_create_device_context = NULL;
@@ -946,12 +948,17 @@ VkResult wine_vkCreateDevice(VkPhysicalDevice client_physical_device, const VkDe
         TRACE("Driver version: %#x.\n", properties.driverVersion);
     }
 
+    size = sizeof(*device);
+
     /* We need to cache all queues within the device as each requires wrapping since queues are dispatchable objects. */
     for (queue_count = 0, i = 0; i < create_info->queueCreateInfoCount; i++)
         queue_count += create_info->pQueueCreateInfos[i].queueCount;
+    size += queue_count * sizeof(*device->queues);
 
-    if (!(device = calloc(1, offsetof(struct wine_device, queues[queue_count]))))
-        return VK_ERROR_OUT_OF_HOST_MEMORY;
+    if (!(device = ptr = calloc(1, size))) return VK_ERROR_OUT_OF_HOST_MEMORY;
+    ptr = (char *)ptr + sizeof(*device);
+    device->queues = ptr;
+    ptr = (char *)ptr + queue_count * sizeof(*device->queues);
 
     if ((callback = (VkCreateInfoWineDeviceCallback *)create_info->pNext)
             && callback->sType == VK_STRUCTURE_TYPE_CREATE_INFO_WINE_DEVICE_CALLBACK)
