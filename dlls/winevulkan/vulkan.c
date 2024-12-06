@@ -918,7 +918,7 @@ VkResult wine_vkCreateDevice(VkPhysicalDevice client_physical_device, const VkDe
     VkDeviceCreateInfo create_info_host;
     struct conversion_context ctx;
     struct vulkan_device *device;
-    unsigned int queue_count, i;
+    unsigned int queue_count, props_count, i;
     VkResult res;
     size_t size;
     void *ptr;
@@ -943,6 +943,9 @@ VkResult wine_vkCreateDevice(VkPhysicalDevice client_physical_device, const VkDe
 
     size = sizeof(*device);
 
+    instance->p_vkGetPhysicalDeviceQueueFamilyProperties(physical_device->host.physical_device, &props_count, NULL);
+    size += props_count * sizeof(*device->queue_props);
+
     /* We need to cache all queues within the device as each requires wrapping since queues are dispatchable objects. */
     for (queue_count = 0, i = 0; i < create_info->queueCreateInfoCount; i++)
         queue_count += create_info->pQueueCreateInfos[i].queueCount;
@@ -950,6 +953,8 @@ VkResult wine_vkCreateDevice(VkPhysicalDevice client_physical_device, const VkDe
 
     if (!(device = ptr = calloc(1, size))) return VK_ERROR_OUT_OF_HOST_MEMORY;
     ptr = (char *)ptr + sizeof(*device);
+    device->queue_props = ptr;
+    ptr = (char *)ptr + props_count * sizeof(*device->queue_props);
     device->queues = ptr;
     ptr = (char *)ptr + queue_count * sizeof(*device->queues);
 
@@ -992,6 +997,8 @@ VkResult wine_vkCreateDevice(VkPhysicalDevice client_physical_device, const VkDe
     if (device->p_##name == NULL) TRACE("Not found '%s'.\n", #name);
     ALL_VK_DEVICE_FUNCS
 #undef USE_VK_FUNC
+
+    instance->p_vkGetPhysicalDeviceQueueFamilyProperties(physical_device->host.physical_device, &props_count, device->queue_props);
 
     for (i = 0; i < create_info_host.queueCreateInfoCount; i++)
         wine_vk_device_init_queues(device, create_info_host.pQueueCreateInfos + i);

@@ -111,6 +111,7 @@ struct vulkan_device
 #undef USE_VK_FUNC
     uint64_t queue_count;
     struct vulkan_queue *queues;
+    VkQueueFamilyProperties *queue_props;
 };
 
 static inline struct vulkan_device *vulkan_device_from_handle( VkDevice handle )
