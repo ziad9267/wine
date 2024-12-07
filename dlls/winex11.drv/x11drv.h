@@ -692,7 +692,7 @@ extern void net_supported_init( struct x11drv_thread_data *data );
 extern void net_supporting_wm_check_init( struct x11drv_thread_data *data );
 
 extern Window init_clip_window(void);
-extern void update_user_time( Display *display, Window window, Time time );
+extern void update_user_time( Display *display, Window window, Time time, BOOL force );
 extern UINT get_window_net_wm_state( Display *display, Window window );
 extern void make_window_embedded( struct x11drv_win_data *data );
 extern Window create_client_window( HWND hwnd, RECT client_rect, const XVisualInfo *visual, Colormap colormap );
