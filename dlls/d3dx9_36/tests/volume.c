@@ -478,14 +478,12 @@ static void test_d3dx_save_volume_to_file(IDirect3DDevice9 *device)
 
     set_box(&box, 0, 0, 16, 16, 1, 2);
     hr = D3DXSaveVolumeToFileInMemory(&buffer, D3DXIFF_DDS, volume, NULL, NULL);
-    todo_wine ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
-    if (SUCCEEDED(hr))
-    {
-        dds = ID3DXBuffer_GetBufferPointer(buffer);
-        check_dds_header(&dds->header, DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_DEPTH | DDSD_PIXELFORMAT, 16, 16, 0,
-                2, 0, &d3dfmt_a8r8g8b8_pf, DDSCAPS_TEXTURE | DDSCAPS_ALPHA, DDSCAPS2_VOLUME, FALSE);
-        ID3DXBuffer_Release(buffer);
-    }
+    ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+
+    dds = ID3DXBuffer_GetBufferPointer(buffer);
+    check_dds_header(&dds->header, DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_DEPTH | DDSD_PIXELFORMAT, 16, 16, 0,
+            2, 0, &d3dfmt_a8r8g8b8_pf, DDSCAPS_TEXTURE | DDSCAPS_ALPHA, DDSCAPS2_VOLUME, FALSE);
+    ID3DXBuffer_Release(buffer);
 
     /*
      * Box only has a depth of 1, saves like a regular surface. E.g no depth
@@ -493,14 +491,12 @@ static void test_d3dx_save_volume_to_file(IDirect3DDevice9 *device)
      */
     set_box(&box, 0, 0, 16, 16, 1, 2);
     hr = D3DXSaveVolumeToFileInMemory(&buffer, D3DXIFF_DDS, volume, NULL, &box);
-    todo_wine ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
-    if (SUCCEEDED(hr))
-    {
-        dds = ID3DXBuffer_GetBufferPointer(buffer);
-        check_dds_header(&dds->header, DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT, 16, 16, 0, 0, 0,
-                &d3dfmt_a8r8g8b8_pf, DDSCAPS_TEXTURE | DDSCAPS_ALPHA, 0, FALSE);
-        ID3DXBuffer_Release(buffer);
-    }
+    ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+
+    dds = ID3DXBuffer_GetBufferPointer(buffer);
+    check_dds_header(&dds->header, DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT, 16, 16, 0, 0, 0,
+            &d3dfmt_a8r8g8b8_pf, DDSCAPS_TEXTURE | DDSCAPS_ALPHA, 0, FALSE);
+    ID3DXBuffer_Release(buffer);
 
     for (i = 0; i < ARRAY_SIZE(save_files); ++i)
     {
@@ -515,37 +511,36 @@ static void test_d3dx_save_volume_to_file(IDirect3DDevice9 *device)
             ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
 
             hr = D3DXSaveVolumeToFileA(save_files[i].file_name_a, save_files[i].file_format, volume, NULL, !j ? NULL : &box);
-            todo_wine ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+            ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
 
             hr = D3DXFillVolumeTexture(volume_texture, fill_func_volume, (void *)&clear_val);
             ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
 
             memset(&info, 0, sizeof(info));
             hr = D3DXLoadVolumeFromFileA(volume, NULL, NULL, save_files[i].file_name_a, NULL, D3DX_FILTER_NONE, 0, &info);
-            todo_wine ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
-            if (SUCCEEDED(hr))
-            {
-                get_texture_volume_readback(device, volume_texture, 0, &volume_rb);
-                if (save_files[i].file_format == D3DXIFF_DDS)
-                {
-                    check_image_info(&info, 16, 16, !j ? 2 : 1, 1, save_files[i].save_format, !j ? D3DRTYPE_VOLUMETEXTURE : D3DRTYPE_TEXTURE,
-                            D3DXIFF_DDS, TRUE);
-                    for (k = 0; k < ARRAY_SIZE(coords); ++k)
-                        check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 0, expected_colors[k], 4, FALSE);
-                    for (k = 0; k < ARRAY_SIZE(coords); ++k)
-                        check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 1, !j ? back_expected[k] : 0, 4, FALSE);
-                }
-                else
-                {
-                    const D3DXIMAGE_FILEFORMAT iff = save_files[i].file_format == D3DXIFF_DIB ? D3DXIFF_BMP : save_files[i].file_format;
-                    const uint8_t max_diff = iff == D3DXIFF_JPG ? 40 : 0;
+            ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
 
-                    check_image_info(&info, 16, 16, 1, 1, save_files[i].save_format, D3DRTYPE_TEXTURE, iff, FALSE);
-                    for (k = 0; k < ARRAY_SIZE(coords); ++k)
-                        check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 0, expected_colors[k], max_diff, FALSE);
-                }
-                release_volume_readback(&volume_rb);
+            get_texture_volume_readback(device, volume_texture, 0, &volume_rb);
+            if (save_files[i].file_format == D3DXIFF_DDS)
+            {
+                check_image_info(&info, 16, 16, !j ? 2 : 1, 1, save_files[i].save_format, !j ? D3DRTYPE_VOLUMETEXTURE : D3DRTYPE_TEXTURE,
+                        D3DXIFF_DDS, FALSE);
+                for (k = 0; k < ARRAY_SIZE(coords); ++k)
+                    check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 0, expected_colors[k], 4, FALSE);
+                for (k = 0; k < ARRAY_SIZE(coords); ++k)
+                    check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 1, !j ? back_expected[k] : 0, 4, FALSE);
             }
+            else
+            {
+                const D3DXIMAGE_FILEFORMAT iff = save_files[i].file_format == D3DXIFF_DIB ? D3DXIFF_BMP : save_files[i].file_format;
+                const uint8_t max_diff = iff == D3DXIFF_JPG ? 40 : 0;
+
+                check_image_info(&info, 16, 16, 1, 1, save_files[i].save_format, D3DRTYPE_TEXTURE, iff, FALSE);
+                for (k = 0; k < ARRAY_SIZE(coords); ++k)
+                    check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 0, expected_colors[k], max_diff, FALSE);
+            }
+            release_volume_readback(&volume_rb);
+
             DeleteFileA(save_files[i].file_name_a);
         }
 
@@ -558,37 +553,35 @@ static void test_d3dx_save_volume_to_file(IDirect3DDevice9 *device)
             ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
 
             hr = D3DXSaveVolumeToFileW(save_files[i].file_name_w, save_files[i].file_format, volume, NULL, !j ? NULL : &box);
-            todo_wine ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
+            ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
 
             hr = D3DXFillVolumeTexture(volume_texture, fill_func_volume, (void *)&clear_val);
             ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
 
             memset(&info, 0, sizeof(info));
             hr = D3DXLoadVolumeFromFileW(volume, NULL, NULL, save_files[i].file_name_w, NULL, D3DX_FILTER_NONE, 0, &info);
-            todo_wine ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
-            if (SUCCEEDED(hr))
-            {
-                get_texture_volume_readback(device, volume_texture, 0, &volume_rb);
-                if (save_files[i].file_format == D3DXIFF_DDS)
-                {
-                    check_image_info(&info, 16, 16, !j ? 2 : 1, 1, save_files[i].save_format, !j ? D3DRTYPE_VOLUMETEXTURE : D3DRTYPE_TEXTURE,
-                            D3DXIFF_DDS, TRUE);
-                    for (k = 0; k < ARRAY_SIZE(coords); ++k)
-                        check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0], coords[k][1], 0, expected_colors[k], 0, FALSE);
-                    for (k = 0; k < ARRAY_SIZE(coords); ++k)
-                        check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0], coords[k][1], 1, !j ? back_expected[k] : 0, 0, FALSE);
-                }
-                else
-                {
-                    const D3DXIMAGE_FILEFORMAT iff = save_files[i].file_format == D3DXIFF_DIB ? D3DXIFF_BMP : save_files[i].file_format;
-                    const uint8_t max_diff = iff == D3DXIFF_JPG ? 40 : 0;
+            ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
 
-                    check_image_info(&info, 16, 16, 1, 1, save_files[i].save_format, D3DRTYPE_TEXTURE, iff, FALSE);
-                    for (k = 0; k < ARRAY_SIZE(coords); ++k)
-                        check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 0, expected_colors[k], max_diff, FALSE);
-                }
-                release_volume_readback(&volume_rb);
+            get_texture_volume_readback(device, volume_texture, 0, &volume_rb);
+            if (save_files[i].file_format == D3DXIFF_DDS)
+            {
+                check_image_info(&info, 16, 16, !j ? 2 : 1, 1, save_files[i].save_format, !j ? D3DRTYPE_VOLUMETEXTURE : D3DRTYPE_TEXTURE,
+                        D3DXIFF_DDS, FALSE);
+                for (k = 0; k < ARRAY_SIZE(coords); ++k)
+                    check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0], coords[k][1], 0, expected_colors[k], 0, FALSE);
+                for (k = 0; k < ARRAY_SIZE(coords); ++k)
+                    check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0], coords[k][1], 1, !j ? back_expected[k] : 0, 0, FALSE);
             }
+            else
+            {
+                const D3DXIMAGE_FILEFORMAT iff = save_files[i].file_format == D3DXIFF_DIB ? D3DXIFF_BMP : save_files[i].file_format;
+                const uint8_t max_diff = iff == D3DXIFF_JPG ? 40 : 0;
+
+                check_image_info(&info, 16, 16, 1, 1, save_files[i].save_format, D3DRTYPE_TEXTURE, iff, FALSE);
+                for (k = 0; k < ARRAY_SIZE(coords); ++k)
+                    check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 0, expected_colors[k], max_diff, FALSE);
+            }
+            release_volume_readback(&volume_rb);
 
             DeleteFileW(save_files[i].file_name_w);
         }
@@ -603,9 +596,7 @@ static void test_d3dx_save_volume_to_file(IDirect3DDevice9 *device)
             ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
 
             hr = D3DXSaveVolumeToFileInMemory(&buffer, save_files[i].file_format, volume, NULL, !j ? NULL : &box);
-            todo_wine ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
-            if (!buffer)
-                continue;
+            ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
 
             hr = D3DXFillVolumeTexture(volume_texture, fill_func_volume, (void *)&clear_val);
             ok(hr == D3D_OK, "Unexpected hr %#lx.\n", hr);
@@ -633,7 +624,7 @@ static void test_d3dx_save_volume_to_file(IDirect3DDevice9 *device)
 
                 check_image_info(&info, 16, 16, 1, 1, save_files[i].save_format, D3DRTYPE_TEXTURE, iff, FALSE);
                 for (k = 0; k < ARRAY_SIZE(coords); ++k)
-                    check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 0, expected_colors[k], max_diff, TRUE);
+                    check_volume_readback_pixel_4bpp_diff(&volume_rb, coords[k][0],  coords[k][1], 0, expected_colors[k], max_diff, FALSE);
             }
             release_volume_readback(&volume_rb);
         }
