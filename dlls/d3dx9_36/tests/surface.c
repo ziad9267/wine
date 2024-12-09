@@ -3852,7 +3852,7 @@ static void test_save_surface_iffs(IDirect3DDevice9 *device)
         uint8_t init_pixel_value;
     } iff_tests[] = {
         { D3DFMT_P8, test_palette,
-          { { D3D_OK, D3DFMT_P8, .todo_hr = TRUE },
+          { { D3D_OK, D3DFMT_P8 },
             { D3D_OK, D3DFMT_X8R8G8B8 },
             { D3D_OK, D3DFMT_A8R8G8B8 },
             { D3D_OK, D3DFMT_A8R8G8B8 },
