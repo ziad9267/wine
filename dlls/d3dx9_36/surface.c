@@ -515,6 +515,38 @@ static const enum d3dx_pixel_format_id jpg_save_pixel_formats[] =
     D3DX_PIXEL_FORMAT_B8G8R8_UNORM,
 };
 
+static const enum d3dx_pixel_format_id bmp_save_pixel_formats[] =
+{
+    D3DX_PIXEL_FORMAT_B5G5R5X1_UNORM,
+    D3DX_PIXEL_FORMAT_B5G6R5_UNORM,
+    D3DX_PIXEL_FORMAT_B8G8R8_UNORM,
+    D3DX_PIXEL_FORMAT_B8G8R8X8_UNORM,
+    D3DX_PIXEL_FORMAT_B8G8R8A8_UNORM
+};
+
+static const enum d3dx_pixel_format_id unimplemented_bmp_save_pixel_formats[] =
+{
+    D3DX_PIXEL_FORMAT_P8_UINT,
+    D3DX_PIXEL_FORMAT_A8_UNORM,
+    D3DX_PIXEL_FORMAT_P8_UINT_A8_UNORM,
+    D3DX_PIXEL_FORMAT_L8A8_UNORM,
+    D3DX_PIXEL_FORMAT_L16_UNORM,
+    D3DX_PIXEL_FORMAT_B2G3R3_UNORM,
+    D3DX_PIXEL_FORMAT_R16_FLOAT,
+    D3DX_PIXEL_FORMAT_R16G16_FLOAT,
+    D3DX_PIXEL_FORMAT_R16G16_UNORM,
+    D3DX_PIXEL_FORMAT_R32_FLOAT,
+    D3DX_PIXEL_FORMAT_R32G32_FLOAT,
+    D3DX_PIXEL_FORMAT_B4G4R4X4_UNORM,
+    D3DX_PIXEL_FORMAT_B4G4R4A4_UNORM,
+    D3DX_PIXEL_FORMAT_B2G3R3A8_UNORM,
+    D3DX_PIXEL_FORMAT_B5G5R5A1_UNORM,
+    D3DX_PIXEL_FORMAT_R8G8B8X8_UNORM,
+    D3DX_PIXEL_FORMAT_R8G8B8A8_UNORM,
+    D3DX_PIXEL_FORMAT_B10G10R10A2_UNORM,
+    D3DX_PIXEL_FORMAT_R10G10B10A2_UNORM,
+};
+
 static BOOL d3dx_pixel_format_id_array_contains(const enum d3dx_pixel_format_id *format_ids, uint32_t format_ids_size,
         enum d3dx_pixel_format_id format)
 {
@@ -609,6 +641,7 @@ static enum d3dx_pixel_format_id d3dx_get_closest_d3dx_pixel_format_id(const enu
     return (bestfmt) ? bestfmt->format : D3DX_PIXEL_FORMAT_COUNT;
 }
 
+static const char *debug_d3dx_image_file_format(D3DXIMAGE_FILEFORMAT format);
 static HRESULT d3dx_get_save_pixel_format_from_image_file_format(const struct pixel_format_desc *src_fmt_desc,
         D3DXIMAGE_FILEFORMAT file_format, enum d3dx_pixel_format_id *save_fmt)
 {
@@ -638,6 +671,18 @@ static HRESULT d3dx_get_save_pixel_format_from_image_file_format(const struct pi
         case D3DXIFF_JPG:
             save_fmts = jpg_save_pixel_formats;
             save_fmts_count = ARRAY_SIZE(jpg_save_pixel_formats);
+            break;
+
+        case D3DXIFF_BMP:
+            if (d3dx_pixel_format_id_array_contains(unimplemented_bmp_save_pixel_formats,
+                    ARRAY_SIZE(unimplemented_bmp_save_pixel_formats), src_fmt_desc->format))
+            {
+                FIXME("Saving d3dformat %#x currently unimplemented for file type %s.\n", src_fmt_desc->format,
+                        debug_d3dx_image_file_format(file_format));
+                return E_NOTIMPL;
+            }
+            save_fmts = bmp_save_pixel_formats;
+            save_fmts_count = ARRAY_SIZE(bmp_save_pixel_formats);
             break;
 
         default:
@@ -744,6 +789,13 @@ static HRESULT d3dx_pixels_save_wic(struct d3dx_pixels *pixels, const struct pix
     hr = IWICBitmapFrameEncode_SetSize(wic_frame, pixels->size.width, pixels->size.height);
     if (FAILED(hr))
         goto exit;
+
+    /*
+     * Encode 32bpp BGRA format surfaces as 32bpp BGRX for BMP.
+     * This matches the behavior of native.
+     */
+    if (IsEqualGUID(&GUID_ContainerFormatBmp, container_format) && (fmt_desc->format == D3DX_PIXEL_FORMAT_B8G8R8A8_UNORM))
+        pixel_format_guid = wic_guid_from_d3dx_pixel_format_id(D3DX_PIXEL_FORMAT_B8G8R8X8_UNORM);
 
     memcpy(&wic_pixel_format, pixel_format_guid, sizeof(*pixel_format_guid));
     hr = IWICBitmapFrameEncode_SetPixelFormat(wic_frame, &wic_pixel_format);
@@ -863,6 +915,7 @@ static HRESULT d3dx_save_pixels_to_memory(struct d3dx_pixels *src_pixels, const 
              break;
         }
 
+        case D3DXIFF_BMP:
         case D3DXIFF_PNG:
         case D3DXIFF_JPG:
             if (src_fmt_desc == dst_fmt_desc)
@@ -3307,10 +3360,10 @@ HRESULT WINAPI D3DXSaveSurfaceToFileInMemory(ID3DXBuffer **dst_buffer, D3DXIMAGE
     IDirect3DSurface9_GetDesc(src_surface, &src_surface_desc);
     switch (file_format)
     {
-        case D3DXIFF_BMP:
         case D3DXIFF_DIB:
             container_format = &GUID_ContainerFormatBmp;
             break;
+        case D3DXIFF_BMP:
         case D3DXIFF_JPG:
         case D3DXIFF_PNG:
         case D3DXIFF_DDS:
