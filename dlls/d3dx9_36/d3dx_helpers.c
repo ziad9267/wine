@@ -121,6 +121,7 @@ static const struct
     { &GUID_WICPixelFormat1bppIndexed, D3DX_PIXEL_FORMAT_P8_UINT },
     { &GUID_WICPixelFormat4bppIndexed, D3DX_PIXEL_FORMAT_P8_UINT },
     { &GUID_WICPixelFormat8bppGray,    D3DX_PIXEL_FORMAT_L8_UNORM },
+    { &GUID_WICPixelFormat16bppGray,   D3DX_PIXEL_FORMAT_L16_UNORM },
     { &GUID_WICPixelFormat16bppBGR555, D3DX_PIXEL_FORMAT_B5G5R5X1_UNORM },
     { &GUID_WICPixelFormat16bppBGR565, D3DX_PIXEL_FORMAT_B5G6R5_UNORM },
     { &GUID_WICPixelFormat24bppBGR,    D3DX_PIXEL_FORMAT_B8G8R8_UNORM },
@@ -929,6 +930,7 @@ HRESULT d3dx_save_pixels_to_memory(struct d3dx_pixels *src_pixels, const struct 
              break;
         }
 
+        case D3DX_IMAGE_FILE_FORMAT_TIFF:
         case D3DX_IMAGE_FILE_FORMAT_DIB:
         case D3DX_IMAGE_FILE_FORMAT_BMP:
         case D3DX_IMAGE_FILE_FORMAT_PNG:
