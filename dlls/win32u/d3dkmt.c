@@ -333,10 +333,65 @@ NTSTATUS WINAPI NtGdiDdDDIDestroyDevice( const D3DKMT_DESTROYDEVICE *desc )
  */
 NTSTATUS WINAPI NtGdiDdDDIQueryAdapterInfo( D3DKMT_QUERYADAPTERINFO *desc )
 {
+    NTSTATUS status = STATUS_NOT_IMPLEMENTED;
+    struct d3dkmt_adapter *adapter;
+
     if (!desc) return STATUS_INVALID_PARAMETER;
 
-    FIXME( "desc %p, type %d stub\n", desc, desc->Type );
-    return STATUS_NOT_IMPLEMENTED;
+    FIXME( "desc %p, type %d semi-stub\n", desc, desc->Type );
+
+    if (!d3dkmt_use_vulkan())
+    {
+        WARN("Vulkan is unavailable.\n");
+        return status;
+    }
+
+    pthread_mutex_lock( &d3dkmt_lock );
+    if ((adapter = find_adapter_from_handle( desc->hAdapter )) && adapter->vk_device)
+    {
+        if (desc->Type == KMTQAITYPE_WDDM_2_7_CAPS)
+        {
+            VkPhysicalDeviceDriverPropertiesKHR driverProperties;
+            VkPhysicalDeviceProperties2KHR properties2;
+            D3DKMT_WDDM_2_7_CAPS *data;
+            const char *e;
+
+            memset( &driverProperties, 0, sizeof(driverProperties) );
+            memset( &properties2, 0, sizeof(properties2) );
+            driverProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR;
+            properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
+            properties2.pNext = &driverProperties;
+            pvkGetPhysicalDeviceProperties2KHR( adapter->vk_device, &properties2 );
+
+            /*
+             * Advertise Hardware-Scheduling as enabled for NVIDIA Adapters. NVIDIA driver does
+             * userspace submission. Allow overriding this value via the
+             * WINE_DISABLE_HARDWARE_SCHEDULING environment variable.
+             */
+            data = desc->pPrivateDriverData;
+            e = getenv( "WINE_DISABLE_HARDWARE_SCHEDULING" );
+            if ((!e || *e == '\0' || *e == '0') && (driverProperties.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY))
+            {
+                data->HwSchEnabled = 1;
+                data->HwSchSupported = 1;
+                data->HwSchEnabledByDefault = 1;
+            }
+            else
+            {
+                data->HwSchEnabled = 0;
+                data->HwSchSupported = 0;
+                data->HwSchEnabledByDefault = 0;
+            }
+
+            status = STATUS_SUCCESS;
+        }
+        else
+        {
+            FIXME("desc %p, type %d stub\n", desc, desc->Type);
+        }
+    }
+    pthread_mutex_unlock( &d3dkmt_lock );
+    return status;
 }
 
 /******************************************************************************
