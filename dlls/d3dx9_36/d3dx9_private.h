@@ -169,6 +169,20 @@ static inline void set_volume_struct(struct volume *volume, uint32_t width, uint
     volume->depth = depth;
 }
 
+enum d3dx_image_file_format
+{
+    D3DX_IMAGE_FILE_FORMAT_BMP  = 0,
+    D3DX_IMAGE_FILE_FORMAT_JPG  = 1,
+    D3DX_IMAGE_FILE_FORMAT_TGA  = 2,
+    D3DX_IMAGE_FILE_FORMAT_PNG  = 3,
+    D3DX_IMAGE_FILE_FORMAT_DDS  = 4,
+    D3DX_IMAGE_FILE_FORMAT_PPM  = 5,
+    D3DX_IMAGE_FILE_FORMAT_DIB  = 6,
+    D3DX_IMAGE_FILE_FORMAT_HDR  = 7,
+    D3DX_IMAGE_FILE_FORMAT_PFM  = 8,
+    D3DX_IMAGE_FILE_FORMAT_FORCE_DWORD = 0x7fffffff
+};
+
 enum d3dx_resource_type
 {
     D3DX_RESOURCE_TYPE_TEXTURE_2D,
@@ -306,7 +320,7 @@ struct d3dx_image
     void *image_buf;
     PALETTEENTRY *image_palette;
 
-    D3DXIMAGE_FILEFORMAT image_file_format;
+    enum d3dx_image_file_format image_file_format;
 };
 
 HRESULT d3dx_image_init(const void *src_data, uint32_t src_data_size, struct d3dx_image *image,
@@ -409,7 +423,7 @@ HRESULT d3dx_get_save_pixel_format_from_image_file_format(const struct pixel_for
 HRESULT d3dx_init_dds_header(struct dds_header *header, enum d3dx_resource_type resource_type,
         enum d3dx_pixel_format_id format, const struct volume *size, uint32_t mip_levels);
 HRESULT d3dx_save_pixels_to_memory(struct d3dx_pixels *src_pixels, const struct pixel_format_desc *src_fmt_desc,
-        D3DXIMAGE_FILEFORMAT file_format, enum d3dx_pixel_format_id dst_format, ID3DXBuffer **dst_buffer);
+        enum d3dx_image_file_format file_format, enum d3dx_pixel_format_id dst_format, ID3DXBuffer **dst_buffer);
 HRESULT d3dx_pixels_init(const void *data, uint32_t row_pitch, uint32_t slice_pitch,
         const PALETTEENTRY *palette, enum d3dx_pixel_format_id format, uint32_t left, uint32_t top, uint32_t right,
         uint32_t bottom, uint32_t front, uint32_t back, struct d3dx_pixels *pixels);
@@ -423,7 +437,7 @@ unsigned short float_32_to_16(const float in);
 float float_16_to_32(const unsigned short in);
 
 /* debug helpers */
-const char *debug_d3dx_image_file_format(D3DXIMAGE_FILEFORMAT format);
+const char *debug_d3dx_image_file_format(enum d3dx_image_file_format format);
 const char *debug_d3dxparameter_class(D3DXPARAMETER_CLASS c);
 const char *debug_d3dxparameter_type(D3DXPARAMETER_TYPE t);
 const char *debug_d3dxparameter_registerset(D3DXREGISTER_SET r);
