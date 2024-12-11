@@ -66,7 +66,44 @@
 #define d3dx_blob_release(blob)            ID3D10Blob_Release(blob)
 
 enum d3dx_pixel_format_id d3dx_pixel_format_id_from_dxgi_format(DXGI_FORMAT format);
+DXGI_FORMAT dxgi_format_from_legacy_dds_d3dx_pixel_format_id(enum d3dx_pixel_format_id format);
+DXGI_FORMAT dxgi_format_from_dxt10_dds_d3dx_pixel_format_id(enum d3dx_pixel_format_id format);
 #endif /* D3DX_D3D_VERSION == 10 */
+
+#if D3DX_D3D_VERSION == 11
+#define COBJMACROS
+#include "d3dx11.h"
+#include "d3dcompiler.h"
+
+#define D3DERR_INVALIDCALL      0x8876086c
+#define D3DX_ERROR_INVALID_DATA D3DX11_ERR_INVALID_DATA
+
+#define D3DX_DEFAULT                  D3DX11_DEFAULT
+
+#define D3DX_FILTER_NONE              D3DX11_FILTER_NONE
+#define D3DX_FILTER_POINT             D3DX11_FILTER_POINT
+#define D3DX_FILTER_LINEAR            D3DX11_FILTER_LINEAR
+#define D3DX_FILTER_TRIANGLE          D3DX11_FILTER_TRIANGLE
+#define D3DX_FILTER_BOX               D3DX11_FILTER_BOX
+#define D3DX_FILTER_MIRROR_U          D3DX11_FILTER_MIRROR_U
+#define D3DX_FILTER_MIRROR_V          D3DX11_FILTER_MIRROR_V
+#define D3DX_FILTER_MIRROR_W          D3DX11_FILTER_MIRROR_W
+#define D3DX_FILTER_MIRROR            D3DX11_FILTER_MIRROR
+#define D3DX_FILTER_DITHER            D3DX11_FILTER_DITHER
+#define D3DX_FILTER_DITHER_DIFFUSION  D3DX11_FILTER_DITHER_DIFFUSION
+#define D3DX_FILTER_SRGB_IN           D3DX11_FILTER_SRGB_IN
+#define D3DX_FILTER_SRGB_OUT          D3DX11_FILTER_SRGB_OUT
+#define D3DX_FILTER_SRGB              D3DX11_FILTER_SRGB
+
+#define ID3DXBlob                          ID3D10Blob
+#define d3dx_create_blob(size, blob)       D3DCreateBlob(size, blob)
+#define d3dx_blob_get_buffer_pointer(blob) ID3D10Blob_GetBufferPointer(blob)
+#define d3dx_blob_release(blob)            ID3D10Blob_Release(blob)
+
+enum d3dx_pixel_format_id d3dx_pixel_format_id_from_dxgi_format(DXGI_FORMAT format);
+DXGI_FORMAT dxgi_format_from_legacy_dds_d3dx_pixel_format_id(enum d3dx_pixel_format_id format);
+DXGI_FORMAT dxgi_format_from_dxt10_dds_d3dx_pixel_format_id(enum d3dx_pixel_format_id format);
+#endif /* D3DX_D3D_VERSION == 11 */
 
 #define D3DX_FILTER_INVALID_BITS 0xff80fff8
 static inline HRESULT d3dx_validate_filter(uint32_t filter)
