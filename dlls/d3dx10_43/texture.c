@@ -1480,16 +1480,47 @@ HRESULT WINAPI D3DX10FilterTexture(ID3D10Resource *texture, UINT src_level, UINT
 
 HRESULT WINAPI D3DX10SaveTextureToFileW(ID3D10Resource *texture, D3DX10_IMAGE_FILE_FORMAT format, const WCHAR *filename)
 {
-    FIXME("texture %p, format %u, filename %s stub!\n", texture, format, debugstr_w(filename));
+    ID3D10Blob *buffer;
+    HRESULT hr;
 
-    return E_NOTIMPL;
+    TRACE("texture %p, format %u, filename %s stub!\n", texture, format, debugstr_w(filename));
+
+    if (!filename)
+        return E_FAIL;
+
+    hr = D3DX10SaveTextureToMemory(texture, format, &buffer, 0);
+    if (SUCCEEDED(hr))
+    {
+        hr = write_buffer_to_file(filename, buffer);
+        ID3D10Blob_Release(buffer);
+    }
+
+    return hr;
 }
 
 HRESULT WINAPI D3DX10SaveTextureToFileA(ID3D10Resource *texture, D3DX10_IMAGE_FILE_FORMAT format, const char *filename)
 {
-    FIXME("texture %p, format %u, filename %s stub!\n", texture, format, debugstr_a(filename));
+    WCHAR *buffer;
+    int str_len;
+    HRESULT hr;
 
-    return E_NOTIMPL;
+    TRACE("texture %p, format %u, filename %s.\n", texture, format, debugstr_a(filename));
+
+    if (!filename)
+        return E_FAIL;
+
+    str_len = MultiByteToWideChar(CP_ACP, 0, filename, -1, NULL, 0);
+    if (!str_len)
+        return HRESULT_FROM_WIN32(GetLastError());
+
+    buffer = malloc(str_len * sizeof(*buffer));
+    if (!buffer)
+        return E_OUTOFMEMORY;
+
+    MultiByteToWideChar(CP_ACP, 0, filename, -1, buffer, str_len);
+    hr = D3DX10SaveTextureToFileW(texture, format, buffer);
+    free(buffer);
+    return hr;
 }
 
 static HRESULT d3dx10_get_save_format_for_file_format(D3DX10_IMAGE_FILE_FORMAT iff, enum d3dx_pixel_format_id src_fmt,
