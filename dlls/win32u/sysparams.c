@@ -159,6 +159,7 @@ static INT64 last_query_display_time;
 static UINT64 monitor_update_serial;
 static pthread_mutex_t display_lock = PTHREAD_MUTEX_INITIALIZER;
 
+static BOOL emulate_modelist = TRUE;
 static BOOL emulate_modeset = TRUE;
 BOOL decorated_mode = TRUE;
 UINT64 thunk_lock_callback = 0;
@@ -449,6 +450,21 @@ static const char *debugstr_devmodew( const DEVMODEW *devmode )
                              devmode->dmDisplayFixedOutput == DMDFO_STRETCH ? "" : "un",
                              devmode->dmDisplayFlags & DM_INTERLACED ? "" : "non-",
                              position );
+}
+
+static UINT devmode_get( const DEVMODEW *mode, UINT field )
+{
+    switch (field)
+    {
+    case DM_DISPLAYORIENTATION: return mode->dmFields & DM_DISPLAYORIENTATION ? mode->dmDisplayOrientation : 0;
+    case DM_BITSPERPEL: return mode->dmFields & DM_BITSPERPEL ? mode->dmBitsPerPel : 0;
+    case DM_PELSWIDTH: return mode->dmFields & DM_PELSWIDTH ? mode->dmPelsWidth : 0;
+    case DM_PELSHEIGHT: return mode->dmFields & DM_PELSHEIGHT ? mode->dmPelsHeight : 0;
+    case DM_DISPLAYFLAGS: return mode->dmFields & DM_DISPLAYFLAGS ? mode->dmDisplayFlags : 0;
+    case DM_DISPLAYFREQUENCY: return mode->dmFields & DM_DISPLAYFREQUENCY ? mode->dmDisplayFrequency : 0;
+    case DM_DISPLAYFIXEDOUTPUT: return mode->dmFields & DM_DISPLAYFIXEDOUTPUT ? mode->dmDisplayFixedOutput : 0;
+    }
+    return 0;
 }
 
 static BOOL write_source_mode( HKEY hkey, UINT index, const DEVMODEW *mode )
@@ -1658,6 +1674,23 @@ static DEVMODEW *get_virtual_modes( const DEVMODEW *current, const DEVMODEW *ini
     return modes;
 }
 
+static DEVMODEW find_largest_mode( const DEVMODEW *found, const DEVMODEW *modes, UINT modes_count )
+{
+    const DEVMODEW *mode;
+
+    for (mode = modes; mode && modes_count; mode = NEXT_DEVMODEW(mode), modes_count--)
+    {
+        if (devmode_get( found, DM_DISPLAYORIENTATION ) != devmode_get( mode, DM_DISPLAYORIENTATION )) continue;
+        if (devmode_get( found, DM_BITSPERPEL ) >= devmode_get( mode, DM_BITSPERPEL )) continue;
+        if (devmode_get( found, DM_PELSWIDTH ) >= devmode_get( mode, DM_PELSWIDTH )) continue;
+        if (devmode_get( found, DM_PELSHEIGHT ) >= devmode_get( mode, DM_PELSHEIGHT )) continue;
+        if (devmode_get( found, DM_DISPLAYFREQUENCY ) >= devmode_get( mode, DM_DISPLAYFREQUENCY )) continue;
+        found = mode;
+    }
+
+    return *found;
+}
+
 static void add_modes( const DEVMODEW *current, UINT modes_count, const DEVMODEW *modes, void *param )
 {
     struct device_manager_ctx *ctx = param;
@@ -1675,6 +1708,23 @@ static void add_modes( const DEVMODEW *current, UINT modes_count, const DEVMODEW
         modes = current;
         modes_count = 1;
     }
+    else if (emulate_modelist)
+    {
+        physical = find_largest_mode( current, modes, modes_count );
+        if ((virtual_modes = get_virtual_modes( current, &physical, &physical, &virtual_count )))
+        {
+            modes_count = virtual_count;
+            modes = virtual_modes;
+        }
+
+        /* HACK: Gamescope doesn't really changes the display mode, pretend it changed to what was requested */
+        if (user_driver->pHasWindowManager( "steamcompmgr" ) && read_source_mode( source->key, ENUM_CURRENT_SETTINGS, &virtual ))
+        {
+            WARN( "Faking current mode to %s\n", debugstr_devmodew(&virtual) );
+            current = &virtual;
+            detached = *current;
+        }
+    }
 
     physical = modes_count == 1 ? *modes : *current;
     if (ctx->is_primary) ctx->primary = *current;
@@ -1686,7 +1736,7 @@ static void add_modes( const DEVMODEW *current, UINT modes_count, const DEVMODEW
     if (modes_count > 1 || current == &detached)
     {
         reg_delete_value( source->key, physicalW );
-        virtual_modes = NULL;
+        if (!emulate_modelist) virtual_modes = NULL;
     }
     else
     {
@@ -2277,7 +2327,6 @@ static BOOL lock_display_devices( BOOL force )
     init_display_driver(); /* make sure to load the driver before anything else */
 
     if (user_driver->pHasWindowManager( "steamcompmgr" )) emulate_modeset = FALSE;
-    if (user_driver->pHasWindowManager( "xwayland" )) emulate_modeset = FALSE;
 
     pthread_mutex_lock( &display_lock );
 
@@ -3864,7 +3913,7 @@ static LONG apply_display_settings( struct source *target, const DEVMODEW *devmo
     struct source *primary, *source;
     DEVMODEW *mode, *displays;
     HWND restorer_window;
-    LONG ret;
+    UINT ret;
 
     if (!lock_display_devices( FALSE )) return DISP_CHANGE_FAILED;
     if (!(displays = get_display_settings( target, devmode )))
@@ -3894,6 +3943,7 @@ static LONG apply_display_settings( struct source *target, const DEVMODEW *devmo
     /* use the default implementation in virtual desktop mode */
     if (is_virtual_desktop() || emulate_modeset) ret = DISP_CHANGE_SUCCESSFUL;
     else ret = user_driver->pChangeDisplaySettings( displays, primary_name, hwnd, flags, lparam );
+    if (ret != DISP_CHANGE_SUCCESSFUL) WARN( "Failed to change display settings, ret %d\n", ret );
 
     if (ret == DISP_CHANGE_SUCCESSFUL)
     {
@@ -5465,6 +5515,8 @@ void sysparams_init(void)
         grab_fullscreen = IS_OPTION_TRUE( buffer[0] );
     if (!get_config_key( hkey, appkey, "Decorated", buffer, sizeof(buffer) ))
         decorated_mode = IS_OPTION_TRUE( buffer[0] );
+    if (!get_config_key( hkey, appkey, "EmulateModelist", buffer, sizeof(buffer) ))
+        emulate_modelist = !IS_OPTION_TRUE( buffer[0] );
     if (!get_config_key( hkey, appkey, "EmulateModeset", buffer, sizeof(buffer) ))
         emulate_modeset = !IS_OPTION_TRUE( buffer[0] );
 
