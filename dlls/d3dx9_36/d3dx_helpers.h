@@ -34,6 +34,7 @@
 #define ID3DXBlob                              ID3DXBuffer
 #define d3dx_create_blob(size, blob)           D3DXCreateBuffer(size, blob)
 #define d3dx_blob_get_buffer_pointer(blob)     ID3DXBuffer_GetBufferPointer(blob)
+#define d3dx_blob_get_buffer_size(blob)        ID3DXBuffer_GetBufferSize(blob)
 #define d3dx_blob_release(blob)                ID3DXBuffer_Release(blob)
 #endif /* D3DX_D3D_VERSION == 9 */
 
@@ -66,6 +67,7 @@
 #define ID3DXBlob                          ID3D10Blob
 #define d3dx_create_blob(size, blob)       D3D10CreateBlob(size, blob)
 #define d3dx_blob_get_buffer_pointer(blob) ID3D10Blob_GetBufferPointer(blob)
+#define d3dx_blob_get_buffer_size(blob)    ID3D10Blob_GetBufferSize(blob)
 #define d3dx_blob_release(blob)            ID3D10Blob_Release(blob)
 
 enum d3dx_pixel_format_id d3dx_pixel_format_id_from_dxgi_format(DXGI_FORMAT format);
@@ -103,6 +105,7 @@ DXGI_FORMAT dxgi_format_from_dxt10_dds_d3dx_pixel_format_id(enum d3dx_pixel_form
 #define ID3DXBlob                          ID3D10Blob
 #define d3dx_create_blob(size, blob)       D3DCreateBlob(size, blob)
 #define d3dx_blob_get_buffer_pointer(blob) ID3D10Blob_GetBufferPointer(blob)
+#define d3dx_blob_get_buffer_size(blob)    ID3D10Blob_GetBufferSize(blob)
 #define d3dx_blob_release(blob)            ID3D10Blob_Release(blob)
 
 enum d3dx_pixel_format_id d3dx_pixel_format_id_from_dxgi_format(DXGI_FORMAT format);
@@ -550,6 +553,7 @@ float float_16_to_32(const unsigned short in);
 /* debug helpers */
 const char *debug_d3dx_image_file_format(enum d3dx_image_file_format format);
 
+HRESULT write_buffer_to_file(const WCHAR *filename, ID3DXBlob *buffer);
 HRESULT load_file(const WCHAR *path, void **data, DWORD *size);
 HRESULT load_resource(HMODULE module, HRSRC rsrc, void **data, DWORD *size);
 HRESULT load_resourceW(HMODULE module, const WCHAR *resource, void **data, DWORD *size);

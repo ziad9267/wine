@@ -3328,6 +3328,26 @@ void get_aligned_rect(uint32_t left, uint32_t top, uint32_t right, uint32_t bott
                 & ~(fmt_desc->block_height - 1), height);
 }
 
+HRESULT write_buffer_to_file(const WCHAR *dst_filename, ID3DXBlob *buffer)
+{
+    HRESULT hr = S_OK;
+    void *buffer_pointer;
+    DWORD buffer_size;
+    DWORD bytes_written;
+    HANDLE file = CreateFileW(dst_filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (file == INVALID_HANDLE_VALUE)
+        return HRESULT_FROM_WIN32(GetLastError());
+
+    buffer_pointer = d3dx_blob_get_buffer_pointer(buffer);
+    buffer_size = d3dx_blob_get_buffer_size(buffer);
+
+    if (!WriteFile(file, buffer_pointer, buffer_size, &bytes_written, NULL))
+        hr = HRESULT_FROM_WIN32(GetLastError());
+
+    CloseHandle(file);
+    return hr;
+}
+
 /* File/resource loading functions shared amongst d3dx10/d3dx11. */
 HRESULT load_file(const WCHAR *path, void **data, DWORD *size)
 {

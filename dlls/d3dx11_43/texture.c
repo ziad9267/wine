@@ -32,19 +32,48 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3dx);
 HRESULT WINAPI D3DX11SaveTextureToFileW(ID3D11DeviceContext *context, ID3D11Resource *texture,
         D3DX11_IMAGE_FILE_FORMAT format, const WCHAR *filename)
 {
-    FIXME("context %p, texture %p, format %u, filename %s stub!\n",
-            context, texture, format, debugstr_w(filename));
+    ID3D10Blob *buffer;
+    HRESULT hr;
 
-    return E_NOTIMPL;
+    TRACE("context %p, texture %p, format %u, filename %s.\n", context, texture, format, debugstr_w(filename));
+
+    if (!filename)
+        return E_FAIL;
+
+    hr = D3DX11SaveTextureToMemory(context, texture, format, &buffer, 0);
+    if (SUCCEEDED(hr))
+    {
+        hr = write_buffer_to_file(filename, buffer);
+        ID3D10Blob_Release(buffer);
+    }
+
+    return hr;
 }
 
 HRESULT WINAPI D3DX11SaveTextureToFileA(ID3D11DeviceContext *context, ID3D11Resource *texture,
         D3DX11_IMAGE_FILE_FORMAT format, const char *filename)
 {
-    FIXME("context %p, texture %p, format %u, filename %s stub!\n",
-            context, texture, format, debugstr_a(filename));
+    WCHAR *buffer;
+    int str_len;
+    HRESULT hr;
 
-    return E_NOTIMPL;
+    TRACE("context %p, texture %p, format %u, filename %s.\n", context, texture, format, debugstr_a(filename));
+
+    if (!filename)
+        return E_FAIL;
+
+    str_len = MultiByteToWideChar(CP_ACP, 0, filename, -1, NULL, 0);
+    if (!str_len)
+        return HRESULT_FROM_WIN32(GetLastError());
+
+    buffer = malloc(str_len * sizeof(*buffer));
+    if (!buffer)
+        return E_OUTOFMEMORY;
+
+    MultiByteToWideChar(CP_ACP, 0, filename, -1, buffer, str_len);
+    hr = D3DX11SaveTextureToFileW(context, texture, format, buffer);
+    free(buffer);
+    return hr;
 }
 
 HRESULT WINAPI D3DX11GetImageInfoFromFileA(const char *src_file, ID3DX11ThreadPump *pump, D3DX11_IMAGE_INFO *info,
