@@ -1786,23 +1786,6 @@ static DEVMODEW *get_virtual_modes( const DEVMODEW *current, const DEVMODEW *ini
     return modes;
 }
 
-static DEVMODEW find_largest_mode( const DEVMODEW *found, const DEVMODEW *modes, UINT modes_count )
-{
-    const DEVMODEW *mode;
-
-    for (mode = modes; mode && modes_count; mode = NEXT_DEVMODEW(mode), modes_count--)
-    {
-        if (devmode_get( found, DM_DISPLAYORIENTATION ) != devmode_get( mode, DM_DISPLAYORIENTATION )) continue;
-        if (devmode_get( found, DM_BITSPERPEL ) >= devmode_get( mode, DM_BITSPERPEL )) continue;
-        if (devmode_get( found, DM_PELSWIDTH ) >= devmode_get( mode, DM_PELSWIDTH )) continue;
-        if (devmode_get( found, DM_PELSHEIGHT ) >= devmode_get( mode, DM_PELSHEIGHT )) continue;
-        if (devmode_get( found, DM_DISPLAYFREQUENCY ) >= devmode_get( mode, DM_DISPLAYFREQUENCY )) continue;
-        found = mode;
-    }
-
-    return *found;
-}
-
 static void add_modes( const DEVMODEW *current, UINT host_modes_count, const DEVMODEW *host_modes, void *param )
 {
     struct device_manager_ctx *ctx = param;
@@ -1824,7 +1807,7 @@ static void add_modes( const DEVMODEW *current, UINT host_modes_count, const DEV
     }
     else if (emulate_modelist)
     {
-        physical = find_largest_mode( current, modes, modes_count );
+        physical = *current;
         if ((virtual_modes = get_virtual_modes( current, &physical, &physical, host_modes, host_modes_count, &virtual_count )))
         {
             modes_count = virtual_count;
