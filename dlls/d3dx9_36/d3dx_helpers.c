@@ -276,7 +276,9 @@ static enum d3dx_pixel_format_id d3dx_pixel_format_id_from_dds_pixel_format(cons
     {
         const struct dds_pixel_format *dds_pf = &dds_pixel_formats[i].dds_pixel_format;
 
-        if (pixel_format->flags != dds_pf->flags)
+        if (pixel_format->flags != dds_pf->flags
+                /* Alpha flag might also be set alongside fourCC. */
+                && ((pixel_format->flags & DDS_PF_FOURCC) != dds_pf->flags))
             continue;
 
         switch (pixel_format->flags & ~DDS_PF_ALPHA)
