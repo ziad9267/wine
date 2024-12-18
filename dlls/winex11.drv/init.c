@@ -221,6 +221,10 @@ BOOL needs_offscreen_rendering( HWND hwnd, BOOL known_child, BOOL check_gamma )
 {
     static int no_child_clipping_cached = -1;
 
+    UINT style = NtUserGetWindowLongW( hwnd, GWL_STYLE );
+    struct x11drv_win_data *data;
+    BOOL needs_offscreen;
+
     if (no_child_clipping_cached == -1)
     {
         const char *sgi = getenv( "SteamGameId" );
@@ -228,6 +232,14 @@ BOOL needs_offscreen_rendering( HWND hwnd, BOOL known_child, BOOL check_gamma )
         no_child_clipping_cached = sgi && (!strcmp( sgi, "2229850" ) || !strcmp( sgi, "2229880" ));
         if (no_child_clipping_cached) FIXME( "HACK: disabling child GL window clipping.\n" );
     }
+
+    if (!(data = get_win_data( hwnd ))) needs_offscreen = TRUE; /* window is in a different process */
+    else
+    {
+        needs_offscreen = (style & WS_VISIBLE) && !(style & WS_MINIMIZE) && !is_window_rect_mapped( &data->rects.visible );
+        release_win_data( data );
+    }
+    if (needs_offscreen) return needs_offscreen;
 
     if (NtUserGetDpiForWindow( hwnd ) != NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI )
         && !enable_fullscreen_hack( hwnd, check_gamma ))
