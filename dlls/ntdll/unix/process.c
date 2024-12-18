@@ -1047,6 +1047,11 @@ void fill_vm_counters( VM_COUNTERS_EX *pvmi, int unix_pid )
 #endif
 }
 
+int get_unix_debugger_pid(void)
+{
+    return 0;
+}
+
 #elif defined(linux)
 
 void fill_vm_counters( VM_COUNTERS_EX *pvmi, int unix_pid )
@@ -1082,6 +1087,23 @@ void fill_vm_counters( VM_COUNTERS_EX *pvmi, int unix_pid )
     fclose(f);
 }
 
+int get_unix_debugger_pid(void)
+{
+    int unix_pid = 0;
+    char line[256];
+    FILE *file;
+
+    if (!(file = fopen( "/proc/self/status", "r" ))) return 0;
+    while (fgets( line, sizeof(line), file ))
+    {
+        if (sscanf( line, "TracerPid: %d", &unix_pid )) break;
+        unix_pid = 0;
+    }
+    fclose( file );
+
+    return unix_pid;
+}
+
 #elif defined(HAVE_LIBPROCSTAT)
 
 void fill_vm_counters( VM_COUNTERS_EX *pvmi, int unix_pid )
@@ -1106,11 +1128,21 @@ void fill_vm_counters( VM_COUNTERS_EX *pvmi, int unix_pid )
     }
 }
 
+int get_unix_debugger_pid(void)
+{
+    return 0;
+}
+
 #else
 
 void fill_vm_counters( VM_COUNTERS_EX *pvmi, int unix_pid )
 {
     /* FIXME : real data */
+}
+
+int get_unix_debugger_pid(void)
+{
+    return 0;
 }
 
 #endif
@@ -1587,6 +1619,12 @@ NTSTATUS WINAPI NtQueryInformationProcess( HANDLE handle, PROCESSINFOCLASS class
 #endif
         }
         else ret = STATUS_INVALID_PARAMETER;
+        break;
+
+    case ProcessWineUnixDebuggerPid:
+        if (handle == NtCurrentProcess()) ret = STATUS_INVALID_PARAMETER;
+        else if (size != sizeof(int)) ret = STATUS_INFO_LENGTH_MISMATCH;
+        else *(int *)info = get_unix_debugger_pid();
         break;
 
     case ProcessQuotaLimits:

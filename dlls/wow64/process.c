@@ -661,6 +661,9 @@ NTSTATUS WINAPI wow64_NtQueryInformationProcess( UINT *args )
     case ProcessWineLdtCopy:
         return STATUS_NOT_IMPLEMENTED;
 
+    case ProcessWineUnixDebuggerPid:
+        return NtQueryInformationProcess( handle, class, ptr, len, retlen );
+
     default:
         FIXME( "unsupported class %u\n", class );
         return STATUS_INVALID_INFO_CLASS;
