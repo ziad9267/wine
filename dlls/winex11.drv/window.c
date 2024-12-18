@@ -2040,6 +2040,7 @@ void detach_client_window( struct x11drv_win_data *data, Window client_window )
     }
 
     data->client_window = 0;
+    data->offscreen_client = client_window;
 }
 
 
@@ -2063,6 +2064,7 @@ void attach_client_window( struct x11drv_win_data *data, Window client_window )
     set_wine_allow_flip( client_window, 1 );
 
     data->client_window = client_window;
+    data->offscreen_client = 0;
 }
 
 
@@ -2077,6 +2079,7 @@ void destroy_client_window( HWND hwnd, Window client_window )
 
     if ((data = get_win_data( hwnd )))
     {
+        if (data->offscreen_client == client_window) data->offscreen_client = 0;
         if (data->client_window == client_window)
         {
             if (data->whole_window) client_window_events_disable( data, client_window );
@@ -2131,6 +2134,7 @@ Window create_client_window( HWND hwnd, RECT client_rect, const XVisualInfo *vis
                                                CWBackingStore | CWColormap | CWBorderPixel, &attr );
     if (data->client_window)
     {
+        data->offscreen_client = 0;
         set_wine_allow_flip( data->client_window, 1 );
         XMapWindow( gdi_display, data->client_window );
         if (data->whole_window)
@@ -2819,7 +2823,7 @@ void X11DRV_GetDC( HDC hdc, HWND hwnd, HWND top, const RECT *win_rect,
 
     if ((data = get_win_data( top )))
     {
-        if (!(escape.drawable = data->client_window) || (flags & DCX_WINDOW))
+        if ((!(escape.drawable = data->client_window) && !(escape.drawable = data->offscreen_client)) || (flags & DCX_WINDOW))
         {
             if (data->client_window) WARN( "window %p/%lx has an onscreen client window\n", data->hwnd, data->whole_window );
             escape.drawable = data->whole_window;
