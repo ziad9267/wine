@@ -101,6 +101,8 @@ static XContext host_window_context = 0;
 
 static const WCHAR whole_window_prop[] =
     {'_','_','w','i','n','e','_','x','1','1','_','w','h','o','l','e','_','w','i','n','d','o','w',0};
+static const WCHAR client_window_prop[] =
+    {'_','_','w','i','n','e','_','x','1','1','_','c','l','i','e','n','t','_','w','i','n','d','o','w',0};
 static const WCHAR clip_window_prop[] =
     {'_','_','w','i','n','e','_','x','1','1','_','c','l','i','p','_','w','i','n','d','o','w',0};
 static const WCHAR focus_time_prop[] =
@@ -2041,6 +2043,7 @@ void detach_client_window( struct x11drv_win_data *data, Window client_window )
 
     data->client_window = 0;
     data->offscreen_client = client_window;
+    NtUserRemoveProp( data->hwnd, client_window_prop );
 }
 
 
@@ -2065,6 +2068,7 @@ void attach_client_window( struct x11drv_win_data *data, Window client_window )
 
     data->client_window = client_window;
     data->offscreen_client = 0;
+    NtUserSetProp( data->hwnd, client_window_prop, (HANDLE)data->client_window );
 }
 
 
@@ -2084,6 +2088,7 @@ void destroy_client_window( HWND hwnd, Window client_window )
         {
             if (data->whole_window) client_window_events_disable( data, client_window );
             data->client_window = 0;
+            NtUserRemoveProp( hwnd, client_window_prop );
         }
         release_win_data( data );
     }
@@ -2135,6 +2140,7 @@ Window create_client_window( HWND hwnd, RECT client_rect, const XVisualInfo *vis
     if (data->client_window)
     {
         data->offscreen_client = 0;
+        NtUserSetProp( data->hwnd, client_window_prop, (HANDLE)data->client_window );
         set_wine_allow_flip( data->client_window, 1 );
         XMapWindow( gdi_display, data->client_window );
         if (data->whole_window)
@@ -2799,6 +2805,7 @@ Window get_onscreen_drawable( HWND hwnd, HWND toplevel, RECT *rect )
         return window;
     }
 
+    if ((window = (Window)NtUserGetProp( toplevel, client_window_prop ))) return window;
     /* FIXME: apply visible / window rects offset */
     return X11DRV_get_whole_window( toplevel );
 }
@@ -2838,9 +2845,14 @@ void X11DRV_GetDC( HDC hdc, HWND hwnd, HWND top, const RECT *win_rect,
         if (top == hwnd && escape.drawable == root_window) escape.mode = ClipByChildren;
         release_win_data( data );
     }
+    else if (!(escape.drawable = (Window)NtUserGetProp( top, client_window_prop )) || (flags & DCX_WINDOW))
+    {
+        if (escape.drawable) WARN( "window %p has a client window\n", top );
+        escape.drawable = X11DRV_get_whole_window( top );
+    }
     else
     {
-        escape.drawable = X11DRV_get_whole_window( top );
+        /* FIXME: apply visible / client rects offset */
     }
 
     if (!escape.drawable) return; /* don't create a GC for foreign windows */
