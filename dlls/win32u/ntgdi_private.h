@@ -89,6 +89,8 @@ typedef struct tagDC
     XFORM         xformVport2World;  /* Inverse of the above transformation */
     BOOL          vport2WorldValid;  /* Is xformVport2World valid? */
     RECT          bounds;            /* Current bounding rect */
+    UINT          dpi_from;
+    UINT          dpi_to;
 } DC;
 
 /* dce flags */
@@ -162,8 +164,8 @@ extern void free_brush_pattern( struct brush_pattern *pattern );
 /* clipping.c */
 extern BOOL clip_device_rect( DC *dc, RECT *dst, const RECT *src );
 extern BOOL clip_visrect( DC *dc, RECT *dst, const RECT *src );
-extern void set_visible_region( HDC hdc, HRGN hrgn, const RECT *vis_rect,
-                                const RECT *device_rect, struct window_surface *surface );
+extern void set_visible_region( HDC hdc, HRGN hrgn, const RECT *vis_rect, const RECT *device_rect,
+                                struct window_surface *surface, UINT dpi_from, UINT dpi_to );
 extern void update_dc_clipping( DC * dc );
 
 /* Return the total DC region (if any) */

@@ -190,6 +190,7 @@ BOOL dp_to_lp( DC *dc, POINT *points, INT count )
         {
             double x = points->x;
             double y = points->y;
+            *points = map_dpi_point( *points, dc->dpi_to, dc->dpi_from );
             points->x = GDI_ROUND( x * dc->xformVport2World.eM11 +
                                    y * dc->xformVport2World.eM21 +
                                    dc->xformVport2World.eDx );
@@ -274,6 +275,7 @@ void lp_to_dp( DC *dc, POINT *points, INT count )
         points->y = GDI_ROUND( x * dc->xformWorld2Vport.eM12 +
                                y * dc->xformWorld2Vport.eM22 +
                                dc->xformWorld2Vport.eDy );
+        *points = map_dpi_point( *points, dc->dpi_from, dc->dpi_to );
         points++;
     }
 }

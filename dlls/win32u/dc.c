@@ -154,6 +154,8 @@ static void free_dc_attr( DC_ATTR *dc_attr )
  */
 static void set_initial_dc_state( DC *dc )
 {
+    if (dc->dce && dc->dpi_from && dc->dpi_to) dc->dirty = 1;
+
     dc->attr->wnd_org.x     = 0;
     dc->attr->wnd_org.y     = 0;
     dc->attr->wnd_ext.cx    = 1;
@@ -195,6 +197,8 @@ static void set_initial_dc_state( DC *dc )
     dc->xformWorld2Vport    = dc->xformWorld2Wnd;
     dc->xformVport2World    = dc->xformWorld2Wnd;
     dc->vport2WorldValid    = TRUE;
+    dc->dpi_from            = 0;
+    dc->dpi_to              = 0;
 
     reset_bounds( &dc->bounds );
 }
