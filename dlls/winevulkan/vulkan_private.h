@@ -97,6 +97,8 @@ struct wine_instance
     struct rb_tree objects;
     pthread_rwlock_t objects_lock;
 
+    pthread_key_t transient_object_handle;
+
     /* We cache devices as we need to wrap them as they are dispatchable objects. */
     uint32_t phys_dev_count;
     struct wine_phys_dev phys_devs[];
