@@ -462,6 +462,12 @@ static BOOL is_hidraw_enabled(WORD vid, WORD pid, const USAGE_AND_PAGE *usages, 
 
     if (check_bus_option(L"DisableHidraw", FALSE)) return FALSE;
 
+    if (usages->UsagePage == HID_USAGE_PAGE_DIGITIZER)
+    {
+        WARN("Ignoring unsupported %04X:%04X hidraw touchscreen\n", vid, pid);
+        return FALSE;
+    }
+
     if (!RtlQueryEnvironmentVariable(NULL, L"PROTON_DISABLE_HIDRAW", 20, value, ARRAY_SIZE(value) - 1, &len))
     {
         value[len] = 0;
