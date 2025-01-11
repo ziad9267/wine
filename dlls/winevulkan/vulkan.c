@@ -201,7 +201,7 @@ static void append_debug_utils_object(const VkDebugUtilsObjectNameInfoEXT *objec
     dst->object_name_len = append_string(object->pObjectName, strings, strings_len);
 }
 
-static void signal_timeline_sem(struct vulkan_device *device, VkSemaphore sem, uint64_t *value)
+static void signal_timeline_sem(struct vulkan_device *device, VkSemaphore sem, UINT64 *value)
 {
     /* May be called from native thread. */
     struct VkSemaphoreSignalInfo info = { 0 };
@@ -3739,7 +3739,7 @@ static void add_sem_signal_op(struct vulkan_device *device, struct wine_semaphor
         VkSemaphore *phys_semaphore, uint64_t *phys_signal_value, BOOL signal_immediate)
 {
     struct pending_d3d12_fence_op *op;
-    uint64_t value;
+    UINT64 value;
 
     pthread_mutex_lock(&device->signaller_mutex);
     if ((op = get_free_fence_op(device)))

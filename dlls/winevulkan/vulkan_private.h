@@ -123,7 +123,7 @@ struct keyed_mutex_shm
     uint64_t instance_id_counter;
     uint64_t acquired_to_instance;
     uint64_t key;
-    uint64_t timeline_value;
+    UINT64 timeline_value;
     uint64_t timeline_queued_release;
 };
 
@@ -217,7 +217,7 @@ struct wine_semaphore
     {
         /* Shared mem access mutex. The non-shared parts access is guarded with device global signaller_mutex. */
         pthread_mutex_t mutex;
-        uint64_t virtual_value, physical_value;
+        UINT64 virtual_value, physical_value;
         uint64_t last_reset_physical;
         uint64_t last_dropped_reset_physical;
         struct
