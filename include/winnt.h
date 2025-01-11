@@ -2460,7 +2460,7 @@ static FORCEINLINE struct _TEB * WINAPI NtCurrentTeb(void)
     return teb;
 }
 #elif defined(__i386__) && defined(_MSC_VER)
-DWORD __readfsdword(DWORD);
+unsigned long __readfsdword(unsigned long);
 #pragma intrinsic(__readfsdword)
 static FORCEINLINE struct _TEB * WINAPI NtCurrentTeb(void)
 {
