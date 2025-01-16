@@ -2452,7 +2452,7 @@ NTSYSAPI struct _TEB * WINAPI NtCurrentTeb(void) __attribute__((pure));
 # else
 NTSYSAPI struct _TEB * WINAPI NtCurrentTeb(void);
 # endif
-#elif defined(__i386__) && defined(__GNUC__)
+#elif defined(__i386__) && (defined(__GNUC__) || defined(__clang__))
 static FORCEINLINE struct _TEB * WINAPI NtCurrentTeb(void)
 {
     struct _TEB *teb;
