@@ -1494,6 +1494,7 @@ static int skip_iconify(void)
     {
         cached = (env = getenv( "SteamGameId" )) && (0
                     || !strcmp( env, "1827980" )
+                    || !strcmp( env, "1183470" )
                  );
         if (cached) FIXME( "HACK: skip_iconify.\n" );
     }
