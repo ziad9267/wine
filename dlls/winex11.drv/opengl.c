@@ -1818,6 +1818,13 @@ static GLXContext create_glxcontext(Display *display, struct wgl_context *contex
 
 BOOL enable_fullscreen_hack( HWND hwnd, BOOL check_gamma )
 {
+    static int disable_fshack = -1;
+    if (disable_fshack == -1) {
+        const char *env = getenv("WINE_DISABLE_FULLSCREEN_HACK");
+        disable_fshack = env && atoi(env);
+    }
+
+    if (disable_fshack) return FALSE;
     if (NtUserGetDpiForWindow( hwnd ) != NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI )) return TRUE; /* needs DPI scaling */
     return check_gamma && ReadNoFence( &gamma_serial );
 }
