@@ -1485,6 +1485,22 @@ static void set_xembed_flags( struct x11drv_win_data *data, unsigned long flags 
                      x11drv_atom(_XEMBED_INFO), 32, PropModeReplace, (unsigned char*)info, 2 );
 }
 
+static int skip_iconify(void)
+{
+    static int cached = -1;
+    const char *env;
+
+    if (cached == -1)
+    {
+        cached = (env = getenv( "SteamGameId" )) && (0
+                    || !strcmp( env, "1827980" )
+                 );
+        if (cached) FIXME( "HACK: skip_iconify.\n" );
+    }
+
+    return cached;
+}
+
 static void window_set_wm_state( struct x11drv_win_data *data, UINT new_state, UINT swp_flags )
 {
     UINT old_state = data->pending_state.wm_state;
@@ -1531,6 +1547,16 @@ static void window_set_wm_state( struct x11drv_win_data *data, UINT new_state, U
     data->wm_state_serial = NextRequest( data->display );
     TRACE( "window %p/%lx, requesting WM_STATE %#x -> %#x serial %lu, foreground %p\n", data->hwnd, data->whole_window,
            old_state, new_state, data->wm_state_serial, NtUserGetForegroundWindow() );
+
+    if (new_state == IconicState && X11DRV_HasWindowManager( "steamcompmgr" ) && skip_iconify())
+    {
+        /* Gamescope will restore window when attempting to iconify it. Do not call XIconifyWindow() and
+         * pretend that window is already minimized for the games which depend on some windows to be minimized. */
+        WARN( "hwnd %p, skipping iconify.\n", data->hwnd );
+        data->current_state.wm_state = data->pending_state.wm_state;
+        data->wm_state_serial = 0;
+        return;
+    }
 
     switch (MAKELONG(old_state, new_state))
     {
