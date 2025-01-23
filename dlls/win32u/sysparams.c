@@ -1633,6 +1633,8 @@ static SIZE *get_screen_sizes( const DEVMODEW *maximum, const DEVMODEW *modes, U
 {
     static SIZE lowres_sizes[] =
     {
+        /* 4:3 */
+        { 640,  480},
         /* 16:9 */
         { 960,  540},
     };
@@ -1670,6 +1672,7 @@ static SIZE *get_screen_sizes( const DEVMODEW *maximum, const DEVMODEW *modes, U
     UINT max_width = devmode_get( maximum, DM_PELSWIDTH ), max_height = devmode_get( maximum, DM_PELSHEIGHT );
     SIZE *sizes, max_size = {.cx = max( max_width, max_height ), .cy = min( max_width, max_height )};
     const DEVMODEW *mode;
+    BOOL enable_lowres;
     UINT i, count;
 
     const char *env;
@@ -1685,7 +1688,7 @@ static SIZE *get_screen_sizes( const DEVMODEW *maximum, const DEVMODEW *modes, U
     }
 
     /* Titan Souls renders incorrectly if we report modes smaller than 800x600 */
-    if (!(env = getenv( "SteamAppId" )) || strcmp( env, "297130" ))
+    if ((enable_lowres = !(env = getenv( "SteamAppId" )) || strcmp( env, "297130" )))
     {
         memcpy( sizes + count, lowres_sizes, ARRAY_SIZE(lowres_sizes) * sizeof(*sizes) );
         count += ARRAY_SIZE(lowres_sizes);
@@ -1695,8 +1698,8 @@ static SIZE *get_screen_sizes( const DEVMODEW *maximum, const DEVMODEW *modes, U
     {
         UINT width = devmode_get( mode, DM_PELSWIDTH ), height = devmode_get( mode, DM_PELSHEIGHT );
         SIZE size = {.cx = max( width, height ), .cy = min( width, height )};
-        if (!size.cx || size.cx < 800 || size.cx > max_size.cx) continue;
-        if (!size.cy || size.cy < 600 || size.cy > max_size.cy) continue;
+        if (!size.cx || (size.cx < 800 && !enable_lowres) || size.cx > max_size.cx) continue;
+        if (!size.cy || (size.cy < 600 && !enable_lowres) || size.cy > max_size.cy) continue;
         count += add_screen_size( sizes, count, size );
     }
 
