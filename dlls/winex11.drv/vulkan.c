@@ -232,7 +232,15 @@ static void vulkan_surface_update_offscreen( HWND hwnd, struct x11drv_vulkan_sur
     struct x11drv_win_data *data;
 
     if (surface->other_process) offscreen = TRUE;
-    if (offscreen == surface->offscreen) return;
+    if (offscreen == surface->offscreen)
+    {
+        if (!offscreen && (data = get_win_data( hwnd )))
+        {
+            attach_client_window( data, surface->window );
+            release_win_data( data );
+        }
+        return;
+    }
     surface->offscreen = offscreen;
 
     if (!surface->offscreen)
