@@ -920,7 +920,7 @@ static void window_set_mwm_hints( struct x11drv_win_data *data, const MwmHints *
      * the Mutter generated sequence, while achieving the same thing and getting WM_TAKE_FOCUS event when the
      * window is mapped again.
      */
-    if (data->managed && data->pending_state.wm_state == NormalState &&
+    if (X11DRV_HasWindowManager( "Mutter" ) && data->managed && data->pending_state.wm_state == NormalState &&
         !old_hints->decorations != !new_hints->decorations)
     {
         if (data->wm_state_serial) return; /* another WM_STATE update is pending, wait for it to complete */
