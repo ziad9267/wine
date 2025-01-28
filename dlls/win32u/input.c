@@ -1828,15 +1828,13 @@ HWND WINAPI NtUserSetCapture( HWND hwnd )
 }
 
 /**********************************************************************
- *           release_capture
+ *           NtUserReleaseCapture (win32u.@)
  */
-BOOL release_capture(void)
+BOOL WINAPI NtUserReleaseCapture(void)
 {
     HWND previous = NULL;
-    BOOL ret;
 
-    ret = set_capture_window( 0, 0, &previous );
-    return ret;
+    return set_capture_window( 0, 0, &previous );
 }
 
 /*****************************************************************
