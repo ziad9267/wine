@@ -702,6 +702,22 @@ typedef enum _WINDOWINFOCLASS
     WindowDefaultInputContext,
 } WINDOWINFOCLASS;
 
+/* NtUserGetThreadState info classes */
+typedef enum _USERTHREADSTATECLASS
+{
+    UserThreadStateFocusWindow,
+    UserThreadStateActiveWindow,
+    UserThreadStateCaptureWindow,
+    UserThreadStateDefaultImeWindow,
+    UserThreadStateDefaultInputContext,
+    UserThreadStateInputState,
+    UserThreadStateCursor,
+    UserThreadStateExtraInfo,
+    UserThreadStateInSendMessage,
+    UserThreadStateMessageTime,
+    UserThreadStateIsForeground
+} USERTHREADSTATECLASS;
+
 W32KAPI HKL     WINAPI NtUserActivateKeyboardLayout( HKL layout, UINT flags );
 W32KAPI BOOL    WINAPI NtUserAddClipboardFormatListener( HWND hwnd );
 W32KAPI UINT    WINAPI NtUserAssociateInputContext( HWND hwnd, HIMC ctx, ULONG flags );
@@ -841,6 +857,7 @@ W32KAPI BOOL    WINAPI NtUserGetScrollBarInfo( HWND hwnd, LONG id, SCROLLBARINFO
 W32KAPI ULONG   WINAPI NtUserGetSystemDpiForProcess( HANDLE process );
 W32KAPI HMENU   WINAPI NtUserGetSystemMenu( HWND hwnd, BOOL revert );
 W32KAPI HDESK   WINAPI NtUserGetThreadDesktop( DWORD thread );
+W32KAPI ULONG_PTR WINAPI NtUserGetThreadState( USERTHREADSTATECLASS cls );
 W32KAPI BOOL    WINAPI NtUserGetTitleBarInfo( HWND hwnd, TITLEBARINFO *info );
 W32KAPI BOOL    WINAPI NtUserGetTouchInputInfo( HTOUCHINPUT handle, UINT count, TOUCHINPUT *ptr, int size );
 W32KAPI INT     WINAPI NtUserGetUpdateRgn( HWND hwnd, HRGN hrgn, BOOL erase );
@@ -986,7 +1003,6 @@ enum
 {
     NtUserCallNoParam_GetDesktopWindow,
     NtUserCallNoParam_GetDialogBaseUnits,
-    NtUserCallNoParam_GetInputState,
     NtUserCallNoParam_GetLastInputTime,
     NtUserCallNoParam_GetProcessDefaultLayout,
     NtUserCallNoParam_GetProgmanWindow,
@@ -1007,11 +1023,6 @@ static inline DWORD NtUserGetDialogBaseUnits(void)
 {
     return NtUserCallNoParam( NtUserCallNoParam_GetDialogBaseUnits );
 };
-
-static inline BOOL NtUserGetInputState(void)
-{
-    return NtUserCallNoParam( NtUserCallNoParam_GetInputState );
-}
 
 static inline DWORD NtUserGetLastInputTime(void)
 {

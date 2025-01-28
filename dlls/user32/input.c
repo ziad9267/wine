@@ -108,9 +108,7 @@ BOOL WINAPI DECLSPEC_HOTPATCH GetCursorPos( POINT *pt )
  */
 HWND WINAPI GetCapture(void)
 {
-    GUITHREADINFO info;
-    info.cbSize = sizeof(info);
-    return NtUserGetGUIThreadInfo( GetCurrentThreadId(), &info ) ? info.hwndCapture : 0;
+    return (HWND)NtUserGetThreadState( UserThreadStateCaptureWindow );
 }
 
 
@@ -137,7 +135,7 @@ BOOL WINAPI SetCaretBlinkTime( unsigned int time )
  */
 BOOL WINAPI GetInputState(void)
 {
-    return NtUserGetInputState();
+    return NtUserGetThreadState( UserThreadStateInputState );
 }
 
 
@@ -776,9 +774,7 @@ BOOL WINAPI SetForegroundWindow( HWND hwnd )
  */
 HWND WINAPI GetActiveWindow(void)
 {
-    GUITHREADINFO info;
-    info.cbSize = sizeof(info);
-    return NtUserGetGUIThreadInfo( GetCurrentThreadId(), &info ) ? info.hwndActive : 0;
+    return (HWND)NtUserGetThreadState( UserThreadStateActiveWindow );
 }
 
 
@@ -787,9 +783,7 @@ HWND WINAPI GetActiveWindow(void)
  */
 HWND WINAPI GetFocus(void)
 {
-    GUITHREADINFO info;
-    info.cbSize = sizeof(info);
-    return NtUserGetGUIThreadInfo( GetCurrentThreadId(), &info ) ? info.hwndFocus : 0;
+    return (HWND)NtUserGetThreadState( UserThreadStateFocusWindow );
 }
 
 
