@@ -114,7 +114,6 @@ extern BOOL register_touch_window( HWND hwnd, UINT flags );
 extern BOOL unregister_touch_window( HWND hwnd );
 
 /* menu.c */
-extern HMENU create_menu( BOOL is_popup );
 extern BOOL draw_menu_bar( HWND hwnd );
 extern UINT draw_nc_menu_bar( HDC hdc, RECT *rect, HWND hwnd );
 extern void end_menu( HWND hwnd );
