@@ -91,7 +91,6 @@ extern void unregister_imm_window( HWND hwnd );
 extern BOOL enable_mouse_in_pointer;
 extern BOOL grab_pointer;
 extern BOOL grab_fullscreen;
-extern BOOL destroy_caret(void);
 extern HWND get_active_window(void);
 extern HWND get_capture(void);
 extern BOOL get_cursor_pos( POINT *pt );
