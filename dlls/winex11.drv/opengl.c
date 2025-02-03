@@ -1887,7 +1887,11 @@ static struct gl_drawable *create_gl_drawable( HWND hwnd, const struct glx_pixel
                                          visual->class == DirectColor) ? AllocAll : AllocNone );
         gl->window = create_client_window( hwnd, gl->rect, visual, gl->colormap );
         if (gl->window)
+        {
             gl->drawable = pglXCreateWindow( gdi_display, gl->format->fbconfig, gl->window, NULL );
+            gl->hdc_src = NtGdiOpenDCW( &device_str, NULL, NULL, 0, TRUE, NULL, NULL, NULL );
+            set_dc_drawable( gl->hdc_src, gl->window, &gl->rect, IncludeInferiors );
+        }
         gl->fs_hack = enable_fshack;
         TRACE( "%p created client %lx drawable %lx\n", hwnd, gl->window, gl->drawable );
         if (gl->fs_hack) WARN( "Window %p has the fullscreen hack enabled\n", hwnd );
@@ -3219,6 +3223,8 @@ static void present_gl_drawable( HWND hwnd, HDC hdc, struct gl_drawable *gl, BOO
 
     if (hwnd && (surface = window_surface_get( hwnd )))
     {
+        HDC hdc_dst;
+
         TRACE("surface %p, alpha_mask %#x.\n", surface, surface->alpha_mask);
         if (surface->alpha_mask)
         {
@@ -3227,6 +3233,16 @@ static void present_gl_drawable( HWND hwnd, HDC hdc, struct gl_drawable *gl, BOO
             if (!drawable) sync_gl_drawable( hwnd, FALSE );
             return;
         }
+        WARN( "surface is present on non-ULW window.\n" );
+        hdc_dst = NtUserGetDCEx( hwnd, 0, DCX_CACHE | DCX_USESTYLE );
+        region = get_dc_monitor_region( hwnd, hdc );
+        if (region) NtGdiExtSelectClipRgn( hdc_dst, region, RGN_COPY );
+        NtGdiStretchBlt( hdc_dst, 0, 0, gl->rect.right - gl->rect.left, gl->rect.bottom - gl->rect.top,
+                         gl->hdc_src, 0, 0, gl->rect.right, gl->rect.bottom, SRCCOPY, 0 );
+        NtUserReleaseDC( hwnd, hdc_dst );
+        if (region) NtGdiDeleteObjectApp( region );
+        window_surface_release( surface );
+        return;
     }
 
     if (!drawable) return;
