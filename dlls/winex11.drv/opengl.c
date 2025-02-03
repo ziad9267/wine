@@ -3204,6 +3204,7 @@ static BOOL glxdrv_wglShareLists(struct wgl_context *org, struct wgl_context *de
 static void present_gl_drawable( HWND hwnd, HDC hdc, struct gl_drawable *gl, BOOL flush, BOOL gl_finish )
 {
     HWND toplevel = NtUserGetAncestor( hwnd, GA_ROOT );
+    struct window_surface *surface;
     Drawable window, drawable;
     RECT rect_dst, rect;
     HRGN region;
@@ -3215,6 +3216,19 @@ static void present_gl_drawable( HWND hwnd, HDC hdc, struct gl_drawable *gl, BOO
     case DC_GL_CHILD_WIN: drawable = gl->window; break;
     default: drawable = 0; break;
     }
+
+    if (hwnd && (surface = window_surface_get( hwnd )))
+    {
+        TRACE("surface %p, alpha_mask %#x.\n", surface, surface->alpha_mask);
+        if (surface->alpha_mask)
+        {
+            /* GL drawing to ULW window never gets onscreen directly, only though UpdateLayeredWindow(). */
+            window_surface_release( surface );
+            if (!drawable) sync_gl_drawable( hwnd, FALSE );
+            return;
+        }
+    }
+
     if (!drawable) return;
     window = get_onscreen_drawable( hwnd, toplevel, &rect_dst );
     region = get_dc_monitor_region( hwnd, hdc );

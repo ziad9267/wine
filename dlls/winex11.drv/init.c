@@ -220,6 +220,7 @@ static BOOL needs_client_window_clipping( HWND hwnd )
 BOOL needs_offscreen_rendering( HWND hwnd, BOOL known_child, BOOL check_gamma )
 {
     static int no_child_clipping_cached = -1;
+    struct window_surface *surface;
 
     UINT style = NtUserGetWindowLongW( hwnd, GWL_STYLE );
     struct x11drv_win_data *data;
@@ -238,6 +239,13 @@ BOOL needs_offscreen_rendering( HWND hwnd, BOOL known_child, BOOL check_gamma )
     {
         needs_offscreen = (style & WS_VISIBLE) && !(style & WS_MINIMIZE) && !is_window_rect_mapped( &data->rects.visible );
         release_win_data( data );
+    }
+    if (!needs_offscreen && (surface = window_surface_get( hwnd )))
+    {
+        TRACE("hwnd %p, surface %p, surface->alpha_mask %#x.\n", hwnd, surface, surface->alpha_mask);
+        /* 3d drawing to ULW window never gets onscreen directly, only though UpdateLayeredWindow(). */
+        needs_offscreen = !!surface->alpha_mask;
+        window_surface_release( surface );
     }
     if (needs_offscreen) return needs_offscreen;
 
