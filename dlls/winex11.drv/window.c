@@ -1233,6 +1233,12 @@ static void window_set_net_wm_state( struct x11drv_win_data *data, UINT new_stat
     static const UINT fullscreen_mask = (1 << NET_WM_STATE_MAXIMIZED) | (1 << NET_WM_STATE_FULLSCREEN);
     UINT i, count, old_state = data->pending_state.net_wm_state, net_wm_bypass_compositor = 0;
 
+    /* Gamescope advertises _NET_WM_STATE_FULLSCREEN support but it then breaks its modeset emulation:
+     * Instead of upscaling the windows, it will make them cover the entire screen, increasing their
+     * pixel size even if the display mode is supposed to be at a lower resolution.
+     */
+    if (X11DRV_HasWindowManager( "steamcompmgr" )) new_state &= ~(1 << NET_WM_STATE_FULLSCREEN);
+
     new_state &= x11drv_thread_data()->net_wm_state_mask;
     data->desired_state.net_wm_state = new_state;
     if (!data->whole_window) return; /* no window, nothing to update */
