@@ -2220,6 +2220,7 @@ static BOOL apply_window_pos( HWND hwnd, HWND insert_after, UINT swp_flags, stru
                                         get_driver_window_surface( new_surface, raw_dpi ) );
 
         update_children_window_state( hwnd );
+        vulkan_update_surfaces( hwnd );
     }
 
     return ret;
