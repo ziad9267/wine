@@ -256,7 +256,7 @@ void host_window_set_parent( struct host_window *win, Window parent )
 /***********************************************************************
  * http://standards.freedesktop.org/startup-notification-spec
  */
-static void remove_startup_notification(Display *display, Window window)
+static void remove_startup_notification( struct x11drv_win_data *data )
 {
     static LONG startup_notification_removed = 0;
     char message[1024];
@@ -272,7 +272,9 @@ static void remove_startup_notification(Display *display, Window window)
 
     if (!(id = getenv( "DESKTOP_STARTUP_ID" )) || !id[0]) return;
 
-    if ((src = strstr( id, "_TIME" ))) update_user_time( display, window, atol( src + 5 ), FALSE );
+    TRACE( "Using DESKTOP_STARTUP_ID %s\n", debugstr_a(id) );
+
+    if ((src = strstr( id, "_TIME" ))) update_user_time( data, atol( src + 5 ), FALSE );
 
     pos = snprintf(message, sizeof(message), "remove: ID=");
     message[pos++] = '"';
@@ -288,8 +290,8 @@ static void remove_startup_notification(Display *display, Window window)
 
     xevent.xclient.type = ClientMessage;
     xevent.xclient.message_type = x11drv_atom(_NET_STARTUP_INFO_BEGIN);
-    xevent.xclient.display = display;
-    xevent.xclient.window = window;
+    xevent.xclient.display = data->display;
+    xevent.xclient.window = data->whole_window;
     xevent.xclient.format = 8;
 
     src = message;
@@ -305,7 +307,7 @@ static void remove_startup_notification(Display *display, Window window)
         src += msglen;
         srclen -= msglen;
 
-        XSendEvent( display, DefaultRootWindow( display ), False, PropertyChangeMask, &xevent );
+        XSendEvent( data->display, DefaultRootWindow( data->display ), False, PropertyChangeMask, &xevent );
         xevent.xclient.message_type = x11drv_atom(_NET_STARTUP_INFO);
     }
 }
@@ -1162,11 +1164,15 @@ Window init_clip_window(void)
 /***********************************************************************
  *     update_user_time
  */
-void update_user_time( Display *display, Window window, Time time, BOOL force )
+void update_user_time( struct x11drv_win_data *data, Time time, BOOL force )
 {
     if (!force && (time == -1 || time == 0)) time = 1;
-    if (time == -1) XDeleteProperty( display, window, x11drv_atom(_NET_WM_USER_TIME) );
-    else XChangeProperty( display, window, x11drv_atom(_NET_WM_USER_TIME), XA_CARDINAL,
+
+    TRACE( "window %p/%lx, requesting _NET_WM_USER_TIME %ld serial %lu\n", data->hwnd, data->whole_window,
+           time, NextRequest( data->display ) );
+
+    if (time == -1) XDeleteProperty( data->display, data->whole_window, x11drv_atom(_NET_WM_USER_TIME) );
+    else XChangeProperty( data->display, data->whole_window, x11drv_atom(_NET_WM_USER_TIME), XA_CARDINAL,
                           32, PropModeReplace, (unsigned char *)&time, 1 );
 }
 
@@ -1521,7 +1527,7 @@ static void window_set_wm_state( struct x11drv_win_data *data, UINT new_state, U
     {
     case MAKELONG(WithdrawnState, IconicState):
     case MAKELONG(WithdrawnState, NormalState):
-        remove_startup_notification( data->display, data->whole_window );
+        remove_startup_notification( data );
         set_wm_hints( data, swp_flags );
         update_net_wm_states( data );
         sync_window_style( data );
@@ -1537,8 +1543,8 @@ static void window_set_wm_state( struct x11drv_win_data *data, UINT new_state, U
     {
         /* try forcing activation if the window is supposed to be foreground or if it is fullscreen */
         if (data->hwnd == foreground || data->is_fullscreen) swp_flags = 0;
-        if (swp_flags & SWP_NOACTIVATE) update_user_time( data->display, data->whole_window, 0, TRUE );
-        else update_user_time( data->display, data->whole_window, -1, TRUE );
+        if (swp_flags & SWP_NOACTIVATE) update_user_time( data, 0, TRUE );
+        else update_user_time( data, -1, TRUE );
     }
     else if (data->has_focus && data->hwnd != foreground)
     {

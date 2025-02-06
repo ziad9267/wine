@@ -1601,6 +1601,7 @@ BOOL X11DRV_ButtonPress( HWND hwnd, XEvent *xev )
 {
     XButtonEvent *event = &xev->xbutton;
     int buttonNum = event->button - 1;
+    struct x11drv_win_data *data;
     INPUT input;
 
     if (buttonNum >= NB_BUTTONS) return FALSE;
@@ -1614,7 +1615,12 @@ BOOL X11DRV_ButtonPress( HWND hwnd, XEvent *xev )
     input.mi.time        = EVENT_x11_time_to_win32_time( event->time );
     input.mi.dwExtraInfo = 0;
 
-    if (hwnd) update_user_time( event->display, event->window, event->time, FALSE );
+    if ((data = get_win_data( hwnd )))
+    {
+        update_user_time( data, event->time, FALSE );
+        release_win_data( data );
+    }
+
     map_event_coords( hwnd, event->window, event->root, event->x_root, event->y_root, &input );
     send_mouse_input( hwnd, event->window, event->state, &input );
     return TRUE;
