@@ -46,6 +46,12 @@ extern GList *find_element_factories(GstElementFactoryListType type, GstRank min
         GstCaps *element_sink_caps, GstCaps *element_src_caps);
 extern GstElement *find_element(GstElementFactoryListType type,
         GstCaps *element_sink_caps, GstCaps *element_src_caps);
+/*
+ * Append `element` to `container`, updates the pointer to the first and last elements in the
+ * pipeline. Returns whether the operation succeeded.
+ *
+ * This takes the ownership of `element` whether it succeeded or not.
+ */
 extern bool append_element(GstElement *container, GstElement *element, GstElement **first, GstElement **last);
 extern bool link_src_to_sink(GstPad *src_pad, GstPad *sink_pad);
 extern bool link_src_to_element(GstPad *src_pad, GstElement *element);
@@ -147,5 +153,7 @@ static inline void touch_h264_used_tag(void)
         GST_WARNING("STEAM_COMPAT_TRANSCODED_MEDIA_PATH not set, cannot create h264-used file");
     }
 }
+
+GST_ELEMENT_REGISTER_DECLARE(winegstreamerstepper);
 
 #endif /* __WINE_WINEGSTREAMER_UNIX_PRIVATE_H */

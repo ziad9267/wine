@@ -350,6 +350,9 @@ NTSTATUS wg_init_gstreamer(void *arg)
         return STATUS_UNSUCCESSFUL;
     }
 
+    if (!GST_ELEMENT_REGISTER(winegstreamerstepper, NULL))
+        GST_ERROR("Failed to register the stepper element");
+
     return STATUS_SUCCESS;
 }
 
