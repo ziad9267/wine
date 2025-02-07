@@ -1505,6 +1505,8 @@ DECL_HANDLER(init_process_done)
 
         if (!process->parent_id)
             process->affinity = current->affinity = get_thread_affinity( current );
+
+        set_thread_affinity( current, current->affinity );
     }
 }
 
