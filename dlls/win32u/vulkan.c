@@ -290,6 +290,7 @@ static VkResult win32u_vkGetPhysicalDeviceSurfaceFormatsKHR( VkPhysicalDevice cl
     struct surface *surface = surface_from_handle( client_surface );
     struct vulkan_instance *instance = physical_device->instance;
 
+    if (surface->hwnd) vulkan_update_surfaces( surface->hwnd );
     return instance->p_vkGetPhysicalDeviceSurfaceFormatsKHR( physical_device->host.physical_device,
                                                                 surface->obj.host.surface, format_count, formats );
 }
@@ -302,6 +303,8 @@ static VkResult win32u_vkGetPhysicalDeviceSurfaceFormats2KHR( VkPhysicalDevice c
     VkPhysicalDeviceSurfaceInfo2KHR surface_info_host = *surface_info;
     struct vulkan_instance *instance = physical_device->instance;
     VkResult res;
+
+    if (surface->hwnd) vulkan_update_surfaces( surface->hwnd );
 
     if (!instance->p_vkGetPhysicalDeviceSurfaceFormats2KHR)
     {
