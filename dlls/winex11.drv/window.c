@@ -2855,17 +2855,7 @@ void X11DRV_GetDC( HDC hdc, HWND hwnd, HWND top, const RECT *win_rect,
 
     if ((data = get_win_data( top )))
     {
-        if (!(escape.drawable = data->client_window) || (flags & DCX_WINDOW))
-        {
-            if (data->client_window) WARN( "window %p/%lx has an onscreen client window\n", data->hwnd, data->whole_window );
-            escape.drawable = data->whole_window;
-        }
-        else
-        {
-            OffsetRect( &escape.dc_rect, data->rects.client.left - data->rects.window.left,
-                        data->rects.client.top - data->rects.window.top );
-        }
-
+        escape.drawable = data->whole_window;
         /* special case: when repainting the root window, clip out top-level windows */
         if (top == hwnd && escape.drawable == root_window) escape.mode = ClipByChildren;
         release_win_data( data );
