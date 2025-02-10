@@ -2824,12 +2824,9 @@ Window get_onscreen_drawable( HWND hwnd, HWND toplevel, RECT *rect )
 
     if ((data = get_win_data( toplevel )))
     {
-        if (!(window = data->client_window))
-        {
-            OffsetRect( rect, data->rects.client.left - data->rects.visible.left,
-                        data->rects.client.top - data->rects.visible.top );
-            window = data->whole_window;
-        }
+        OffsetRect( rect, data->rects.client.left - data->rects.visible.left,
+                    data->rects.client.top - data->rects.visible.top );
+        window = data->whole_window;
         release_win_data( data );
         return window;
     }
