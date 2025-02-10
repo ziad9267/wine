@@ -1922,6 +1922,21 @@ static RECT get_visible_rect( HWND hwnd, BOOL shaped, UINT style, UINT ex_style,
     return visible_rect;
 }
 
+static int force_present_to_surface(void)
+{
+    static int cached = -1;
+
+    if (cached == -1)
+    {
+        const char *sgi = getenv( "SteamGameId" );
+
+        cached = sgi &&
+                 (
+                    !strcmp(sgi, "803600")
+                 );
+    }
+    return cached;
+}
 
 static BOOL get_surface_rect( const RECT *visible_rect, RECT *surface_rect )
 {
@@ -1932,6 +1947,7 @@ static BOOL get_surface_rect( const RECT *visible_rect, RECT *surface_rect )
     /* crop surfaces which are larger than the virtual screen rect, some applications create huge windows */
     if ((surface_rect->right - surface_rect->left > virtual_rect.right - virtual_rect.left ||
          surface_rect->bottom - surface_rect->top > virtual_rect.bottom - virtual_rect.top) &&
+        !force_present_to_surface() &&
         !intersect_rect( surface_rect, surface_rect, &virtual_rect ))
         return FALSE;
     OffsetRect( surface_rect, -visible_rect->left, -visible_rect->top );

@@ -289,10 +289,27 @@ static void X11DRV_vulkan_surface_update( HWND hwnd, void *private )
     vulkan_surface_update_offscreen( hwnd, surface );
 }
 
+static int force_present_to_surface(void)
+{
+    static int cached = -1;
+
+    if (cached == -1)
+    {
+        const char *sgi = getenv( "SteamGameId" );
+
+        cached = sgi &&
+                 (
+                    !strcmp(sgi, "803600")
+                 );
+    }
+    return cached;
+}
+
 static void X11DRV_vulkan_surface_presented( HWND hwnd, void *private, VkResult result )
 {
     struct x11drv_vulkan_surface *surface = private;
     HWND toplevel = NtUserGetAncestor( hwnd, GA_ROOT );
+    struct window_surface *win_surface;
     struct x11drv_win_data *data;
     RECT rect_dst, rect;
     Drawable window;
@@ -304,9 +321,19 @@ static void X11DRV_vulkan_surface_presented( HWND hwnd, void *private, VkResult 
 
     if (!surface->offscreen) return;
     if (!(hdc = NtUserGetDCEx( hwnd, 0, DCX_CACHE | DCX_USESTYLE ))) return;
+
+    if (force_present_to_surface() && (win_surface = window_surface_get( hwnd )))
+    {
+        TRACE("blitting to surface win_surface %p.\n", win_surface);
+        NtGdiStretchBlt( hdc, 0, 0, surface->rect.right - surface->rect.left, surface->rect.bottom - surface->rect.top,
+                         surface->hdc_src, 0, 0, surface->rect.right, surface->rect.bottom, SRCCOPY, 0 );
+        NtUserReleaseDC( hwnd, hdc );
+        window_surface_release( win_surface );
+        return;
+    }
+
     window = X11DRV_get_whole_window( toplevel );
     region = get_dc_monitor_region( hwnd, hdc );
-
     NtUserGetClientRect( hwnd, &rect_dst, NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI ) );
     NtUserMapWindowPoints( hwnd, toplevel, (POINT *)&rect_dst, 2, NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI ) );
 
