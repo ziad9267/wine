@@ -3247,14 +3247,13 @@ static void present_gl_drawable( HWND hwnd, HDC hdc, struct gl_drawable *gl, BOO
     }
 
     if (!drawable) return;
-    window = get_dc_drawable( hdc, &rect );
-    region = get_dc_monitor_region( hwnd, hdc );
 
     if (gl_finish) pglFinish();
     if (flush) XFlush( gdi_display );
 
     NtUserGetClientRect( hwnd, &rect_dst, NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI ) );
     NtUserMapWindowPoints( hwnd, toplevel, (POINT *)&rect_dst, 2, NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI ) );
+    if (IsRectEmpty( &rect_dst ) || IsRectEmpty( &gl->rect )) return;
 
     if ((data = get_win_data( toplevel )))
     {
@@ -3262,6 +3261,9 @@ static void present_gl_drawable( HWND hwnd, HDC hdc, struct gl_drawable *gl, BOO
                     data->rects.client.top - data->rects.visible.top );
         release_win_data( data );
     }
+
+    window = get_dc_drawable( hdc, &rect );
+    region = get_dc_monitor_region( hwnd, hdc );
 
     if (get_dc_drawable( gl->hdc_dst, &rect ) != window || !EqualRect( &rect, &rect_dst ))
         set_dc_drawable( gl->hdc_dst, window, &rect_dst, IncludeInferiors );
