@@ -806,6 +806,11 @@ static void handle_wm_protocols( HWND hwnd, XClientMessageEvent *event )
                 NtUserIsWindowEnabled( hwnd ), NtUserIsWindowVisible( hwnd ), (int)NtUserGetWindowLongW( hwnd, GWL_STYLE ),
                 get_focus(), get_active_window(), last_focus );
 
+        /* Sometimes, when windows are quickly unmapped then mapped, we are being offered focus but still won't
+         * receive it because of some time resolution rules. Instead of relying on it, force receiving focus by
+         * setting the XSetInputFocus time to CurrentTime when we are expecting to be foreground. */
+        if (hwnd == foreground) event_time = CurrentTime;
+
         if (can_activate_window(hwnd))
         {
             set_focus( event->display, hwnd, event_time );
