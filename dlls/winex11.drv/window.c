@@ -368,6 +368,7 @@ static struct x11drv_win_data *alloc_win_data( Display *display, HWND hwnd )
         data->display = display;
         data->vis = default_visual;
         data->hwnd = hwnd;
+        data->user_time = -1;
         pthread_mutex_lock( &win_data_mutex );
         XSaveContext( gdi_display, (XID)hwnd, win_data_context, (char *)data );
     }
@@ -1167,6 +1168,8 @@ Window init_clip_window(void)
 void update_user_time( struct x11drv_win_data *data, Time time, BOOL force )
 {
     if (!force && (time == -1 || time == 0)) time = 1;
+    if (!data->user_time == !time) return;
+    data->user_time = time;
 
     TRACE( "window %p/%lx, requesting _NET_WM_USER_TIME %ld serial %lu\n", data->hwnd, data->whole_window,
            time, NextRequest( data->display ) );
