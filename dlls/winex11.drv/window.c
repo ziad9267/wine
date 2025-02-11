@@ -1496,7 +1496,8 @@ static int skip_iconify(void)
 
     if (cached == -1)
     {
-        cached = (env = getenv( "SteamGameId" )) && (0
+        cached = X11DRV_HasWindowManager( "steamcompmgr" ) &&
+                    (env = getenv( "SteamGameId" )) && (0
                     || !strcmp( env, "1827980" )
                     || !strcmp( env, "1183470" )
                  );
@@ -1553,7 +1554,7 @@ static void window_set_wm_state( struct x11drv_win_data *data, UINT new_state, U
     TRACE( "window %p/%lx, requesting WM_STATE %#x -> %#x serial %lu, foreground %p\n", data->hwnd, data->whole_window,
            old_state, new_state, data->wm_state_serial, NtUserGetForegroundWindow() );
 
-    if (new_state == IconicState && X11DRV_HasWindowManager( "steamcompmgr" ) && skip_iconify())
+    if (new_state == IconicState && skip_iconify())
     {
         /* Gamescope will restore window when attempting to iconify it. Do not call XIconifyWindow() and
          * pretend that window is already minimized for the games which depend on some windows to be minimized. */
@@ -1569,7 +1570,18 @@ static void window_set_wm_state( struct x11drv_win_data *data, UINT new_state, U
     case MAKELONG(WithdrawnState, NormalState):
     case MAKELONG(IconicState, NormalState):
         if (data->embedded) set_xembed_flags( data, XEMBED_MAPPED );
-        else XMapWindow( data->display, data->whole_window );
+        else
+        {
+            /* whole_window could be both iconic and mapped. Since XMapWindow() doesn't do
+             * anything if the window is already mapped, we need to unmap it first */
+             if (old_state == IconicState)
+                XUnmapWindow( data->display, data->whole_window );
+            XMapWindow( data->display, data->whole_window );
+            /* Mutter always unminimizes windows when handling map requests. Restore iconic state
+             * except for some games on Gamescope */
+            if (new_state == IconicState && !skip_iconify())
+                XIconifyWindow( data->display, data->whole_window, data->vis.screen );
+        }
         break;
     case MAKELONG(NormalState, WithdrawnState):
     case MAKELONG(IconicState, WithdrawnState):
