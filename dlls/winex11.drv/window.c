@@ -1913,6 +1913,19 @@ void window_configure_notify( struct x11drv_win_data *data, unsigned long serial
                          current, expected, prefix, received, NULL );
 }
 
+void net_active_window_notify( unsigned long serial, Window value, Time time )
+{
+    struct x11drv_thread_data *data = x11drv_thread_data();
+    Window *desired = &data->desired_net_active_window, *pending = &data->pending_net_active_window, *current = &data->current_net_active_window;
+    unsigned long *expect_serial = &data->net_active_window_serial;
+    const char *expected, *received;
+
+    received = wine_dbg_sprintf( "_NET_ACTIVE_WINDOW %lx serial %lu time %lu", value, serial, time );
+    expected = *expect_serial ? wine_dbg_sprintf( ", expected %lx serial %lu", *pending, *expect_serial ) : "";
+    handle_state_change( serial, expect_serial, sizeof(value), &value, desired, pending,
+                         current, expected, "", received, NULL );
+}
+
 BOOL window_has_pending_wm_state( HWND hwnd, UINT state )
 {
     struct x11drv_win_data *data;
@@ -3652,7 +3665,7 @@ static Window get_net_supporting_wm_check( Display *display, Window window )
 }
 
 
-static BOOL get_window_net_wm_name( Display *display, Window window, char **name )
+BOOL get_window_net_wm_name( Display *display, Window window, char **name )
 {
     unsigned long count, remaining;
     int format, ret;
@@ -3678,6 +3691,11 @@ static BOOL get_window_wm_name( Display *display, Window window, char **name )
     return !X11DRV_check_error() && !ret && *name;
 }
 
+BOOL get_window_name( Display *display, Window window, char **name )
+{
+    return get_window_net_wm_name( display, window, name ) || get_window_wm_name( display, window, name );
+}
+
 void net_supporting_wm_check_init( struct x11drv_thread_data *data )
 {
     Window window = None, other;
@@ -3687,8 +3705,7 @@ void net_supporting_wm_check_init( struct x11drv_thread_data *data )
     X11DRV_expect_error( data->display, host_window_error, NULL );
     other = get_net_supporting_wm_check( data->display, window );
     if (X11DRV_check_error() || window != other) WARN( "Invalid _NET_SUPPORTING_WM_CHECK window\n" );
-    else if (get_window_net_wm_name( data->display, window, &data->window_manager ) ||
-             get_window_wm_name( data->display, window, &data->window_manager ))
+    else if (get_window_name( data->display, window, &data->window_manager ))
     {
         char const *sgi = getenv( "SteamGameId" );
 
