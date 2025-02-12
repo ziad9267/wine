@@ -1244,7 +1244,7 @@ static void window_set_net_wm_state( struct x11drv_win_data *data, UINT new_stat
      * Instead of upscaling the windows, it will make them cover the entire screen, increasing their
      * pixel size even if the display mode is supposed to be at a lower resolution.
      */
-    if (X11DRV_HasWindowManager( "steamcompmgr" )) new_state &= ~(1 << NET_WM_STATE_FULLSCREEN);
+    if (X11DRV_HasWindowManager( "steamcompmgr" )) new_state &= ~fullscreen_mask;
 
     new_state &= x11drv_thread_data()->net_wm_state_mask;
     data->desired_state.net_wm_state = new_state;
@@ -1352,6 +1352,9 @@ static void window_set_config( struct x11drv_win_data *data, const RECT *new_rec
         window_set_net_wm_state( data, net_wm_state & ~fullscreen_mask );
     }
 
+    /* Gamescope has broken _NET_WM_STATE_FULLSCREEN / _NET_WM_STATE_MAXIMIZED support, always allow resizing instead */
+    if (X11DRV_HasWindowManager( "steamcompmgr" )) style &= ~WS_MAXIMIZE;
+
     /* resizing a managed maximized window is not allowed */
     if ((old_rect->right - old_rect->left != new_rect->right - new_rect->left ||
          old_rect->bottom - old_rect->top != new_rect->bottom - new_rect->top) &&
@@ -1384,8 +1387,8 @@ static void window_set_config( struct x11drv_win_data *data, const RECT *new_rec
 
     data->pending_state.rect = *new_rect;
     data->configure_serial = NextRequest( data->display );
-    TRACE( "window %p/%lx, requesting config %s above %u, serial %lu\n", data->hwnd, data->whole_window,
-           wine_dbgstr_rect(new_rect), above, data->configure_serial );
+    TRACE( "window %p/%lx, requesting config %s above %u mask %#x, serial %lu\n", data->hwnd, data->whole_window,
+           wine_dbgstr_rect(new_rect), above, mask, data->configure_serial );
     XReconfigureWMWindow( data->display, data->whole_window, data->vis.screen, mask, &changes );
 
     if (net_wm_state != -1) window_set_net_wm_state( data, net_wm_state );
