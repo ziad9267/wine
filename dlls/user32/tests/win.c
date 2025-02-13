@@ -7817,7 +7817,6 @@ static void test_ShowWindow(void)
     BitBlt(mem_dc, 0, 0, 200, 200, screen_dc, 0, 0, SRCCOPY);
 
     color = GetPixel(mem_dc, 150, 150);
-    todo_wine_if(color != RGB(0xff, 0, 0xff)) /* fails on Mutter */
     ok(color == RGB(0xff, 0, 0xff), "Got unexpected color %#lx.\n", color);
 
     DeleteObject(mem_bitmap);

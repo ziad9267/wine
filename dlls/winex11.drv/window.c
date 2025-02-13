@@ -1529,6 +1529,22 @@ static void window_set_wm_state( struct x11drv_win_data *data, UINT new_state, U
     if (data->wm_state_serial) return; /* another WM_STATE update is pending, wait for it to complete */
     if (old_state == new_state) return; /* states are the same, nothing to update */
 
+    /* When transitioning a window from IconicState to NormalState and the window is managed, go
+     * through WithdrawnState. This is needed because Mutter doesn't unmap windows when making
+     * windows iconic/minimized as Mutter needs to support live preview for minimized windows. So on
+     * Mutter, a window can be both iconic and mapped. If the window is mapped, then XMapWindow()
+     * will have no effect according to the  XMapWindow() documentation. Thus we have to transition
+     * to WithdrawnState first, then to NormalState. Other window managers such as KWin don't need
+     * this because they unmap windows when making them iconic */
+    if (X11DRV_HasWindowManager( "Mutter" ) && data->managed
+        && MAKELONG(old_state, new_state) == MAKELONG(IconicState, NormalState))
+    {
+        WARN( "window %p/%lx is iconic, remapping to workaround Mutter issues.\n", data->hwnd, data->whole_window );
+        window_set_wm_state( data, WithdrawnState, 0 );
+        window_set_wm_state( data, NormalState, swp_flags );
+        return;
+    }
+
     switch (MAKELONG(old_state, new_state))
     {
     case MAKELONG(WithdrawnState, IconicState):
