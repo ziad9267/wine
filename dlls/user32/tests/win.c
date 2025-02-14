@@ -7453,6 +7453,11 @@ static void test_ShowWindow(void)
     LPARAM ret;
     MONITORINFO mon_info;
     unsigned int i;
+    HDC screen_dc, mem_dc;
+    WNDCLASSA cls = {0};
+    HBITMAP mem_bitmap;
+    COLORREF color;
+    HBRUSH brush;
 
     DWORD test_style[] =
     {
@@ -7777,6 +7782,50 @@ static void test_ShowWindow(void)
 
         flush_events(TRUE);
     }
+
+    /* Test minimizing a normal window and then making it normal */
+    brush = CreateSolidBrush(RGB(0xff, 0, 0xff));
+
+    cls.lpfnWndProc = DefWindowProcA;
+    cls.hInstance = GetModuleHandleA(0);
+    cls.hCursor = LoadCursorA(0, (LPCSTR)IDC_ARROW);
+    cls.hbrBackground = brush;
+    cls.lpszClassName = "TestShowWindowClass";
+    ok(RegisterClassA(&cls), "RegisterClass failed\n");
+
+    hwnd = CreateWindowExA(WS_EX_TOPMOST, cls.lpszClassName, NULL, WS_POPUP | WS_VISIBLE,
+                           100, 100, 100, 100, 0, 0, 0, NULL);
+    flush_events(TRUE);
+
+    ret = ShowWindow(hwnd, SW_SHOWMINIMIZED);
+    ok(ret, "unexpected ret: %Iu\n", ret);
+    flush_events(TRUE);
+
+    ret = ShowWindow(hwnd, SW_SHOWNORMAL);
+    ok(ret, "unexpected ret: %Iu\n", ret);
+    flush_events(TRUE);
+
+    /* Wait until window manager animation finishes */
+    Sleep(500);
+
+    /* Test if window is really in normal state by testing the color on the screen because win32
+     * states such as WS_MINIMIZE may not reflect the actual x11 window state */
+    screen_dc = GetDC(GetDesktopWindow());
+    mem_dc = CreateCompatibleDC(screen_dc);
+    mem_bitmap = CreateCompatibleBitmap(screen_dc, 200, 200);
+    SelectObject(mem_dc, mem_bitmap);
+    BitBlt(mem_dc, 0, 0, 200, 200, screen_dc, 0, 0, SRCCOPY);
+
+    color = GetPixel(mem_dc, 150, 150);
+    todo_wine_if(color != RGB(0xff, 0, 0xff)) /* fails on Mutter */
+    ok(color == RGB(0xff, 0, 0xff), "Got unexpected color %#lx.\n", color);
+
+    DeleteObject(mem_bitmap);
+    DeleteDC(mem_dc);
+    ReleaseDC(GetDesktopWindow(), screen_dc);
+    DestroyWindow(hwnd);
+    DeleteObject(brush);
+    UnregisterClassA(cls.lpszClassName, cls.hInstance);
 }
 
 static void test_ShowWindow_owned(HWND hwndMain)
