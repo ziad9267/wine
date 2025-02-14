@@ -47,6 +47,8 @@ WINE_DECLARE_DEBUG_CHANNEL(fps);
 
 static const struct vulkan_driver_funcs *driver_funcs;
 
+static pthread_mutex_t surface_list_lock = PTHREAD_MUTEX_INITIALIZER;
+
 struct surface
 {
     struct vulkan_surface obj;
@@ -54,7 +56,7 @@ struct surface
     HWND hwnd;
 
     struct list entry;
-    struct rb_entry window_entry;
+    struct list temp_entry;
 };
 
 static struct surface *surface_from_handle( VkSurfaceKHR handle )
@@ -154,6 +156,7 @@ static VkResult win32u_vkCreateWin32SurfaceKHR( VkInstance client_instance, cons
         return res;
     }
 
+    pthread_mutex_lock( &surface_list_lock );
     if (!(win = get_win_ptr( surface->hwnd )) || win == WND_DESKTOP || win == WND_OTHER_PROCESS)
         list_init( &surface->entry );
     else
@@ -161,6 +164,7 @@ static VkResult win32u_vkCreateWin32SurfaceKHR( VkInstance client_instance, cons
         list_add_tail( &win->vulkan_surfaces, &surface->entry );
         release_win_ptr( win );
     }
+    pthread_mutex_unlock( &surface_list_lock );
 
     vulkan_object_init( &surface->obj.obj, host_surface );
     surface->obj.instance = instance;
@@ -184,11 +188,13 @@ static void win32u_vkDestroySurfaceKHR( VkInstance client_instance, VkSurfaceKHR
     TRACE( "instance %p, handle 0x%s, allocator %p\n", instance, wine_dbgstr_longlong( client_surface ), allocator );
     if (allocator) FIXME( "Support for allocation callbacks not implemented yet\n" );
 
+    pthread_mutex_lock( &surface_list_lock );
     if ((win = get_win_ptr( surface->hwnd )) && win != WND_DESKTOP && win != WND_OTHER_PROCESS)
     {
         list_remove( &surface->entry );
         release_win_ptr( win );
     }
+    pthread_mutex_unlock( &surface_list_lock );
 
     instance->p_vkDestroySurfaceKHR( instance->host.instance, surface->obj.host.surface, NULL /* allocator */ );
     driver_funcs->p_vulkan_surface_destroy( surface->hwnd, surface->driver_private );
@@ -1607,20 +1613,34 @@ static void vulkan_init_once(void)
 void vulkan_update_surfaces( HWND hwnd )
 {
     struct surface *surface;
+    struct list temp_list;
     WND *win;
 
-    if (!(win = get_win_ptr( hwnd )) || win == WND_DESKTOP || win == WND_OTHER_PROCESS) return;
+    list_init( &temp_list );
+    pthread_mutex_lock( &surface_list_lock );
 
+    if (!(win = get_win_ptr( hwnd )) || win == WND_DESKTOP || win == WND_OTHER_PROCESS)
+    {
+        pthread_mutex_unlock( &surface_list_lock );
+        return;
+    }
     LIST_FOR_EACH_ENTRY( surface, &win->vulkan_surfaces, struct surface, entry )
+    {
+        list_add_tail( &temp_list, &surface->temp_entry );
+    }
+    release_win_ptr( win );
+
+    LIST_FOR_EACH_ENTRY( surface, &temp_list, struct surface, temp_entry )
         driver_funcs->p_vulkan_surface_update( surface->hwnd, surface->driver_private );
 
-    release_win_ptr( win );
+    pthread_mutex_unlock( &surface_list_lock );
 }
 
 void vulkan_detach_surfaces( struct list *surfaces )
 {
     struct surface *surface, *next;
 
+    pthread_mutex_lock( &surface_list_lock );
     LIST_FOR_EACH_ENTRY_SAFE( surface, next, surfaces, struct surface, entry )
     {
         driver_funcs->p_vulkan_surface_detach( surface->hwnd, surface->driver_private );
@@ -1628,6 +1648,7 @@ void vulkan_detach_surfaces( struct list *surfaces )
         list_init( &surface->entry );
         surface->hwnd = NULL;
     }
+    pthread_mutex_unlock( &surface_list_lock );
 }
 
 #else /* SONAME_LIBVULKAN */
