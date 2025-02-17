@@ -563,7 +563,6 @@ enum x11drv_atoms
     XATOM_text_rtf,
     XATOM_text_richtext,
     XATOM_text_uri_list,
-    XATOM_GAMESCOPE_FOCUSED_APP,
     XATOM_GAMESCOPE_DISPLAY_EDID_PATH,
     XATOM_GAMESCOPE_XALIA_OVERLAY,
     NB_XATOMS
