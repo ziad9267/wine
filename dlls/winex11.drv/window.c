@@ -312,6 +312,28 @@ static void remove_startup_notification( struct x11drv_win_data *data )
     }
 }
 
+static HWND hwnd_from_window( Display *display, Window window )
+{
+    unsigned long count, remaining;
+    unsigned long *xhwnd;
+    HWND hwnd = (HWND)-1;
+    int format;
+    Atom type;
+
+    if (!window) return 0;
+    if (!XFindContext( display, window, winContext, (char **)&hwnd )) return hwnd;
+
+    X11DRV_expect_error( display, host_window_error, NULL );
+    if (!XGetWindowProperty( display, window, x11drv_atom(_WINE_HWND), 0, 65536, False, XA_CARDINAL,
+                             &type, &format, &count, &remaining, (unsigned char **)&xhwnd ))
+    {
+        if (type == XA_CARDINAL && format == 32) hwnd = ULongToHandle(*xhwnd);
+        XFree( xhwnd );
+    }
+    if (X11DRV_check_error()) return (HWND)-1;
+    return hwnd;
+}
+
 static BOOL is_managed( HWND hwnd )
 {
     struct x11drv_win_data *data = get_win_data( hwnd );
@@ -1917,11 +1939,12 @@ void net_active_window_notify( unsigned long serial, Window value, Time time )
 {
     struct x11drv_thread_data *data = x11drv_thread_data();
     Window *desired = &data->desired_net_active_window, *pending = &data->pending_net_active_window, *current = &data->current_net_active_window;
+    HWND hwnd = hwnd_from_window( data->display, value ), expect_hwnd = hwnd_from_window( data->display, *pending );
     unsigned long *expect_serial = &data->net_active_window_serial;
     const char *expected, *received;
 
-    received = wine_dbg_sprintf( "_NET_ACTIVE_WINDOW %lx serial %lu time %lu", value, serial, time );
-    expected = *expect_serial ? wine_dbg_sprintf( ", expected %lx serial %lu", *pending, *expect_serial ) : "";
+    received = wine_dbg_sprintf( "_NET_ACTIVE_WINDOW %p/%lx serial %lu time %lu", hwnd, value, serial, time );
+    expected = *expect_serial ? wine_dbg_sprintf( ", expected %p/%lx serial %lu", expect_hwnd, *pending, *expect_serial ) : "";
     handle_state_change( serial, expect_serial, sizeof(value), &value, desired, pending,
                          current, expected, "", received, NULL );
 }
@@ -2302,6 +2325,7 @@ void set_gamescope_overlay_prop( Display *display, Window window, HWND hwnd )
  */
 static void create_whole_window( struct x11drv_win_data *data )
 {
+    unsigned long xhwnd = (UINT_PTR)data->hwnd;
     int cx, cy, mask;
     XSetWindowAttributes attr;
     WCHAR text[1024];
@@ -2336,6 +2360,8 @@ static void create_whole_window( struct x11drv_win_data *data )
                                         cx, cy, 0, data->vis.depth, InputOutput,
                                         data->vis.visual, mask, &attr );
     if (!data->whole_window) goto done;
+    XChangeProperty( data->display, data->whole_window, x11drv_atom(_WINE_HWND), XA_CARDINAL, 32,
+                     PropModeReplace, (unsigned char *)&xhwnd, 1 );
     set_wine_allow_flip( data->whole_window, 0 );
 
     SetRect( &data->current_state.rect, pos.x, pos.y, pos.x + cx, pos.y + cy );
