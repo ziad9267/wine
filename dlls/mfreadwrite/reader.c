@@ -1907,7 +1907,6 @@ static HRESULT source_reader_create_transform(struct source_reader *reader, BOOL
     GUID category;
     IMFTransform *transform;
     UINT i, count;
-    BOOL force_processor = FALSE;
     HRESULT hr;
 
     if (FAILED(hr = IMFMediaType_GetMajorType(input_type, &in_type.guidMajorType))
@@ -1947,16 +1946,6 @@ static HRESULT source_reader_create_transform(struct source_reader *reader, BOOL
             entry->min_buffer_size = max(entry->min_buffer_size, bytes_per_second);
     }
 
-    if (IsEqualGUID(&in_type.guidMajorType, &MFMediaType_Video) && IsEqualGUID(&in_type.guidSubtype, &MFVideoFormat_VP90)
-            && IsEqualGUID(&out_type.guidSubtype, &MFVideoFormat_RGB32) && allow_processor
-            && IsEqualGUID(&category, &MFT_CATEGORY_VIDEO_DECODER))
-    {
-        /* The WMV video decoder doesn't supply MFVideoFormat_RGB32 directly on Windows. It will output NV12 and a processor converts
-         * this to MFVideoFormat_RGB32. This also ensures the image is the correct way up.
-         */
-        force_processor = TRUE;
-    }
-
     if (IsEqualGUID(&out_type.guidMajorType, &MFMediaType_Video) && IsEqualGUID(&out_type.guidSubtype, &MFVideoFormat_ABGR32)
             && IsEqualGUID(&category, &MFT_CATEGORY_VIDEO_PROCESSOR))
     {
@@ -1976,6 +1965,7 @@ static HRESULT source_reader_create_transform(struct source_reader *reader, BOOL
         WARN("Fixing up MFVideoFormat_IYUV subtype for the video processor\n");
         out_type.guidSubtype = MFVideoFormat_NV12;
     }
+
     count = 0;
     if (SUCCEEDED(hr = MFTEnumEx(category, 0, &in_type, allow_processor ? NULL : &out_type, &activates, &count)))
     {
@@ -2018,8 +2008,8 @@ static HRESULT source_reader_create_transform(struct source_reader *reader, BOOL
                     && SUCCEEDED(hr = IMFTransform_GetInputCurrentType(transform, 0, &media_type)))
             {
                 if (SUCCEEDED(hr = update_media_type_from_upstream(output_type, media_type))
-                        && (force_processor || (FAILED(hr = IMFTransform_SetOutputType(transform, 0, output_type, 0))
-                        && FAILED(hr = set_matching_transform_output_type(transform, output_type)) && allow_processor))
+                        && FAILED(hr = IMFTransform_SetOutputType(transform, 0, output_type, 0))
+                        && FAILED(hr = set_matching_transform_output_type(transform, output_type)) && allow_processor
                         && SUCCEEDED(hr = IMFTransform_GetOutputAvailableType(transform, 0, 0, &media_type)))
                 {
                     struct transform_entry *converter;
