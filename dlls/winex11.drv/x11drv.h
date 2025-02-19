@@ -701,9 +701,11 @@ extern void window_mwm_hints_notify( struct x11drv_win_data *data, unsigned long
 extern void window_configure_notify( struct x11drv_win_data *data, unsigned long serial, const RECT *rect );
 
 extern BOOL get_window_name( Display *display, Window window, char **name );
+extern void set_net_active_window( HWND hwnd, HWND previous );
 extern void net_active_window_notify( unsigned long serial, Window window, Time time );
 extern void net_supported_init( struct x11drv_thread_data *data );
 extern void net_supporting_wm_check_init( struct x11drv_thread_data *data );
+extern BOOL is_netwm_supported( Atom atom );
 
 extern Window init_clip_window(void);
 extern void update_user_time( struct x11drv_win_data *data, Time time, BOOL force );

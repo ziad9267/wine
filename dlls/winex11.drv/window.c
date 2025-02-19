@@ -1818,10 +1818,22 @@ static UINT window_update_client_config( struct x11drv_win_data *data )
  */
 BOOL X11DRV_GetWindowStateUpdates( HWND hwnd, UINT *state_cmd, UINT *config_cmd, RECT *rect, HWND *foreground )
 {
+    struct x11drv_thread_data *thread_data = x11drv_thread_data();
     struct x11drv_win_data *data;
+    HWND old_foreground;
+    Window window;
 
     *state_cmd = *config_cmd = 0;
     *foreground = 0;
+
+    if (!(old_foreground = NtUserGetForegroundWindow())) old_foreground = NtUserGetDesktopWindow();
+    if (NtUserGetWindowThread( old_foreground, NULL ) == GetCurrentThreadId() && !window_has_pending_wm_state( old_foreground, NormalState ) &&
+        !thread_data->net_active_window_serial && (window = thread_data->current_net_active_window))
+    {
+        *foreground = hwnd_from_window( thread_data->display, window );
+        if (*foreground == (HWND)-1) *foreground = NtUserGetDesktopWindow();
+        if (*foreground == old_foreground) *foreground = 0;
+    }
 
     if ((data = get_win_data( hwnd )))
     {
@@ -1952,6 +1964,38 @@ void net_active_window_notify( unsigned long serial, Window value, Time time )
     expected = *expect_serial ? wine_dbg_sprintf( ", expected %p/%lx serial %lu", expect_hwnd, *pending, *expect_serial ) : "";
     handle_state_change( serial, expect_serial, sizeof(value), &value, desired, pending,
                          current, expected, "", received, NULL );
+}
+
+void set_net_active_window( HWND hwnd, HWND previous )
+{
+    struct x11drv_thread_data *data = x11drv_thread_data();
+    Window window;
+    XEvent xev;
+
+    if (!is_netwm_supported( x11drv_atom(_NET_ACTIVE_WINDOW) )) return;
+    if (window_has_pending_wm_state( hwnd, -1 )) return;
+    if (!(window = X11DRV_get_whole_window( hwnd ))) return;
+    if (data->pending_net_active_window == window) return;
+
+    xev.xclient.type = ClientMessage;
+    xev.xclient.window = window;
+    xev.xclient.message_type = x11drv_atom(_NET_ACTIVE_WINDOW);
+    xev.xclient.serial = 0;
+    xev.xclient.display = data->display;
+    xev.xclient.send_event = True;
+    xev.xclient.format = 32;
+    xev.xclient.data.l[0] = 2; /* source: pager */
+    xev.xclient.data.l[1] = 0; /* timestamp */
+    xev.xclient.data.l[2] = X11DRV_get_whole_window( previous ); /* current active */
+    xev.xclient.data.l[3] = 0;
+    xev.xclient.data.l[4] = 0;
+
+    data->pending_net_active_window = window;
+    data->net_active_window_serial = NextRequest( data->display );
+    TRACE( "requesting _NET_ACTIVE_WINDOW %p/%lx serial %lu\n", hwnd, window, data->net_active_window_serial );
+    XSendEvent( data->display, DefaultRootWindow( data->display ), False,
+                SubstructureRedirectMask | SubstructureNotifyMask, &xev );
+    XFlush( data->display );
 }
 
 BOOL window_has_pending_wm_state( HWND hwnd, UINT state )
@@ -3525,7 +3569,7 @@ LRESULT X11DRV_WindowMessage( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp )
 /***********************************************************************
  *              is_netwm_supported
  */
-static BOOL is_netwm_supported( Atom atom )
+BOOL is_netwm_supported( Atom atom )
 {
     struct x11drv_thread_data *data = x11drv_thread_data();
     BOOL supported;
