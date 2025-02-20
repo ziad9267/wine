@@ -1470,14 +1470,27 @@ static void destroy_stream(struct wm_reader *reader)
 
 static HRESULT init_stream(struct wm_reader *reader)
 {
+    BOOL enable_opengl = sizeof(void *) == 4;
     wg_parser_t wg_parser;
     HRESULT hr;
     WORD i;
 
+{
+    const char *sgi = getenv("SteamGameId");
+    if (sgi && (0
+        || !strcmp(sgi, "802870")
+        || !strcmp(sgi, "1083650")
+        || !strcmp(sgi, "1097880")
+        || !strcmp(sgi, "1230140")
+        || !strcmp(sgi, "2515070")
+    ))
+    enable_opengl = FALSE;
+}
+
     /* 32-bit GStreamer ORC cannot efficiently convert I420 to RGBA, use OpenGL converter
      * in that case but keep the usual codepath otherwise.
      */
-    if (!(wg_parser = wg_parser_create(FALSE, sizeof(void *) == 4)))
+    if (!(wg_parser = wg_parser_create(FALSE, enable_opengl)))
         return E_OUTOFMEMORY;
 
     reader->wg_parser = wg_parser;
@@ -1583,9 +1596,22 @@ out_destroy_parser:
 
 static HRESULT reinit_stream(struct wm_reader *reader, bool read_compressed)
 {
+    BOOL enable_opengl = sizeof(void *) == 4 && !read_compressed;
     wg_parser_t wg_parser;
     HRESULT hr;
     WORD i;
+
+{
+    const char *sgi = getenv("SteamGameId");
+    if (sgi && (0
+        || !strcmp(sgi, "802870")
+        || !strcmp(sgi, "1083650")
+        || !strcmp(sgi, "1097880")
+        || !strcmp(sgi, "1230140")
+        || !strcmp(sgi, "2515070")
+    ))
+    enable_opengl = FALSE;
+}
 
     wg_parser_disconnect(reader->wg_parser);
 
@@ -1600,7 +1626,7 @@ static HRESULT reinit_stream(struct wm_reader *reader, bool read_compressed)
     wg_parser_destroy(reader->wg_parser);
     reader->wg_parser = 0;
 
-    if (!(wg_parser = wg_parser_create(read_compressed, sizeof(void *) == 4 && !read_compressed)))
+    if (!(wg_parser = wg_parser_create(read_compressed, enable_opengl)))
         return E_OUTOFMEMORY;
 
     reader->wg_parser = wg_parser;
