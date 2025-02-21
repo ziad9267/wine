@@ -1161,14 +1161,12 @@ void update_user_time( struct x11drv_win_data *data, Time time, BOOL force )
     if (force) NtUserSetProp( data->hwnd, focus_time_prop, (HANDLE)time );
     else if (!time) time = 1; /* time == 0 has reserved semantics */
 
-    if (!force && (time == -1 || time == 0)) time = 1;
-    if (!data->user_time == !time) return;
+    if (force ? !data->user_time == !time : data->user_time == time) return;
     data->user_time = time;
 
     TRACE( "window %p/%lx, requesting _NET_WM_USER_TIME %ld serial %lu\n", data->hwnd, data->whole_window,
-           time, NextRequest( data->display ) );
-
-    if (time == -1) XDeleteProperty( data->display, data->whole_window, x11drv_atom(_NET_WM_USER_TIME) );
+           data->user_time, NextRequest( data->display ) );
+    if (force && time) XDeleteProperty( data->display, data->whole_window, x11drv_atom(_NET_WM_USER_TIME) );
     else XChangeProperty( data->display, data->whole_window, x11drv_atom(_NET_WM_USER_TIME), XA_CARDINAL,
                           32, PropModeReplace, (unsigned char *)&time, 1 );
 }
