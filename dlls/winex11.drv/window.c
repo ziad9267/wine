@@ -381,7 +381,7 @@ static struct x11drv_win_data *alloc_win_data( Display *display, HWND hwnd )
  *
  * Check if a given window should be managed
  */
-static BOOL is_window_managed( HWND hwnd, UINT swp_flags, const RECT *window_rect )
+static BOOL is_window_managed( HWND hwnd, UINT swp_flags, BOOL fullscreen )
 {
     DWORD style, ex_style;
 
@@ -399,18 +399,10 @@ static BOOL is_window_managed( HWND hwnd, UINT swp_flags, const RECT *window_rec
     if (style & WS_THICKFRAME) return TRUE;
     if (style & WS_POPUP)
     {
-        HMONITOR hmon;
-        MONITORINFO mi;
-
         /* popup with sysmenu == caption are managed */
         if (style & WS_SYSMENU) return TRUE;
         /* full-screen popup windows are managed */
-        hmon = NtUserMonitorFromWindow( hwnd, MONITOR_DEFAULTTOPRIMARY );
-        mi.cbSize = sizeof( mi );
-        NtUserGetMonitorInfo( hmon, &mi );
-        if (window_rect->left <= mi.rcWork.left && window_rect->right >= mi.rcWork.right &&
-            window_rect->top <= mi.rcWork.top && window_rect->bottom >= mi.rcWork.bottom)
-            return TRUE;
+        if (fullscreen) return TRUE;
     }
     /* application windows are managed */
     ex_style = NtUserGetWindowLongW( hwnd, GWL_EXSTYLE );
@@ -2282,7 +2274,7 @@ static void create_whole_window( struct x11drv_win_data *data )
     if (data->vis.visualid != default_visual.visualid)
         data->whole_colormap = XCreateColormap( data->display, root_window, data->vis.visual, AllocNone );
 
-    data->managed = is_window_managed( data->hwnd, SWP_NOACTIVATE, &data->rects.window );
+    data->managed = is_window_managed( data->hwnd, SWP_NOACTIVATE, FALSE );
     mask = get_window_attributes( data, &attr ) | CWOverrideRedirect;
     attr.override_redirect = !data->managed;
 
@@ -3116,7 +3108,7 @@ void X11DRV_WindowPosChanged( HWND hwnd, HWND insert_after, HWND owner_hint, UIN
     set_surface_window_rects( surface, new_rects );
 
     if (!(data = get_win_data( hwnd ))) return;
-    if (is_window_managed( hwnd, swp_flags, &new_rects->window )) window_set_managed( data, TRUE, data->embedded );
+    if (is_window_managed( hwnd, swp_flags, fullscreen )) window_set_managed( data, TRUE, data->embedded );
 
     old_style = new_style & ~(WS_VISIBLE | WS_MINIMIZE | WS_MAXIMIZE);
     if (data->desired_state.wm_state != WithdrawnState) old_style |= WS_VISIBLE;
