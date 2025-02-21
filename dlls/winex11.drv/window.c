@@ -1158,6 +1158,9 @@ Window init_clip_window(void)
  */
 void update_user_time( struct x11drv_win_data *data, Time time, BOOL force )
 {
+    if (force) NtUserSetProp( data->hwnd, focus_time_prop, (HANDLE)time );
+    else if (!time) time = 1; /* time == 0 has reserved semantics */
+
     if (!force && (time == -1 || time == 0)) time = 1;
     if (!data->user_time == !time) return;
     data->user_time = time;
@@ -1898,7 +1901,7 @@ BOOL window_has_pending_wm_state( HWND hwnd, UINT state )
 BOOL window_should_take_focus( HWND hwnd, Time time )
 {
     Time focus_time = (UINT_PTR)NtUserGetProp( hwnd, focus_time_prop );
-    return !focus_time || (int)(focus_time - time) < 0;
+    return !focus_time || time > focus_time;
 }
 
 /***********************************************************************
