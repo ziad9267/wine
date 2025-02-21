@@ -1612,12 +1612,6 @@ static void window_set_wm_state( struct x11drv_win_data *data, UINT new_state, U
             update_user_time( data, -1, TRUE );
         }
     }
-    else if (data->has_focus && data->hwnd != foreground)
-    {
-        Window window = X11DRV_get_whole_window( foreground );
-        WARN( "Inconsistent input focus, activating window %p/%lx\n", foreground, window );
-        XSetInputFocus( data->display, window, RevertToParent, CurrentTime );
-    }
 
     data->pending_state.wm_state = new_state;
     data->pending_state.swp_flags = swp_flags;
