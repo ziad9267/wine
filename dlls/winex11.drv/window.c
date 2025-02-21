@@ -2274,7 +2274,7 @@ static void create_whole_window( struct x11drv_win_data *data )
     if (data->vis.visualid != default_visual.visualid)
         data->whole_colormap = XCreateColormap( data->display, root_window, data->vis.visual, AllocNone );
 
-    data->managed = is_window_managed( data->hwnd, SWP_NOACTIVATE, FALSE );
+    data->managed = managed_mode;
     mask = get_window_attributes( data, &attr ) | CWOverrideRedirect;
     attr.override_redirect = !data->managed;
 
@@ -2294,6 +2294,8 @@ static void create_whole_window( struct x11drv_win_data *data )
     data->pending_state.rect = data->current_state.rect;
     data->desired_state.rect = data->current_state.rect;
 
+    /* Set override-redirect attribute only after window creation, Mutter gets confused otherwise */
+    window_set_managed( data, is_window_managed( data->hwnd, SWP_NOACTIVATE, FALSE ), FALSE );
     x11drv_xinput2_enable( data->display, data->whole_window );
     set_initial_wm_hints( data->display, data->whole_window );
     set_wm_hints( data, 0 );
