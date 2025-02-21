@@ -476,7 +476,6 @@ static unsigned long get_mwm_decorations( struct x11drv_win_data *data, DWORD st
  */
 static int get_window_attributes( struct x11drv_win_data *data, XSetWindowAttributes *attr )
 {
-    attr->override_redirect = !data->managed;
     attr->colormap          = data->whole_colormap ? data->whole_colormap : default_colormap;
     attr->save_under        = ((NtUserGetClassLongW( data->hwnd, GCL_STYLE ) & CS_SAVEBITS) != 0);
     attr->bit_gravity       = NorthWestGravity;
@@ -488,7 +487,7 @@ static int get_window_attributes( struct x11drv_win_data *data, XSetWindowAttrib
                                KeyPressMask | KeyReleaseMask | FocusChangeMask |
                                KeymapStateMask | StructureNotifyMask | PropertyChangeMask);
 
-    return (CWOverrideRedirect | CWSaveUnder | CWColormap | CWBorderPixel | CWBackPixel |
+    return (CWSaveUnder | CWColormap | CWBorderPixel | CWBackPixel |
             CWEventMask | CWBitGravity | CWBackingStore);
 }
 
@@ -1622,6 +1621,31 @@ static void window_set_wm_state( struct x11drv_win_data *data, UINT new_state, U
     XFlush( data->display );
 }
 
+static void window_set_managed( struct x11drv_win_data *data, BOOL new_managed, BOOL new_embedded )
+{
+    UINT wm_state = data->desired_state.wm_state, swp_flags = data->desired_state.swp_flags;
+    XSetWindowAttributes attr = {.override_redirect = !new_managed};
+    BOOL old_managed = data->managed, old_embedded = data->embedded;
+
+    if (!data->whole_window) return; /* no window, nothing to update */
+    if (old_managed == new_managed && old_embedded == new_embedded) return; /* states are the same, nothing to update */
+    if (!new_managed)
+    {
+        ERR( "Changing window to unmanaged is not supported\n" );
+        return;
+    }
+
+    window_set_wm_state( data, WithdrawnState, 0 ); /* no WM_STATE is pending, requested immediately */
+
+    data->managed = new_managed;
+    data->embedded = new_embedded;
+    TRACE( "window %p/%lx, requesting override-redirect %u -> %u serial %lu\n", data->hwnd, data->whole_window,
+           !old_managed, !new_managed, NextRequest( data->display ) );
+    XChangeWindowAttributes( data->display, data->whole_window, CWOverrideRedirect, &attr );
+
+    window_set_wm_state( data, wm_state, swp_flags ); /* queue another WM_STATE request with the desired state */
+}
+
 
 /***********************************************************************
  *     map_window
@@ -1886,11 +1910,7 @@ BOOL window_should_take_focus( HWND hwnd, Time time )
  */
 void make_window_embedded( struct x11drv_win_data *data )
 {
-    /* the window cannot be mapped before being embedded */
-    window_set_wm_state( data, WithdrawnState, 0 );
-    data->embedded = TRUE;
-    data->managed = TRUE;
-    window_set_wm_state( data, NormalState, SWP_NOACTIVATE );
+    window_set_managed( data, TRUE, TRUE );
 }
 
 
@@ -2263,7 +2283,8 @@ static void create_whole_window( struct x11drv_win_data *data )
         data->whole_colormap = XCreateColormap( data->display, root_window, data->vis.visual, AllocNone );
 
     data->managed = is_window_managed( data->hwnd, SWP_NOACTIVATE, &data->rects.window );
-    mask = get_window_attributes( data, &attr );
+    mask = get_window_attributes( data, &attr ) | CWOverrideRedirect;
+    attr.override_redirect = !data->managed;
 
     if (!(cx = data->rects.visible.right - data->rects.visible.left)) cx = 1;
     else if (cx > 65535) cx = 65535;
@@ -2336,6 +2357,8 @@ static void destroy_whole_window( struct x11drv_win_data *data, BOOL already_des
     if (data->whole_colormap) XFreeColormap( data->display, data->whole_colormap );
     data->whole_window = data->client_window = 0;
     data->whole_colormap = 0;
+    data->managed = FALSE;
+    data->embedded = FALSE;
 
     memset( &data->desired_state, 0, sizeof(data->desired_state) );
     memset( &data->pending_state, 0, sizeof(data->pending_state) );
@@ -2488,7 +2511,7 @@ static BOOL create_desktop_win_data( Window win, HWND hwnd )
 
     if (!(data = alloc_win_data( display, hwnd ))) return FALSE;
     data->whole_window = win;
-    data->managed = TRUE;
+    window_set_managed( data, TRUE, FALSE );
     NtUserSetProp( data->hwnd, whole_window_prop, (HANDLE)win );
     set_initial_wm_hints( display, win );
     if (is_desktop_fullscreen()) window_set_net_wm_state( data, fullscreen_mask );
@@ -2988,7 +3011,6 @@ void X11DRV_SetParent( HWND hwnd, HWND parent, HWND old_parent )
         {
             /* destroy the old X windows */
             destroy_whole_window( data, FALSE );
-            data->managed = FALSE;
         }
     }
     else  /* new top level window */
@@ -3022,14 +3044,7 @@ BOOL X11DRV_WindowPosChanging( HWND hwnd, UINT swp_flags, BOOL shaped, const str
     data->shaped = shaped;
 
     /* check if we need to switch the window to managed */
-    if (!data->managed && data->whole_window && is_window_managed( hwnd, swp_flags, &rects->window ))
-    {
-        TRACE( "making win %p/%lx managed\n", hwnd, data->whole_window );
-        release_win_data( data );
-        unmap_window( hwnd );
-        if (!(data = get_win_data( hwnd ))) return FALSE; /* use default surface */
-        data->managed = TRUE;
-    }
+    if (is_window_managed( hwnd, swp_flags, &rects->window )) window_set_managed( data, TRUE, data->embedded );
 
     ret = !!data->whole_window; /* use default surface if we don't have a window */
     release_win_data( data );
