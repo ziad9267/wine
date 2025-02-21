@@ -3435,13 +3435,6 @@ LRESULT X11DRV_WindowMessage( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp )
             release_win_data( data );
         }
         return 0;
-    case WM_WINE_DESKTOP_RESIZED:
-        if ((data = get_win_data( hwnd )))
-        {
-            sync_window_position( data, SWP_NOACTIVATE, &data->rects );
-            release_win_data( data );
-        }
-        return 0;
     case WM_X11DRV_DELETE_TAB:
         taskbar_delete_tab( hwnd );
         return 0;
