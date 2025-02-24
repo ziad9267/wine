@@ -1578,7 +1578,17 @@ static void window_set_wm_state( struct x11drv_win_data *data, UINT new_state, U
         /* try forcing activation if the window is supposed to be foreground or if it is fullscreen */
         if (data->hwnd == foreground || data->is_fullscreen) swp_flags = 0;
         if (swp_flags & SWP_NOACTIVATE) update_user_time( data, 0, TRUE );
-        else update_user_time( data, -1, TRUE );
+        else
+        {
+            /* Some older Mutter versions get confused when mapping a window while another has focus
+             * and if there's another window with _NET_WM_STATE_ABOVE. It then decides that the newly
+             * mapped window doesn't deserve to be raised or focused, even if the topmost window isn't
+             * the one with focus and even if it only slightly overlaps it. Reset focus before mapping
+             * the window to force it to be focused instead.
+             */
+            if (X11DRV_HasWindowManager( "Mutter" )) XSetInputFocus( data->display, None, RevertToNone, CurrentTime );
+            update_user_time( data, -1, TRUE );
+        }
     }
     else if (data->has_focus && data->hwnd != foreground)
     {
