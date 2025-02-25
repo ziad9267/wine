@@ -793,7 +793,8 @@ static void handle_wm_protocols( HWND hwnd, XClientMessageEvent *event )
     }
     else if (protocol == x11drv_atom(WM_TAKE_FOCUS))
     {
-        HWND last_focus = x11drv_thread_data()->last_focus, foreground = NtUserGetForegroundWindow();
+        struct x11drv_thread_data *data = x11drv_thread_data();
+        HWND last_focus = data->last_focus, foreground = NtUserGetForegroundWindow();
 
         if (window_has_pending_wm_state( hwnd, -1 ) || (hwnd != foreground && !window_should_take_focus( foreground, event_time )))
         {
@@ -808,10 +809,11 @@ static void handle_wm_protocols( HWND hwnd, XClientMessageEvent *event )
                 NtUserIsWindowEnabled( hwnd ), NtUserIsWindowVisible( hwnd ), (int)NtUserGetWindowLongW( hwnd, GWL_STYLE ),
                 get_focus(), get_active_window(), last_focus );
 
-        /* Sometimes, when windows are quickly unmapped then mapped, we are being offered focus but still won't
-         * receive it because of some time resolution rules. Instead of relying on it, force receiving focus by
-         * setting the XSetInputFocus time to CurrentTime when we are expecting to be foreground. */
-        if (hwnd == foreground) event_time = CurrentTime;
+        /* Steam sometimes calls XSetInputFocus with CurrentTime when it gets focused out, and the game gets
+         * focused in, this effectively sometimes steals focus away from us. Although there's no guarantee to
+         * win the race as it entirely depends on the request timings, using CurrentTime makes it more likely.
+         */
+        if (data->active_window && !strcmp( data->active_window, "Steam" )) event_time = CurrentTime;
 
         if (can_activate_window(hwnd))
         {
