@@ -939,30 +939,6 @@ static void window_set_mwm_hints( struct x11drv_win_data *data, const MwmHints *
     if (!data->whole_window) return; /* no window, nothing to update */
     if (!memcmp( old_hints, new_hints, sizeof(*new_hints) )) return; /* hints are the same, nothing to update */
 
-    /* When removing decorations, Mutter sends UnmapNotify, FocusOut, ReparentNotify, MapNotify, WM_TAKE_FOCUS
-     * event sequence. We won't receive any WM_STATE property changes and cannot use it to detect when it's done,
-     * so explicitly request the Unmap / Map sequence ourselves, so we can follow the WM_STATE property changes.
-     *
-     * When adding decorations to a window in NormalState, Mutter first iconifies the window, then restores it
-     * after the same sequence. It however sometimes fails to restore focus to the window.
-     *
-     * In both cases, we will receive _MOTIF_WM_HINT PropertyNotify change right away and will then be unable to
-     * handle the non-atomic event sequence that follows.
-     *
-     * Instead, explicitly request an unmap / map sequence ourselves and track the corresponding events, overriding
-     * the Mutter generated sequence, while achieving the same thing and getting WM_TAKE_FOCUS event when the
-     * window is mapped again.
-     */
-    if (X11DRV_HasWindowManager( "Mutter" ) && data->managed && data->pending_state.wm_state == NormalState &&
-        !old_hints->decorations != !new_hints->decorations)
-    {
-        if (data->wm_state_serial) return; /* another WM_STATE update is pending, wait for it to complete */
-        WARN( "window %p/%lx adds/removes decorations, remapping\n", data->hwnd, data->whole_window );
-        NtUserSetProp( data->hwnd, focus_time_prop, (HANDLE)-1 );
-        window_set_wm_state( data, WithdrawnState, FALSE );
-        window_set_wm_state( data, NormalState, swp_flags );
-    }
-
     data->pending_state.mwm_hints = *new_hints;
     data->mwm_hints_serial = NextRequest( data->display );
     TRACE( "window %p/%lx, requesting _MOTIF_WM_HINTS %s serial %lu\n", data->hwnd, data->whole_window,
