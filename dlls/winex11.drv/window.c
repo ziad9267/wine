@@ -1864,6 +1864,7 @@ void window_wm_state_notify( struct x11drv_win_data *data, unsigned long serial,
     if (!handle_state_change( serial, expect_serial, sizeof(value), &value, desired, pending,
                               current, expected, prefix, received, reason ))
         return;
+    data->current_state.swp_flags = data->pending_state.swp_flags;
 
     /* send any pending changes from the desired state */
     window_set_wm_state( data, data->desired_state.wm_state, data->desired_state.swp_flags );

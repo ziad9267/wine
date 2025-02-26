@@ -1329,12 +1329,15 @@ static void handle_wm_state_notify( HWND hwnd, XPropertyEvent *event )
 {
     struct x11drv_win_data *data;
     UINT value = 0;
+    BOOL activate;
 
     if (!(data = get_win_data( hwnd ))) return;
     if (event->state == PropertyNewValue) value = get_window_wm_state( event->display, event->window );
     window_wm_state_notify( data, event->serial, value, event->time );
+    activate = value == NormalState && !data->wm_state_serial && !(data->current_state.swp_flags & SWP_NOACTIVATE);
     release_win_data( data );
 
+    if (hwnd == NtUserGetForegroundWindow() && activate) set_net_active_window( hwnd, 0 );
     NtUserPostMessage( hwnd, WM_WINE_WINDOW_STATE_CHANGED, 0, 0 );
 }
 
