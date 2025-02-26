@@ -1028,7 +1028,7 @@ static BOOL X11DRV_FocusOut( HWND hwnd, XEvent *xev )
 static BOOL X11DRV_Expose( HWND hwnd, XEvent *xev )
 {
     XExposeEvent *event = &xev->xexpose;
-    RECT rect, abs_rect;
+    RECT rect, visible, abs_rect;
     POINT pos;
     struct x11drv_win_data *data;
     UINT flags = RDW_INVALIDATE | RDW_FRAME | RDW_ALLCHILDREN;
@@ -1044,6 +1044,23 @@ static BOOL X11DRV_Expose( HWND hwnd, XEvent *xev )
     else pos = root_to_virtual_screen( event->x, event->y );
 
     if (!(data = get_win_data( hwnd ))) return FALSE;
+
+    /* clear any padding outside of the window rect that can exist for display mode emulation */
+    visible = data->rects.visible;
+    OffsetRect( &visible, -data->rects.visible.left, -data->rects.visible.top );
+
+    rect = data->rects.window;
+    OffsetRect( &rect, -data->rects.visible.left, -data->rects.visible.top );
+    intersect_rect( &rect, &rect, &visible );
+
+    if (rect.left > 0 || rect.top > 0 || rect.right < visible.right || rect.bottom < visible.bottom)
+    {
+        UINT width = visible.right - rect.right, height = visible.bottom - rect.bottom;
+        if (visible.right && rect.top) XClearArea( data->display, data->whole_window, 0, 0, visible.right, rect.top, 0 );
+        if (rect.left && visible.bottom) XClearArea( data->display, data->whole_window, 0, 0, rect.left, visible.bottom, 0 );
+        if (width && visible.bottom) XClearArea( data->display, data->whole_window, rect.right, 0, width, visible.bottom, 0 );
+        if (height && visible.right) XClearArea( data->display, data->whole_window, 0, rect.bottom, visible.right, height, 0 );
+    }
 
     rect.left   = pos.x;
     rect.top    = pos.y;
