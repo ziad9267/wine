@@ -1171,6 +1171,8 @@ static void session_start(struct media_session *session, const GUID *time_format
                 }
             }
 
+            session_reset_transforms(session, TRUE);
+
             session->presentation.time_format = *time_format;
             session->presentation.start_position.vt = VT_EMPTY;
             PropVariantCopy(&session->presentation.start_position, start_position);
