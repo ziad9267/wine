@@ -760,6 +760,7 @@ extern void init_recursive_mutex( pthread_mutex_t *mutex );
 
 #define DEPTH_COUNT 3
 extern const unsigned int *depths;
+extern RECT gamescope_screen_rect;
 
 /* Use a distinct type for the settings id, to avoid mixups other types of ids */
 typedef struct { ULONG_PTR id; } x11drv_settings_id;
