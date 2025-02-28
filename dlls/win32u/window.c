@@ -1516,13 +1516,13 @@ int win32u_get_window_pixel_format( HWND hwnd )
     return ret;
 }
 
-static int window_has_client_surface( HWND hwnd )
+static int window_has_client_surface( HWND hwnd, BOOL opengl_only )
 {
     WND *win = get_win_ptr( hwnd );
     BOOL ret;
 
     if (!win || win == WND_DESKTOP || win == WND_OTHER_PROCESS) return FALSE;
-    ret = win->pixel_format || win->internal_pixel_format || !list_empty(&win->vulkan_surfaces);
+    ret = win->pixel_format || win->internal_pixel_format || (!list_empty(&win->vulkan_surfaces) && !opengl_only);
     release_win_ptr( win );
 
     return ret;
@@ -1992,7 +1992,7 @@ static BOOL get_default_window_surface( HWND hwnd, const RECT *surface_rect, str
 static struct window_surface *get_window_surface( HWND hwnd, UINT swp_flags, BOOL create_layered,
                                                   struct window_rects *rects, RECT *surface_rect )
 {
-    BOOL shaped, needs_surface, create_opaque, is_layered, is_child;
+    BOOL shaped, needs_surface, create_opaque, is_layered, is_child, is_opengl;
     HWND parent = NtUserGetAncestor( hwnd, GA_PARENT );
     struct window_surface *new_surface;
     struct window_rects monitor_rects;
@@ -2003,6 +2003,7 @@ static struct window_surface *get_window_surface( HWND hwnd, UINT swp_flags, BOO
     style = NtUserGetWindowLongW( hwnd, GWL_STYLE );
     ex_style = NtUserGetWindowLongW( hwnd, GWL_EXSTYLE );
     is_child = parent && parent != NtUserGetDesktopWindow();
+    is_opengl = window_has_client_surface( hwnd, TRUE );
 
     if (is_child) get_win_monitor_dpi( parent, &raw_dpi );
     else monitor_dpi_from_rect( rects->window, get_thread_dpi(), &raw_dpi );
@@ -2037,7 +2038,12 @@ static struct window_surface *get_window_surface( HWND hwnd, UINT swp_flags, BOO
     if (IsRectEmpty( surface_rect )) needs_surface = FALSE;
     else if (create_layered || is_layered) needs_surface = TRUE;
 
-    if (needs_surface)
+    if (is_opengl && !is_layered && !create_layered)
+    {
+        if (new_surface) window_surface_release( new_surface );
+        new_surface = NULL;
+    }
+    else if (needs_surface)
         create_window_surface( hwnd, create_layered, surface_rect, raw_dpi, &new_surface );
     else if (new_surface && new_surface != &dummy_surface)
     {
@@ -2069,7 +2075,7 @@ static void update_children_window_state( HWND hwnd )
 
     for (i = 0; children[i]; i++)
     {
-        if (!window_has_client_surface( children[i] )) continue;
+        if (!window_has_client_surface( children[i], FALSE )) continue;
         update_window_state( children[i] );
     }
 
