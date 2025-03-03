@@ -1085,6 +1085,16 @@ static void session_reset_transforms(struct media_session *session, BOOL drop)
             if (drop)
                 transform_stream_drop_events(stream);
         }
+
+        if (!drop)
+            continue;
+
+        for (i = 0; i < topo_node->u.transform.output_count; ++i)
+        {
+            struct transform_stream *stream = &topo_node->u.transform.outputs[i];
+            transform_stream_drop_events(stream);
+            stream->requests = 0;
+        }
     }
 }
 
