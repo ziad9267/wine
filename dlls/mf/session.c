@@ -1068,13 +1068,29 @@ static void session_handle_start_error(struct media_session *session, HRESULT hr
     session_command_complete_with_event(session, MESessionStarted, hr, NULL);
 }
 
+static void session_reset_transforms(struct media_session *session)
+{
+    struct topo_node *topo_node;
+    UINT i;
+
+    LIST_FOR_EACH_ENTRY(topo_node, &session->presentation.nodes, struct topo_node, entry)
+    {
+        if (topo_node->type != MF_TOPOLOGY_TRANSFORM_NODE)
+            continue;
+
+        for (i = 0; i < topo_node->u.transform.input_count; i++)
+        {
+            struct transform_stream *stream = &topo_node->u.transform.inputs[i];
+            stream->draining = FALSE;
+        }
+    }
+}
+
 static void session_start(struct media_session *session, const GUID *time_format, const PROPVARIANT *start_position)
 {
     struct media_source *source;
-    struct topo_node *topo_node;
     MFTIME duration;
     HRESULT hr;
-    UINT i;
 
     switch (session->state)
     {
@@ -1110,17 +1126,7 @@ static void session_start(struct media_session *session, const GUID *time_format
                 }
             }
 
-            LIST_FOR_EACH_ENTRY(topo_node, &session->presentation.nodes, struct topo_node, entry)
-            {
-                if (topo_node->type == MF_TOPOLOGY_TRANSFORM_NODE)
-                {
-                    for (i = 0; i < topo_node->u.transform.input_count; i++)
-                    {
-                        struct transform_stream *stream = &topo_node->u.transform.inputs[i];
-                        stream->draining = FALSE;
-                    }
-                }
-            }
+            session_reset_transforms(session);
 
             session->state = SESSION_STATE_STARTING_SOURCES;
             break;
