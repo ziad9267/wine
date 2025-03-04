@@ -3448,6 +3448,26 @@ static BOOL calc_winpos( WINDOWPOS *winpos, struct window_rects *old_rects, stru
             winpos->x = -32000;
             winpos->y = -32000;
         }
+        else
+        {
+            const char *sgi = getenv( "SteamGameId" );
+
+            /* CW-Bug-Id: #24943 Space Engineers (244850) has issues with fullscreen focus loss with
+             * non-native aspect ratio */
+            if (sgi && !strcmp( sgi, "244850" )
+                && !(win->dwStyle & WS_MINIMIZE) && win->parent == get_desktop_window()
+                && is_window_rect_full_screen( &old_rects->visible, get_thread_dpi() ))
+            {
+                RECT rect = {winpos->x, winpos->y,
+                             winpos->x + new_rects->window.right - new_rects->window.left,
+                             winpos->y + new_rects->window.bottom - new_rects->window.top};
+                MONITORINFO info = monitor_info_from_rect( rect, get_thread_dpi() );
+                WARN( "Forcing fullscreen window %p origin from %s to %s\n", winpos->hwnd,
+                      wine_dbgstr_rect(&rect), wine_dbgstr_rect(&info.rcMonitor) );
+                winpos->x = info.rcMonitor.left;
+                winpos->y = info.rcMonitor.top;
+            }
+        }
         new_rects->window.left    = winpos->x;
         new_rects->window.top     = winpos->y;
         new_rects->window.right  += winpos->x - old_rects->window.left;
