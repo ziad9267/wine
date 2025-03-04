@@ -468,6 +468,15 @@ static UINT devmode_get( const DEVMODEW *mode, UINT field )
     return 0;
 }
 
+static BOOL is_detached_mode( const DEVMODEW *mode )
+{
+    return mode->dmFields & DM_POSITION &&
+           mode->dmFields & DM_PELSWIDTH &&
+           mode->dmFields & DM_PELSHEIGHT &&
+           mode->dmPelsWidth == 0 &&
+           mode->dmPelsHeight == 0;
+}
+
 static BOOL write_source_mode( HKEY hkey, UINT index, const DEVMODEW *mode )
 {
     WCHAR bufferW[MAX_PATH] = {0};
@@ -1818,7 +1827,8 @@ static void add_modes( const DEVMODEW *current, UINT host_modes_count, const DEV
         }
 
         /* HACK: Gamescope doesn't really changes the display mode, pretend it changed to what was requested */
-        if (user_driver->pHasWindowManager( "steamcompmgr" ) && read_source_mode( source->key, ENUM_CURRENT_SETTINGS, &virtual ))
+        if (user_driver->pHasWindowManager( "steamcompmgr" ) && read_source_mode( source->key, ENUM_CURRENT_SETTINGS, &virtual )
+            && !is_detached_mode( &virtual ))
         {
             WARN( "Faking current mode to %s\n", debugstr_devmodew(&virtual) );
             current = &virtual;
@@ -1840,7 +1850,7 @@ static void add_modes( const DEVMODEW *current, UINT host_modes_count, const DEV
     }
     else
     {
-        if (!read_source_mode( source->key, ENUM_CURRENT_SETTINGS, &virtual ))
+        if (!read_source_mode( source->key, ENUM_CURRENT_SETTINGS, &virtual ) || is_detached_mode( &virtual ))
             virtual = physical;
 
         if ((virtual_modes = get_virtual_modes( current, &physical, host_modes, host_modes_count, &virtual_count )))
@@ -1892,15 +1902,6 @@ static void release_display_manager_ctx( struct device_manager_ctx *ctx )
         list_remove( &gpu->entry );
         free_vulkan_gpu( gpu );
     }
-}
-
-static BOOL is_detached_mode( const DEVMODEW *mode )
-{
-    return mode->dmFields & DM_POSITION &&
-           mode->dmFields & DM_PELSWIDTH &&
-           mode->dmFields & DM_PELSHEIGHT &&
-           mode->dmPelsWidth == 0 &&
-           mode->dmPelsHeight == 0;
 }
 
 static BOOL is_monitor_active( struct monitor *monitor )
