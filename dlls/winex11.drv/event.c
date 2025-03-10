@@ -1301,7 +1301,7 @@ static void get_window_mwm_hints( Display *display, Window window, MwmHints *hin
     }
 }
 
-static Window get_net_active_window( Display *display, char **name )
+Window get_net_active_window( Display *display, char **name )
 {
     unsigned long count, remaining;
     Window window = None, *value;

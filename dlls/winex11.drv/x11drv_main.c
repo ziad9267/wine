@@ -866,6 +866,7 @@ struct x11drv_thread_data *x11drv_init_thread_data(void)
     x11drv_xinput2_init( data );
     net_supported_init( data );
     net_supporting_wm_check_init( data );
+    net_active_window_init( data );
 
     return data;
 }

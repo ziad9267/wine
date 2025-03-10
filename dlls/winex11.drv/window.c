@@ -1935,8 +1935,20 @@ void net_active_window_notify( unsigned long serial, Window value, Time time )
 
     received = wine_dbg_sprintf( "_NET_ACTIVE_WINDOW %p/%lx serial %lu time %lu", hwnd, value, serial, time );
     expected = *expect_serial ? wine_dbg_sprintf( ", expected %p/%lx serial %lu", expect_hwnd, *pending, *expect_serial ) : "";
+
+    if (hwnd == (HWND)-1) value = root_window;
     handle_state_change( serial, expect_serial, sizeof(value), &value, desired, pending,
                          current, expected, "", received, NULL );
+}
+
+void net_active_window_init( struct x11drv_thread_data *data )
+{
+    Window window = get_net_active_window( data->display, &data->active_window );
+
+    if (hwnd_from_window( data->display, window ) == (HWND)-1) window = root_window;
+    data->desired_net_active_window = window;
+    data->pending_net_active_window = window;
+    data->current_net_active_window = window;
 }
 
 void set_net_active_window( HWND hwnd, HWND previous )
