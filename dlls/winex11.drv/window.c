@@ -1951,6 +1951,18 @@ void net_active_window_init( struct x11drv_thread_data *data )
     data->current_net_active_window = window;
 }
 
+static BOOL window_set_pending_activate( HWND hwnd )
+{
+    struct x11drv_win_data *data;
+    BOOL pending;
+
+    if (!(data = get_win_data( hwnd ))) return FALSE;
+    if ((pending = !!data->wm_state_serial)) data->pending_state.swp_flags &= ~SWP_NOACTIVATE;
+    release_win_data( data );
+
+    return pending;
+}
+
 void set_net_active_window( HWND hwnd, HWND previous )
 {
     struct x11drv_thread_data *data = x11drv_thread_data();
@@ -1958,9 +1970,9 @@ void set_net_active_window( HWND hwnd, HWND previous )
     XEvent xev;
 
     if (!is_netwm_supported( x11drv_atom(_NET_ACTIVE_WINDOW) )) return;
-    if (window_has_pending_wm_state( hwnd, -1 )) return;
     if (!(window = X11DRV_get_whole_window( hwnd ))) return;
     if (data->pending_net_active_window == window) return;
+    if (window_set_pending_activate( hwnd )) return;
 
     xev.xclient.type = ClientMessage;
     xev.xclient.window = window;
