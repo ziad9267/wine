@@ -1258,6 +1258,11 @@ static void window_set_net_wm_state( struct x11drv_win_data *data, UINT new_stat
      */
     if (X11DRV_HasWindowManager( "steamcompmgr" )) new_state &= ~fullscreen_mask;
 
+    /* KWin sometimes combines NET_WM_STATE_FULLSCREEN with NET_WM_STATE_MAXIMIZED, but sometimes doesn't.
+     * Make sure we request both at the same time, so we don't get unexpected value when NET_WM_STATE_MAXIMIZED is added.
+     */
+    if (X11DRV_HasWindowManager( "KWin" ) && (new_state & (1 << NET_WM_STATE_FULLSCREEN))) new_state |= (1 << NET_WM_STATE_MAXIMIZED);
+
     new_state &= x11drv_thread_data()->net_wm_state_mask;
     data->desired_state.net_wm_state = new_state;
     if (!data->whole_window) return; /* no window, nothing to update */
@@ -1495,6 +1500,11 @@ UINT get_window_net_wm_state( Display *display, Window window )
 
     if (!maximized_horz)
         new_state &= ~(1 << NET_WM_STATE_MAXIMIZED);
+
+    /* KWin sometimes combines NET_WM_STATE_FULLSCREEN with NET_WM_STATE_MAXIMIZED, but sometimes doesn't.
+     * Make sure both are always set in replies, so we don't change the win32 state unnecessarily.
+     */
+    if (X11DRV_HasWindowManager( "KWin" ) && (new_state & (1 << NET_WM_STATE_FULLSCREEN))) new_state |= (1 << NET_WM_STATE_MAXIMIZED);
 
     return new_state;
 }
