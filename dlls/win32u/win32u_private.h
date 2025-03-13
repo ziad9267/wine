@@ -44,9 +44,9 @@ extern ULONG_PTR set_icon_param( HICON handle, const struct free_icon_params *pa
 
 /* dce.c */
 extern struct window_surface dummy_surface;
-extern void create_window_surface( HWND hwnd, BOOL create_layered, const RECT *surface_rect, UINT monitor_dpi,
+extern void create_window_surface( HWND hwnd, BOOL create_layered, const RECT *surface_rect, UINT monitor_dpi_num, UINT monitor_dpi_den,
                                    struct window_surface **window_surface );
-extern struct window_surface *get_driver_window_surface( struct window_surface *surface, UINT monitor_dpi );
+extern struct window_surface *get_driver_window_surface( struct window_surface *surface, UINT monitor_dpi_num, UINT monitor_dpi_den );
 extern void erase_now( HWND hwnd, UINT rdw_flags );
 extern void flush_window_surfaces( BOOL idle );
 extern void move_window_bits( HWND hwnd, const struct window_rects *rects, const RECT *valid_rects );
@@ -167,7 +167,7 @@ extern LONG get_char_dimensions( HDC hdc, TEXTMETRICW *metric, int *height );
 extern HBITMAP get_display_bitmap(void);
 extern INT get_display_depth( UNICODE_STRING *name );
 extern RECT get_display_rect( const WCHAR *display );
-extern UINT get_win_monitor_dpi( HWND hwnd, UINT *raw_dpi );
+extern UINT get_win_monitor_dpi( HWND hwnd, UINT *raw_dpi_num, UINT *raw_dpi_den );
 extern RECT get_primary_monitor_rect( UINT dpi );
 extern DWORD get_process_layout(void);
 extern COLORREF get_sys_color( int index );
@@ -194,7 +194,7 @@ extern RECT rect_thread_to_win_dpi( HWND hwnd, RECT rect );
 extern HMONITOR monitor_from_window( HWND hwnd, UINT flags, UINT dpi );
 extern MONITORINFO monitor_info_from_rect( RECT rect, UINT dpi );
 extern MONITORINFO monitor_info_from_window( HWND hwnd, UINT flags );
-extern UINT monitor_dpi_from_rect( RECT rect, UINT dpi, UINT *raw_dpi );
+extern UINT monitor_dpi_from_rect( RECT rect, UINT dpi, UINT *raw_dpi_num, UINT *raw_dpi_den );
 extern BOOL update_display_cache( BOOL force );
 extern void reset_monitor_update_serial(void);
 extern void user_lock(void);

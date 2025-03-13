@@ -1921,10 +1921,26 @@ static BOOL is_monitor_primary( struct monitor *monitor )
     return !!(source->state_flags & DISPLAY_DEVICE_PRIMARY_DEVICE);
 }
 
+static UINT gcd( UINT a, UINT b )
+{
+    int r;
+
+    while (1)
+    {
+        if (!a) return b;
+        if (!b) return a;
+        r = a % b;
+        a = b;
+        b = r;
+    }
+}
+
 /* display_lock must be held */
 static void monitor_virt_to_raw_ratio( struct monitor *monitor, UINT *num, UINT *den )
 {
     struct source *source = monitor->source;
+
+    if (!num || !den) return;
 
     *num = *den = 1;
     if (!source) return;
@@ -2732,7 +2748,7 @@ static UINT get_monitor_dpi( HMONITOR handle, UINT type, UINT *x, UINT *y )
 /**********************************************************************
  *              get_win_monitor_dpi
  */
-UINT get_win_monitor_dpi( HWND hwnd, UINT *raw_dpi )
+UINT get_win_monitor_dpi( HWND hwnd, UINT *raw_dpi_num, UINT *raw_dpi_den )
 {
     UINT dpi = NTUSER_DPI_CONTEXT_GET_DPI( get_window_dpi_awareness_context( hwnd ) );
     HWND parent = get_parent( hwnd );
@@ -2745,7 +2761,7 @@ UINT get_win_monitor_dpi( HWND hwnd, UINT *raw_dpi )
         return 0;
     }
 
-    if (win == WND_DESKTOP) return monitor_dpi_from_rect( rect, get_thread_dpi(), raw_dpi );
+    if (win == WND_DESKTOP) return monitor_dpi_from_rect( rect, get_thread_dpi(), raw_dpi_num, raw_dpi_den );
     if (win == WND_OTHER_PROCESS)
     {
         if (!get_window_rect( hwnd, &rect, dpi )) return 0;
@@ -2754,7 +2770,7 @@ UINT get_win_monitor_dpi( HWND hwnd, UINT *raw_dpi )
     else if ((parent = win->parent) && parent != get_desktop_window())
     {
         release_win_ptr( win );
-        return get_win_monitor_dpi( parent, raw_dpi );
+        return get_win_monitor_dpi( parent, raw_dpi_num, raw_dpi_den );
     }
     else
     {
@@ -2762,7 +2778,7 @@ UINT get_win_monitor_dpi( HWND hwnd, UINT *raw_dpi )
         release_win_ptr( win );
     }
 
-    return monitor_dpi_from_rect( rect, dpi, raw_dpi );
+    return monitor_dpi_from_rect( rect, dpi, raw_dpi_num, raw_dpi_den );
 }
 
 /* keep in sync with user32 */
@@ -2915,7 +2931,7 @@ POINT map_dpi_point( POINT pt, UINT dpi_from, UINT dpi_to )
  */
 static POINT point_win_to_phys_dpi( HWND hwnd, POINT pt )
 {
-    UINT raw_dpi, dpi = get_win_monitor_dpi( hwnd, &raw_dpi );
+    UINT dpi = get_win_monitor_dpi( hwnd, NULL, NULL );
     return map_dpi_point( pt, get_dpi_for_window( hwnd ), dpi );
 }
 
@@ -2924,7 +2940,7 @@ static POINT point_win_to_phys_dpi( HWND hwnd, POINT pt )
  */
 POINT point_phys_to_win_dpi( HWND hwnd, POINT pt )
 {
-    UINT raw_dpi, dpi = get_win_monitor_dpi( hwnd, &raw_dpi );
+    UINT dpi = get_win_monitor_dpi( hwnd, NULL, NULL );
     return map_dpi_point( pt, dpi, get_dpi_for_window( hwnd ) );
 }
 
@@ -2933,8 +2949,8 @@ POINT point_phys_to_win_dpi( HWND hwnd, POINT pt )
  */
 POINT point_thread_to_win_dpi( HWND hwnd, POINT pt )
 {
-    UINT dpi = get_thread_dpi(), raw_dpi;
-    if (!dpi) dpi = get_win_monitor_dpi( hwnd, &raw_dpi );
+    UINT dpi = get_thread_dpi();
+    if (!dpi) dpi = get_win_monitor_dpi( hwnd, NULL, NULL );
     return map_dpi_point( pt, dpi, get_dpi_for_window( hwnd ));
 }
 
@@ -2943,8 +2959,8 @@ POINT point_thread_to_win_dpi( HWND hwnd, POINT pt )
  */
 RECT rect_thread_to_win_dpi( HWND hwnd, RECT rect )
 {
-    UINT dpi = get_thread_dpi(), raw_dpi;
-    if (!dpi) dpi = get_win_monitor_dpi( hwnd, &raw_dpi );
+    UINT dpi = get_thread_dpi();
+    if (!dpi) dpi = get_win_monitor_dpi( hwnd, NULL, NULL );
     return map_dpi_rect( rect, dpi, get_dpi_for_window( hwnd ) );
 }
 
@@ -4368,16 +4384,23 @@ MONITORINFO monitor_info_from_rect( RECT rect, UINT dpi )
     return info;
 }
 
-UINT monitor_dpi_from_rect( RECT rect, UINT dpi, UINT *raw_dpi )
+UINT monitor_dpi_from_rect( RECT rect, UINT dpi, UINT *raw_dpi_num, UINT *raw_dpi_den )
 {
     struct monitor *monitor;
-    UINT ret = system_dpi, x, y;
+    UINT ret = system_dpi, x, y, d;
 
     if (!lock_display_devices( FALSE )) return 0;
     if ((monitor = get_monitor_from_rect( rect, MONITOR_DEFAULTTONEAREST, dpi, MDT_DEFAULT )))
     {
-        *raw_dpi = monitor_get_dpi( monitor, MDT_RAW_DPI, &x, &y );
         ret = monitor_get_dpi( monitor, MDT_DEFAULT, &x, &y );
+        if (raw_dpi_num && raw_dpi_den)
+        {
+            monitor_virt_to_raw_ratio( monitor, raw_dpi_num, raw_dpi_den );
+            *raw_dpi_num *= ret;
+            d = gcd( *raw_dpi_num, *raw_dpi_den );
+            *raw_dpi_num /= d;
+            *raw_dpi_den /= d;
+        }
     }
     unlock_display_devices();
 
