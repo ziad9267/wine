@@ -3207,12 +3207,13 @@ static BOOL glxdrv_wglShareLists(struct wgl_context *org, struct wgl_context *de
 
 static void present_gl_drawable( HWND hwnd, HDC hdc, struct gl_drawable *gl, BOOL flush, BOOL gl_finish )
 {
-    HWND toplevel = NtUserGetAncestor( hwnd, GA_ROOT );
     struct window_surface *surface;
     struct x11drv_win_data *data;
     Drawable window, drawable;
     RECT rect_dst, rect;
+    HWND toplevel;
     HRGN region;
+    UINT dpi;
 
     if (!gl) return;
     switch (gl->type)
@@ -3251,10 +3252,12 @@ static void present_gl_drawable( HWND hwnd, HDC hdc, struct gl_drawable *gl, BOO
     if (gl_finish) pglFinish();
     if (flush) XFlush( gdi_display );
 
-    NtUserGetClientRect( hwnd, &rect_dst, NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI ) );
-    NtUserMapWindowPoints( hwnd, toplevel, (POINT *)&rect_dst, 2, NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI ) );
+    toplevel = NtUserGetAncestor( hwnd, GA_ROOT );
+    dpi = NtUserGetDpiForWindow( hwnd );
+    NtUserGetClientRect( hwnd, &rect_dst, dpi );
+    NtUserMapWindowPoints( hwnd, toplevel, (POINT *)&rect_dst, 2, dpi );
     if (IsRectEmpty( &rect_dst ) || IsRectEmpty( &gl->rect )) return;
-
+    rect_dst = map_rect_virt_to_raw_for_monitor( NtUserMonitorFromWindow( toplevel, MONITOR_DEFAULTTONEAREST ), rect_dst, dpi );
     if ((data = get_win_data( toplevel )))
     {
         OffsetRect( &rect_dst, data->rects.client.left - data->rects.visible.left,

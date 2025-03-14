@@ -2708,6 +2708,22 @@ RECT map_rect_virt_to_raw( RECT rect, UINT dpi_from )
     return rect;
 }
 
+RECT map_rect_virt_to_raw_for_monitor( HMONITOR handle, RECT rect, UINT dpi_from )
+{
+    struct monitor *monitor;
+    UINT num, den, x, y;
+
+    if (!lock_display_devices( FALSE )) return rect;
+    if ((monitor = get_monitor_from_handle( handle )))
+    {
+        monitor_virt_to_raw_ratio( monitor, &num, &den );
+        rect = map_dpi_rect( rect, dpi_from * den, monitor_get_dpi( monitor, MDT_DEFAULT, &x, &y ) * num );
+    }
+    unlock_display_devices();
+
+    return rect;
+}
+
 /* map (absolute) window rects from MDT_DEFAULT to MDT_RAW_DPI coordinates */
 struct window_rects map_window_rects_virt_to_raw( struct window_rects rects, UINT dpi_from )
 {

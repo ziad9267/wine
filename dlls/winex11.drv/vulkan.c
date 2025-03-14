@@ -308,12 +308,13 @@ static int force_present_to_surface(void)
 static void X11DRV_vulkan_surface_presented( HWND hwnd, void *private, VkResult result )
 {
     struct x11drv_vulkan_surface *surface = private;
-    HWND toplevel = NtUserGetAncestor( hwnd, GA_ROOT );
     struct window_surface *win_surface;
     struct x11drv_win_data *data;
     RECT rect_dst, rect;
     Drawable window;
+    HWND toplevel;
     HRGN region;
+    UINT dpi;
     HDC hdc;
 
     vulkan_surface_update_size( hwnd, surface );
@@ -332,10 +333,12 @@ static void X11DRV_vulkan_surface_presented( HWND hwnd, void *private, VkResult 
         return;
     }
 
-    NtUserGetClientRect( hwnd, &rect_dst, NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI ) );
-    NtUserMapWindowPoints( hwnd, toplevel, (POINT *)&rect_dst, 2, NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI ) );
+    toplevel = NtUserGetAncestor( hwnd, GA_ROOT );
+    dpi = NtUserGetDpiForWindow( hwnd );
+    NtUserGetClientRect( hwnd, &rect_dst, dpi );
+    NtUserMapWindowPoints( hwnd, toplevel, (POINT *)&rect_dst, 2, dpi );
     if (IsRectEmpty( &rect_dst ) || IsRectEmpty( &surface->rect )) return;
-
+    rect_dst = map_rect_virt_to_raw_for_monitor( NtUserMonitorFromWindow( toplevel, MONITOR_DEFAULTTONEAREST ), rect_dst, dpi );
     if ((data = get_win_data( toplevel )))
     {
         OffsetRect( &rect_dst, data->rects.client.left - data->rects.visible.left,

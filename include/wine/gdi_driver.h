@@ -84,6 +84,8 @@ static inline RECT visible_rect_from_window( struct window_rects *rects, RECT wi
     return rect;
 }
 
+W32KAPI RECT map_rect_virt_to_raw_for_monitor( HMONITOR monitor, RECT rect, UINT dpi_from );
+
 typedef struct gdi_physdev
 {
     const struct gdi_dc_funcs *funcs;
