@@ -1656,11 +1656,6 @@ static void window_set_managed( struct x11drv_win_data *data, BOOL new_managed, 
 
     if (!data->whole_window) return; /* no window, nothing to update */
     if (old_managed == new_managed && old_embedded == new_embedded) return; /* states are the same, nothing to update */
-    if (!new_managed)
-    {
-        ERR( "Changing window to unmanaged is not supported\n" );
-        return;
-    }
 
     window_set_wm_state( data, WithdrawnState, 0 ); /* no WM_STATE is pending, requested immediately */
 
