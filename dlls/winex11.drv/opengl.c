@@ -317,6 +317,8 @@ enum glx_swap_control_method
     GLX_SWAP_CONTROL_MESA
 };
 
+static const char *gl_renderer;
+
 /* X context to associate a struct gl_drawable to an hwnd */
 static XContext gl_hwnd_context;
 /* X context to associate a struct gl_drawable to a pbuffer hdc */
@@ -541,7 +543,6 @@ static BOOL X11DRV_WineGL_InitOpenglInfo(void)
     int screen = DefaultScreen(gdi_display);
     Window win = 0, root = 0;
     const char *gl_version;
-    const char *gl_renderer;
     const char* str;
     BOOL glx_direct;
     XVisualInfo *vis;
@@ -590,7 +591,7 @@ static BOOL X11DRV_WineGL_InitOpenglInfo(void)
                         "installed correctly\n", is_win64 ? "64-bit" : "32-bit" );
         goto done;
     }
-    gl_renderer = (const char *)opengl_funcs.gl.p_glGetString(GL_RENDERER);
+    gl_renderer = strdup( (const char *)opengl_funcs.gl.p_glGetString(GL_RENDERER) );
     gl_version  = (const char *)opengl_funcs.gl.p_glGetString(GL_VERSION);
     str = (const char *) opengl_funcs.gl.p_glGetString(GL_EXTENSIONS);
     glExtensions = malloc( strlen(str) + sizeof(legacy_extensions) );
@@ -1845,6 +1846,13 @@ BOOL enable_fullscreen_hack( HWND hwnd, BOOL check_gamma )
 
     if (disable_fshack) return FALSE;
     if (NtUserGetDpiForWindow( hwnd ) != NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI )) return TRUE; /* needs DPI scaling */
+    if (check_gamma && X11DRV_HasWindowManager( "xwayland" ) && gl_renderer && strstr( gl_renderer, "NVIDIA" ))
+    {
+        /* Force fshack on XWayland / NVidia because drawing to front buffer doesn't get presented there and fshack works
+         * that around as a side effect. */
+        TRACE( "Forcing fshack on xwayland / NVIDIA.\n" );
+        return TRUE;
+    }
     return check_gamma && ReadNoFence( &gamma_serial );
 }
 
