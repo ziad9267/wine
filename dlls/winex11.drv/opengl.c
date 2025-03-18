@@ -1196,6 +1196,7 @@ static const char *fs_hack_gamma_frag_shader_src =
 
 static WORD gamma_ramp_i[GAMMA_RAMP_SIZE * 3];
 static float gamma_ramp[GAMMA_RAMP_SIZE * 4];
+static pthread_once_t gamma_init_once = PTHREAD_ONCE_INIT;
 static LONG gamma_serial;
 
 /* Return whether integer scaling is on */
@@ -1211,8 +1212,24 @@ BOOL fs_hack_is_integer(void)
     return is_int;
 }
 
+static void init_default_gamma(void)
+{
+    unsigned int i;
+
+    for (i = 0; i < GAMMA_RAMP_SIZE; ++i)
+    {
+        gamma_ramp_i[i] = gamma_ramp_i[i + GAMMA_RAMP_SIZE] = gamma_ramp_i[i + 2 * GAMMA_RAMP_SIZE] =
+            i * 65535 / (GAMMA_RAMP_SIZE - 1);
+
+        gamma_ramp[i * 4] = gamma_ramp_i[i] / 65535.f;
+        gamma_ramp[i * 4 + 1] = gamma_ramp_i[i + GAMMA_RAMP_SIZE] / 65535.f;
+        gamma_ramp[i * 4 + 2] = gamma_ramp_i[i + 2 * GAMMA_RAMP_SIZE] / 65535.f;
+    }
+}
+
 BOOL fs_hack_get_gamma_ramp( PHYSDEV dev, void *data )
 {
+    pthread_once( &gamma_init_once, init_default_gamma );
     memcpy( data, gamma_ramp_i, sizeof(gamma_ramp_i) );
     return TRUE;
 }
@@ -1221,6 +1238,8 @@ BOOL fs_hack_set_gamma_ramp( PHYSDEV dev, void *data )
 {
     const WORD *ramp = data;
     int i;
+
+    pthread_once( &gamma_init_once, init_default_gamma );
     if (memcmp( gamma_ramp_i, ramp, sizeof(gamma_ramp_i) ) == 0)
     {
         /* identical */
