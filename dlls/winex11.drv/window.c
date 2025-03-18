@@ -1271,7 +1271,9 @@ static void window_set_net_wm_state( struct x11drv_win_data *data, UINT new_stat
     if (old_state == new_state) return; /* states are the same, nothing to update */
 
     /* On KWin wait for _NET_WM_STATE changes to complete when they touch maximized / fullscreen states */
-    if (X11DRV_HasWindowManager( "KWin" ) && data->net_wm_state_serial && (old_state ^ new_state) & fullscreen_mask) return;
+    if (X11DRV_HasWindowManager( "KWin" ) && data->pending_state.wm_state == NormalState &&
+        data->net_wm_state_serial && (old_state ^ new_state) & fullscreen_mask)
+        return;
 
     if (data->pending_state.wm_state == IconicState) return; /* window is iconic, don't update its state now */
     if (data->pending_state.wm_state == WithdrawnState)  /* set the _NET_WM_STATE atom directly */
