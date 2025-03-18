@@ -3433,6 +3433,32 @@ static BOOL calc_winpos( WINDOWPOS *winpos, struct window_rects *old_rects, stru
         }
         else
         {
+            const char *sgi = getenv( "SteamGameId" );
+
+            /* CW-Bug-Id: #25036 Escape from Monkey Island™ (730830) Alt+Tab shifts game downward
+             * when opened via config launcher.
+             *
+             * The game calls ShowWindow(hwnd, SW_RESTORE) whenever WM_ACTIVATE or WM_SYSCOMMAND
+             * SC_RESTORE messages are received. And the game is created with a size of 648x514.
+             * The multiple ShowWindow(hwnd, SW_RESTORE) calls will restore its exclusive
+             * fullscreen from 640x480 to 648x514. However, moving or resizing exclusive fullscreen
+             * windows on Windows are not allowed. Due to the missing support for exclusive
+             * fullscreen on Wine, work around it by forcing fullscreen here.
+             */
+            if (sgi && (!strcmp( sgi, "730830" ))
+                && !(win->dwStyle & WS_MINIMIZE) && win->parent == get_desktop_window()
+                && is_window_rect_full_screen( &old_rects->visible, get_thread_dpi() ))
+            {
+                RECT rect = {winpos->x, winpos->y,
+                             winpos->x + new_rects->window.right - new_rects->window.left,
+                             winpos->y + new_rects->window.bottom - new_rects->window.top};
+                MONITORINFO info = monitor_info_from_rect( rect, get_thread_dpi() );
+                WARN( "Forcing fullscreen window %p size from %s to %s\n", winpos->hwnd,
+                      wine_dbgstr_rect(&rect), wine_dbgstr_rect(&info.rcMonitor) );
+                winpos->cx = info.rcMonitor.right - info.rcMonitor.left;
+                winpos->cy = info.rcMonitor.bottom - info.rcMonitor.top;
+            }
+
             new_rects->window.right  = new_rects->window.left + winpos->cx;
             new_rects->window.bottom = new_rects->window.top + winpos->cy;
         }
