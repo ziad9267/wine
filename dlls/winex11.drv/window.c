@@ -1367,6 +1367,7 @@ static void window_set_config( struct x11drv_win_data *data, const RECT *new_rec
         if (data->wm_state_serial) return; /* another WM_STATE update is pending, wait for it to complete */
         if (data->net_wm_state_serial) return; /* another _NET_WM_STATE update is pending, wait for it to complete */
         WARN( "window %p/%lx is maximized/fullscreen, temporarily restoring\n", data->hwnd, data->whole_window );
+        data->net_wm_state_hack = 1;
         net_wm_state = data->pending_state.net_wm_state;
         window_set_net_wm_state( data, net_wm_state & ~fullscreen_mask );
     }
@@ -1904,6 +1905,8 @@ void window_net_wm_state_notify( struct x11drv_win_data *data, unsigned long ser
     unsigned long *expect_serial = &data->net_wm_state_serial;
     const char *expected, *received, *prefix;
 
+    if (data->net_wm_state_hack) pending = desired = &value;
+
     prefix = wine_dbg_sprintf( "window %p/%lx ", data->hwnd, data->whole_window );
     received = wine_dbg_sprintf( "_NET_WM_STATE %#x/%lu", value, serial );
     expected = *expect_serial ? wine_dbg_sprintf( ", expected %#x/%lu", *pending, *expect_serial ) : "";
@@ -1911,6 +1914,7 @@ void window_net_wm_state_notify( struct x11drv_win_data *data, unsigned long ser
     if (!handle_state_change( serial, expect_serial, sizeof(value), &value, desired, pending,
                               current, expected, prefix, received, NULL ))
         return;
+    data->net_wm_state_hack = 0;
 
     /* send any pending changes from the desired state */
     window_set_wm_state( data, data->desired_state.wm_state, data->desired_state.swp_flags );
