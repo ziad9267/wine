@@ -460,6 +460,11 @@ static inline BOOL is_window_resizable( struct x11drv_win_data *data, DWORD styl
         if ((sgi = getenv( "SteamGameId" )) && !strcmp( sgi, "2708320" )
             && !wcscmp( class_name, UnityWndClassW ))
             return TRUE;
+
+        /* Some games fail to get proper fullscreen window size with KWin if we set window size hints,
+         * as the windows may briefly not be covering the entire screen when they becomes fullscreen.
+         */
+        if (sgi && !strcmp( sgi, "2552430" )) return TRUE;
     }
     /* Metacity needs the window to be resizable to make it fullscreen */
     return data->is_fullscreen;
