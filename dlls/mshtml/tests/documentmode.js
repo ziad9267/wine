@@ -399,6 +399,7 @@ sync_test("builtin_obj", function() {
         ok(e === "[object Window]", "window.toString with nullDisp context = " + e);
 
         ok(f.hasOwnProperty("arguments"), "arguments not a prop of createElement");
+        ok(f.hasOwnProperty("caller"), "caller not a prop of createElement");
         ok(!f.hasOwnProperty("length"), "length is a prop of createElement");
     }
 
@@ -4035,6 +4036,7 @@ sync_test("constructors", function() {
     ok(window.Option.prototype === window.HTMLOptionElement.prototype, "Option.prototype != HTMLOptionElement.prototype");
 
     ok(XMLHttpRequest.create.hasOwnProperty("arguments"), "arguments not a prop of XMLHttpRequest.create");
+    ok(XMLHttpRequest.create.hasOwnProperty("caller"), "caller not a prop of XMLHttpRequest.create");
     ok(!XMLHttpRequest.create.hasOwnProperty("length"), "length is a prop of XMLHttpRequest.create");
 
     r = Object.getOwnPropertyDescriptor(HTMLMetaElement, "prototype");
