@@ -169,8 +169,8 @@ sync_test("window own props", function() {
         ["MSPopupWindow",0,10], ["MSRangeCollection",10], "MSSiteModeEvent", ["MSStream",10], ["MSStreamReader",10], "MutationEvent", ["MutationRecord",11], "NodeFilter", "NodeIterator",
         ["OES_element_index_uint",11], ["OES_standard_derivatives",11], ["OES_texture_float",11], ["OES_texture_float_linear",11], "PerformanceEntry", "PerformanceMark", "PerformanceMeasure",
         ["PerformanceNavigationTiming",11], "PerformanceResourceTiming", ["Plugin",11], ["PluginArray",9,10], ["PointerEvent",11], ["PopStateEvent",10], "Position", "PositionError",
-        "ProcessingInstruction", "RangeException", "RegExpError", "Selection", ["SourceBuffer",11], ["SourceBufferList",11], "StyleMedia", "StyleSheetPageList", ["SubtleCrypto",11], "SVGAElement",
-        "SVGAngle", "SVGAnimatedAngle", "SVGAnimatedBoolean", "SVGAnimatedEnumeration", "SVGAnimatedInteger", "SVGAnimatedLength", "SVGAnimatedLengthList", "SVGAnimatedNumber", "SVGAnimatedNumberList",
+        "ProcessingInstruction", "RangeException", "RegExpError", "Selection", ["SourceBuffer",11], ["SourceBufferList",11], "StyleMedia", "StyleSheetPageList", "SVGAElement", "SVGAngle",
+        "SVGAnimatedAngle", "SVGAnimatedBoolean", "SVGAnimatedEnumeration", "SVGAnimatedInteger", "SVGAnimatedLength", "SVGAnimatedLengthList", "SVGAnimatedNumber", "SVGAnimatedNumberList",
         "SVGAnimatedPreserveAspectRatio", "SVGAnimatedRect", "SVGAnimatedString", "SVGAnimatedTransformList", "SVGClipPathElement", ["SVGComponentTransferFunctionElement",10], "SVGDefsElement",
         "SVGDescElement", "SVGElementInstance", "SVGElementInstanceList", "SVGEllipseElement", "SVGException", ["SVGFEBlendElement",10], ["SVGFEColorMatrixElement",10],
         ["SVGFEComponentTransferElement",10], ["SVGFECompositeElement",10], ["SVGFEConvolveMatrixElement",10], ["SVGFEDiffuseLightingElement",10], ["SVGFEDisplacementMapElement",10],
@@ -460,6 +460,7 @@ sync_test("builtin_toString", function() {
     }
     if(v >= 11) {
         test("crypto", window.msCrypto, "Crypto");
+        test("crypto.subtle", window.msCrypto.subtle, "SubtleCrypto");
         test("MutationObserver", new window.MutationObserver(function() {}), "MutationObserver");
     }
     if(v >= 9) {
@@ -3471,6 +3472,11 @@ sync_test("Crypto", function() {
     ok("subtle" in crypto, "subtle not in crypto");
     ok("getRandomValues" in crypto, "getRandomValues not in crypto");
     ok(!("randomUUID" in crypto), "randomUUID is in crypto");
+
+    var list = [ "decrypt", "deriveKey", "digest", "encrypt", "exportKey", "generateKey", "importKey", "sign", "unwrapKey", "verify", "wrapKey" ];
+    for(var i = 0; i < list.length; i++)
+        ok(list[i] in crypto.subtle, list[i] + " not in crypto.subtle");
+    ok(!("deriveBits" in crypto.subtle), "deriveBits is in crypto.subtle");
 });
 
 sync_test("MutationObserver", function() {
