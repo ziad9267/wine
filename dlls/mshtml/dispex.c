@@ -3145,6 +3145,12 @@ static HRESULT constructor_find_dispid(DispatchEx *dispex, const WCHAR *name, DW
     return hres;
 }
 
+static HRESULT constructor_fill_props(DispatchEx *dispex)
+{
+    DISPID dispid;
+    return dispex_get_id(dispex, L"prototype", 0, &dispid);
+}
+
 static const char *constructor_get_name(DispatchEx *dispex)
 {
     struct constructor *constr = constr_from_DispatchEx(dispex);
@@ -3154,6 +3160,7 @@ static const char *constructor_get_name(DispatchEx *dispex)
 static const dispex_static_data_vtbl_t constructor_dispex_vtbl = {
     .destructor  = constructor_destructor,
     .find_dispid = constructor_find_dispid,
+    .fill_props  = constructor_fill_props,
     .get_name    = constructor_get_name,
 };
 
