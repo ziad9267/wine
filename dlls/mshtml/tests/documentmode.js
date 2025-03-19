@@ -4031,7 +4031,6 @@ sync_test("constructors", function() {
     old = window.HTMLMetaElement;
     r = (delete window.HTMLMetaElement);
     ok(r === true, "delete HTMLMetaElement returned " + r);
-    todo_wine.
     ok(!window.hasOwnProperty("HTMLMetaElement"), "HTMLMetaElement still a property of window");
     window.HTMLMetaElement = old;
 });
