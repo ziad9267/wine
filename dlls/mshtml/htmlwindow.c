@@ -683,18 +683,13 @@ static HRESULT WINAPI HTMLWindow2_get_Image(IHTMLWindow2 *iface, IHTMLImageEleme
 
     TRACE("(%p)->(%p)\n", This, p);
 
-    if(!window->image_factory) {
-        HRESULT hres;
-
-        hres = HTMLImageElementFactory_Create(window, &window->image_factory);
+    if(!window->constructors[CTOR_IMAGE]) {
+        HRESULT hres = HTMLImageElementFactory_Create(window, &window->constructors[CTOR_IMAGE]);
         if(FAILED(hres))
             return hres;
     }
 
-    *p = &window->image_factory->IHTMLImageElementFactory_iface;
-    IHTMLImageElementFactory_AddRef(*p);
-
-    return S_OK;
+    return IWineJSDispatchHost_QueryInterface(&window->constructors[CTOR_IMAGE]->IWineJSDispatchHost_iface, &IID_IHTMLImageElementFactory, (void**)p);
 }
 
 static HRESULT WINAPI HTMLWindow2_get_location(IHTMLWindow2 *iface, IHTMLLocation **p)
@@ -3707,8 +3702,6 @@ static void HTMLWindow_traverse(DispatchEx *dispex, nsCycleCollectionTraversalCa
         note_cc_edge((nsISupports*)&This->doc->node.IHTMLDOMNode_iface, "doc", cb);
     if(This->console)
         note_cc_edge((nsISupports*)This->console, "console", cb);
-    if(This->image_factory)
-        note_cc_edge((nsISupports*)&This->image_factory->IHTMLImageElementFactory_iface, "image_factory", cb);
     if(This->option_factory)
         note_cc_edge((nsISupports*)&This->option_factory->IHTMLOptionElementFactory_iface, "option_factory", cb);
     if(This->screen)
@@ -3749,11 +3742,6 @@ static void HTMLWindow_unlink(DispatchEx *dispex)
 
     release_event_target(&This->event_target);
 
-    if(This->image_factory) {
-        HTMLImageElementFactory *image_factory = This->image_factory;
-        This->image_factory = NULL;
-        IHTMLImageElementFactory_Release(&image_factory->IHTMLImageElementFactory_iface);
-    }
     if(This->option_factory) {
         HTMLOptionElementFactory *option_factory = This->option_factory;
         This->option_factory = NULL;
@@ -3833,22 +3821,34 @@ static HRESULT HTMLWindow_find_dispid(DispatchEx *dispex, const WCHAR *name, DWO
     if(dispex_compat_mode(dispex) >= COMPAT_MODE_IE9) {
         const WCHAR **constr_name = bsearch(&name, constructor_names, ARRAYSIZE(constructor_names) ,
                                             sizeof(constructor_names[0]), cmp_name);
+        DispatchEx *constr = NULL;
+
         if(constr_name) {
             prototype_id_t id = constr_name - constructor_names + 1;
             compat_mode_t compat_mode = dispex_compat_mode(dispex);
-            DispatchEx *constr;
-            VARIANT v;
 
             if(compat_mode >= object_descriptors[id]->min_compat_mode &&
                (!object_descriptors[id]->max_compat_mode || compat_mode <= object_descriptors[id]->max_compat_mode)) {
                 hres = get_constructor(This, id, &constr);
                 if(FAILED(hres))
                     return hres;
-
-                V_VT(&v) = VT_DISPATCH;
-                V_DISPATCH(&v) = (IDispatch *)&constr->IWineJSDispatchHost_iface;
-                return dispex_define_property(&This->event_target.dispex, name, PROPF_WRITABLE | PROPF_CONFIGURABLE, &v, dispid);
             }
+        }else {
+            if(!wcscmp(name, L"Image")) {
+                if(!This->constructors[CTOR_IMAGE]) {
+                    hres = HTMLImageElementFactory_Create(This, &This->constructors[CTOR_IMAGE]);
+                    if(FAILED(hres))
+                        return hres;
+                }
+                constr = This->constructors[CTOR_IMAGE];
+            }
+        }
+
+        if(constr) {
+            VARIANT v;
+            V_VT(&v) = VT_DISPATCH;
+            V_DISPATCH(&v) = (IDispatch *)&constr->IWineJSDispatchHost_iface;
+            return dispex_define_property(&This->event_target.dispex, name, PROPF_WRITABLE | PROPF_CONFIGURABLE, &v, dispid);
         }
     }
 
@@ -4194,15 +4194,18 @@ static HRESULT IHTMLWindow6_postMessage_hook(DispatchEx *dispex, WORD flags, DIS
 
 static void HTMLWindow_init_dispex_info(dispex_data_t *info, compat_mode_t compat_mode)
 {
-    static const dispex_hook_t window2_hooks[] = {
+    static const dispex_hook_t window2_ie11_hooks[] = {
+        {DISPID_IHTMLWINDOW2_EXECSCRIPT},
+
+        /* IE9+ */
+        {DISPID_IHTMLWINDOW2_IMAGE},
+
+        /* Common for all modes */
         {DISPID_IHTMLWINDOW2_LOCATION, IHTMLWindow2_location_hook},
         {DISPID_UNKNOWN}
     };
-    static const dispex_hook_t window2_ie11_hooks[] = {
-        {DISPID_IHTMLWINDOW2_LOCATION,   IHTMLWindow2_location_hook},
-        {DISPID_IHTMLWINDOW2_EXECSCRIPT, NULL},
-        {DISPID_UNKNOWN}
-    };
+    const dispex_hook_t *const window2_ie9_hooks = window2_ie11_hooks + 1;
+    const dispex_hook_t *const window2_hooks     = window2_ie9_hooks  + 1;
     static const dispex_hook_t window3_hooks[] = {
         {DISPID_IHTMLWINDOW3_SETTIMEOUT, IHTMLWindow3_setTimeout_hook},
         {DISPID_UNKNOWN}
@@ -4234,7 +4237,8 @@ static void HTMLWindow_init_dispex_info(dispex_data_t *info, compat_mode_t compa
         dispex_info_add_interface(info, IHTMLWindow5_tid, NULL);
     dispex_info_add_interface(info, IHTMLWindow4_tid, compat_mode >= COMPAT_MODE_IE11 ? window4_ie11_hooks : NULL);
     dispex_info_add_interface(info, IHTMLWindow3_tid, compat_mode >= COMPAT_MODE_IE11 ? window3_ie11_hooks : window3_hooks);
-    dispex_info_add_interface(info, IHTMLWindow2_tid, compat_mode >= COMPAT_MODE_IE11 ? window2_ie11_hooks : window2_hooks);
+    dispex_info_add_interface(info, IHTMLWindow2_tid, compat_mode >= COMPAT_MODE_IE11 ? window2_ie11_hooks :
+                                                      compat_mode >= COMPAT_MODE_IE9  ? window2_ie9_hooks  : window2_hooks);
     EventTarget_init_dispex_info(info, compat_mode);
 }
 

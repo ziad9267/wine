@@ -885,7 +885,7 @@ static dispex_static_data_t HTMLImageElementFactory_dispex = {
     .iface_tids     = HTMLImageElementFactory_iface_tids,
 };
 
-HRESULT HTMLImageElementFactory_Create(HTMLInnerWindow *window, HTMLImageElementFactory **ret_val)
+HRESULT HTMLImageElementFactory_Create(HTMLInnerWindow *window, DispatchEx **ret_val)
 {
     HTMLImageElementFactory *ret;
 
@@ -900,6 +900,6 @@ HRESULT HTMLImageElementFactory_Create(HTMLInnerWindow *window, HTMLImageElement
     init_dispatch(&ret->dispex, &HTMLImageElementFactory_dispex, window,
                   dispex_compat_mode(&window->event_target.dispex));
 
-    *ret_val = ret;
+    *ret_val = &ret->dispex;
     return S_OK;
 }
