@@ -188,7 +188,7 @@ sync_test("window own props", function() {
         ["TransitionEvent",10], "TreeWalker", ["Uint16Array",9,9], ["Uint32Array",9,9], ["Uint8Array",9,9], ["Uint8ClampedArray",9,10], ["URL",10], ["ValidityState",10], ["VideoPlaybackQuality",11],
         ["WebGLActiveInfo",11], ["WebGLBuffer",11], ["WebGLContextEvent",11], ["WebGLFramebuffer",11], ["WebGLObject",11], ["WebGLProgram",11], ["WebGLRenderbuffer",11], ["WebGLRenderingContext",11],
         ["WebGLShader",11], ["WebGLShaderPrecisionFormat",11], ["WebGLTexture",11], ["WebGLUniformLocation",11], ["WEBGL_compressed_texture_s3tc",11], ["WEBGL_debug_renderer_info",11], ["WebSocket",10],
-        "WheelEvent", ["Worker",10], ["XDomainRequest",9,10], ["XMLHttpRequestEventTarget",10], "XMLSerializer"
+        "WheelEvent", ["Worker",10], ["XMLHttpRequestEventTarget",10], "XMLSerializer"
     ]);
 });
 
@@ -438,6 +438,7 @@ sync_test("builtin_toString", function() {
     if(v < 11) {
         test("eventObject", document.createEventObject(), "MSEventObj");
         test("selection", document.selection, "MSSelection");
+        test("XDomainRequest", new XDomainRequest(), "XDomainRequest");
     }
     if(v >= 9) {
         test("computedStyle", window.getComputedStyle(e), "CSSStyleDeclaration");
@@ -822,6 +823,7 @@ sync_test("window_props", function() {
     test_exposed("HTMLDocument", v === 8 || v >= 11, v === 8);
     test_exposed("XMLDocument", v >= 11);
     test_exposed("DOMParser", v >= 9);
+    test_exposed("XDomainRequest", v < 11);
     test_exposed("MutationObserver", v >= 11);
     test_exposed("PageTransitionEvent", v >= 11);
     test_exposed("ProgressEvent", v >= 10);
@@ -3971,6 +3973,11 @@ sync_test("prototypes", function() {
     check(new XMLHttpRequest(), XMLHttpRequest.prototype, "xhr");
     check(XMLHttpRequest.prototype, Object.prototype, "xhr prototype");
     check(XMLHttpRequest, Function.prototype, "xhr constructor");
+    if(v < 11) {
+        check(new XDomainRequest(), XDomainRequest.prototype, "xdr");
+        check(XDomainRequest.prototype, Object.prototype, "xdr prototype");
+        check(XDomainRequest, Function.prototype, "xdr constructor");
+    }
     check(document.createElement("img"), HTMLImageElement.prototype, "img elem");
     check(HTMLImageElement.prototype, HTMLElement.prototype, "img elem prototype");
     check(Image, Function.prototype, "Image constructor");
@@ -4405,7 +4412,7 @@ sync_test("constructors", function() {
     if(v < 9)
         return;
 
-    var ctors = [ "DOMParser", "Image", "MutationObserver", "Option", "XMLHttpRequest" ];
+    var ctors = [ "DOMParser", "Image", "MutationObserver", "Option", "XDomainRequest", "XMLHttpRequest" ];
     for(i = 0; i < ctors.length; i++) {
         r = ctors[i];
         if(!(r in window))

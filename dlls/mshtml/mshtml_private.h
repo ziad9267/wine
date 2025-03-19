@@ -158,6 +158,7 @@ typedef struct ScriptHost ScriptHost;
     XDIID(DispHTMLW3CComputedStyle) \
     XDIID(DispHTMLWindow2) \
     XDIID(DispHTMLXMLHttpRequest) \
+    XDIID(DispXDomainRequest) \
     XDIID(DispSVGCircleElement) \
     XDIID(DispSVGSVGElement) \
     XDIID(DispSVGTSpanElement) \
@@ -292,6 +293,8 @@ typedef struct ScriptHost ScriptHost;
     XIID(IHTMLXMLHttpRequest) \
     XIID(IHTMLXMLHttpRequest2) \
     XIID(IHTMLXMLHttpRequestFactory) \
+    XIID(IHTMLXDomainRequest) \
+    XIID(IHTMLXDomainRequestFactory) \
     XIID(IOmHistory) \
     XIID(IOmNavigator) \
     XIID(ISVGCircleElement) \
@@ -516,6 +519,7 @@ typedef struct {
     X(TextRange)                           \
     X(UIEvent)                             \
     X(Window)                              \
+    X(XDomainRequest)                      \
     X(XMLDocument)                         \
     X(XMLHttpRequest)
 
@@ -1205,6 +1209,7 @@ void get_top_window(HTMLOuterWindow*,HTMLOuterWindow**);
 HRESULT HTMLOptionElementFactory_Create(HTMLInnerWindow*,DispatchEx**);
 HRESULT HTMLImageElementFactory_Create(HTMLInnerWindow*,DispatchEx**);
 HRESULT HTMLXMLHttpRequestFactory_Create(HTMLInnerWindow*,DispatchEx**);
+HRESULT HTMLXDomainRequestFactory_Create(HTMLInnerWindow*,DispatchEx**);
 HRESULT create_location(HTMLOuterWindow*,HTMLLocation**);
 HRESULT create_navigator(HTMLInnerWindow*,IOmNavigator**);
 HRESULT create_html_screen(HTMLInnerWindow*,IHTMLScreen**);
