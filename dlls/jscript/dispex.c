@@ -836,10 +836,14 @@ static HRESULT fill_protrefs(jsdisp_t *This)
         return hres;
 
     if(This->prototype->builtin_info->indexed_len) {
-        unsigned i, len = This->prototype->builtin_info->indexed_len(This->prototype);
+        jsdisp_t *prot = This->prototype;
+        unsigned i, len = This->prototype->builtin_info->indexed_len(prot);
+        property_desc_t desc;
         WCHAR buf[11];
 
         for(i = 0; i < len; i++) {
+            if(prot->builtin_info->prop_get_desc(prot, indexed_prop_idx_to_id(i), TRUE, &desc) != S_OK)
+                break;
             swprintf(buf, ARRAY_SIZE(buf), L"%u", i);
             hres = fill_protref(This, string_hash(buf), buf, prop_id_to_idx(indexed_prop_idx_to_id(i)));
             if(hres != S_OK)
@@ -3145,7 +3149,10 @@ HRESULT jsdisp_next_prop(jsdisp_t *obj, DISPID id, enum jsdisp_enum_type enum_ty
 
     id = (id == DISPID_STARTENUM) ? indexed_prop_idx_to_id(0) : id + 1;
     if(is_indexed_prop_id(id)) {
-        if(obj->builtin_info->indexed_len && indexed_prop_id_to_idx(id) < obj->builtin_info->indexed_len(obj)) {
+        property_desc_t desc;
+
+        if(obj->builtin_info->indexed_len && indexed_prop_id_to_idx(id) < obj->builtin_info->indexed_len(obj) &&
+           obj->builtin_info->prop_get_desc(obj, id, TRUE, &desc) == S_OK) {
             *ret = id;
             return S_OK;
         }
