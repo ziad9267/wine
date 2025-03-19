@@ -2848,6 +2848,7 @@ async_test("script_global", function() {
     todo_wine.
     ok(doc instanceof Object, "created doc is not an instance of Object");
     ok(doc.implementation instanceof Object, "created doc.implementation is not an instance of Object");
+    ok(doc.implementation instanceof DOMImplementation, "created doc.implementation is not an instance of DOMImplementation");
 
     document.body.innerHTML = "";
     var iframe = document.createElement("iframe");
@@ -2858,10 +2859,19 @@ async_test("script_global", function() {
         var doc = iframe.contentWindow.document;
         ok(!(doc instanceof Object), "doc is an instance of Object");
         ok(!(doc.implementation instanceof Object), "doc.implementation is an instance of Object");
+        ok(!(doc.implementation instanceof DOMImplementation), "doc.implementation is an instance of DOMImplementation");
+        ok(doc.implementation instanceof iframe.contentWindow.DOMImplementation, "doc.implementation is not an instance of iframe's DOMImplementation");
 
         doc = doc.implementation.createHTMLDocument("test");
         ok(!(doc instanceof Object), "created iframe doc is an instance of Object");
         ok(!(doc.implementation instanceof Object), "created iframe doc.implementation is an instance of Object");
+        ok(!(doc.implementation instanceof DOMImplementation), "created iframe doc.implementation is an instance of DOMImplementation");
+        ok(doc.implementation instanceof iframe.contentWindow.DOMImplementation, "created iframe doc.implementation is not an instance of iframe's DOMImplementation");
+
+        var r = Object.prototype.toString.call(iframe.contentWindow);
+        ok(r === "[object Window]", "iframe's Window toString = " + r);
+        r = Object.prototype.toString.call(iframe.contentWindow.DOMImplementation);
+        ok(r === "[object DOMImplementation]", "iframe's DOMImplementation toString = " + r);
 
         next_test();
     });
