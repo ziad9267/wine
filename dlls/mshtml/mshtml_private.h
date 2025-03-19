@@ -397,7 +397,7 @@ typedef struct {
     /* These are called when the object implements GetMemberName, InvokeEx, DeleteMemberByDispID and GetNextDispID for custom props */
     HRESULT (*invoke)(DispatchEx*,DISPID,LCID,WORD,DISPPARAMS*,VARIANT*,EXCEPINFO*,IServiceProvider*);
     HRESULT (*delete)(DispatchEx*,DISPID);
-    HRESULT (*next_dispid)(DispatchEx*,DISPID,DISPID*);
+    HRESULT (*next_dispid)(DispatchEx*,DISPID,BOOL,DISPID*);
     HRESULT (*get_prop_desc)(DispatchEx*,DISPID,struct property_info*);
 
     /* Used when the object has props it has to fill prior to enumeration, or if it's volatile to not cache it (return S_FALSE then) */

@@ -4016,12 +4016,13 @@ static HRESULT HTMLWindow_delete(DispatchEx *dispex, DISPID id)
     return hres;
 }
 
-static HRESULT HTMLWindow_next_dispid(DispatchEx *dispex, DISPID id, DISPID *pid)
+static HRESULT HTMLWindow_next_dispid(DispatchEx *dispex, DISPID id, BOOL enum_all_own_props, DISPID *pid)
 {
     DWORD idx = (id == DISPID_STARTENUM) ? 0 : id - MSHTML_DISPID_CUSTOM_MIN + 1;
     HTMLInnerWindow *This = impl_from_DispatchEx(dispex);
 
-    while(idx < This->global_prop_cnt && This->global_props[idx].type != GLOBAL_DISPEXVAR)
+    while(idx < This->global_prop_cnt && This->global_props[idx].type != GLOBAL_DISPEXVAR &&
+          (!enum_all_own_props || This->global_props[idx].type != GLOBAL_SCRIPTVAR || global_prop_still_exists(This, &This->global_props[idx]) != S_OK))
         idx++;
     if(idx >= This->global_prop_cnt)
         return S_FALSE;

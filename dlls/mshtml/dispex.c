@@ -2535,7 +2535,7 @@ HRESULT dispex_next_id(DispatchEx *dispex, DISPID id, BOOL enum_all_own_props, D
     }
 
     if(dispex->info->vtbl->next_dispid) {
-        hres = dispex->info->vtbl->next_dispid(dispex, id, ret);
+        hres = dispex->info->vtbl->next_dispid(dispex, id, enum_all_own_props, ret);
         if(hres != S_FALSE)
             return hres;
     }
