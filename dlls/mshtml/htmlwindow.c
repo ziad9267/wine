@@ -111,6 +111,10 @@ static void detach_inner_window(HTMLInnerWindow *window)
     HTMLOuterWindow *outer_window = window->base.outer_window;
     HTMLDocumentNode *doc = window->doc, *doc_iter;
 
+    /* Check if already detached */
+    if(!list_empty(&window->outer_window_entry))
+        return;
+
     while(!list_empty(&window->children)) {
         HTMLOuterWindow *child = LIST_ENTRY(list_tail(&window->children), HTMLOuterWindow, sibling_entry);
 
@@ -138,11 +142,13 @@ static void detach_inner_window(HTMLInnerWindow *window)
     abort_window_bindings(window);
     release_script_hosts(window);
     unlink_ref(&window->jscript);
-    window->base.outer_window = NULL;
 
-    if(outer_window && outer_window->base.inner_window == window) {
-        outer_window->base.inner_window = NULL;
-        IHTMLWindow2_Release(&window->base.IHTMLWindow2_iface);
+    if(outer_window) {
+        list_add_tail(&outer_window->detached_inner_windows, &window->outer_window_entry);
+        if(outer_window->base.inner_window == window) {
+            outer_window->base.inner_window = NULL;
+            IHTMLWindow2_Release(&window->base.IHTMLWindow2_iface);
+        }
     }
 }
 
@@ -3779,6 +3785,7 @@ static void HTMLWindow_destructor(DispatchEx *dispex)
     HTMLInnerWindow *This = impl_from_DispatchEx(dispex);
     unsigned i;
 
+    list_remove(&This->outer_window_entry);
     VariantClear(&This->performance);
 
     for(i = 0; i < This->global_prop_cnt; i++)
@@ -4318,6 +4325,12 @@ static nsresult NSAPI outer_window_unlink(void *p)
         unlink_ref(&window->window_proxy);
         wine_rb_remove(&window_map, &window->entry);
     }
+    while(!list_empty(&window->detached_inner_windows)) {
+        HTMLInnerWindow *inner_window = LIST_ENTRY(list_head(&window->detached_inner_windows), HTMLInnerWindow, outer_window_entry);
+        list_remove(&inner_window->outer_window_entry);
+        list_init(&inner_window->outer_window_entry);
+        inner_window->base.outer_window = NULL;
+    }
     return NS_OK;
 }
 
@@ -4396,6 +4409,7 @@ static HRESULT create_inner_window(HTMLOuterWindow *outer_window, IMoniker *mon,
     list_init(&window->script_hosts);
     list_init(&window->bindings);
     list_init(&window->script_queue);
+    list_init(&window->outer_window_entry);
 
     window->base.outer_window = outer_window;
     window->base.inner_window = window;
@@ -4431,6 +4445,7 @@ HRESULT create_outer_window(GeckoBrowser *browser, mozIDOMWindowProxy *mozwindow
     window->base.inner_window = NULL;
     window->browser = browser;
     list_add_head(&browser->outer_windows, &window->browser_entry);
+    list_init(&window->detached_inner_windows);
     ccref_init(&window->ccref, 1);
 
     mozIDOMWindowProxy_AddRef(mozwindow);
@@ -4483,7 +4498,7 @@ HRESULT create_pending_window(HTMLOuterWindow *outer_window, nsChannelBSC *chann
 
     if(outer_window->pending_window) {
         abort_window_bindings(outer_window->pending_window);
-        outer_window->pending_window->base.outer_window = NULL;
+        list_add_tail(&outer_window->detached_inner_windows, &outer_window->pending_window->outer_window_entry);
         IHTMLWindow2_Release(&outer_window->pending_window->base.IHTMLWindow2_iface);
     }
 
