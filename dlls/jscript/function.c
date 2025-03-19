@@ -131,12 +131,6 @@ static void Arguments_destructor(jsdisp_t *jsdisp)
         scope_release(arguments->scope);
 }
 
-static HRESULT Arguments_lookup_prop(jsdisp_t *jsdisp, const WCHAR *name, unsigned flags, struct property_info *desc)
-{
-    ArgumentsInstance *arguments = arguments_from_jsdisp(jsdisp);
-    return jsdisp_index_lookup(&arguments->jsdisp, name, arguments->argc, PROPF_ENUMERABLE | PROPF_WRITABLE, desc);
-}
-
 static jsval_t *get_argument_ref(ArgumentsInstance *arguments, unsigned idx)
 {
     if(arguments->buf)
@@ -146,17 +140,21 @@ static jsval_t *get_argument_ref(ArgumentsInstance *arguments, unsigned idx)
     return arguments->scope->detached_vars->var + idx;
 }
 
+static unsigned Arguments_indexed_len(jsdisp_t *jsdisp)
+{
+    return arguments_from_jsdisp(jsdisp)->argc;
+}
+
 static HRESULT Arguments_prop_get(jsdisp_t *jsdisp, DISPID id, jsval_t *r)
 {
     ArgumentsInstance *arguments = arguments_from_jsdisp(jsdisp);
-    unsigned idx;
 
-    if(!get_extern_prop_idx(jsdisp, id, &idx))
+    if(!is_indexed_prop_id(id))
         return S_FALSE;
 
-    TRACE("%p[%u]\n", arguments, idx);
+    TRACE("%p[%u]\n", arguments, indexed_prop_id_to_idx(id));
 
-    return jsval_copy(*get_argument_ref(arguments, idx), r);
+    return jsval_copy(*get_argument_ref(arguments, indexed_prop_id_to_idx(id)), r);
 }
 
 static HRESULT Arguments_prop_put(jsdisp_t *jsdisp, DISPID id, jsval_t val)
@@ -166,8 +164,9 @@ static HRESULT Arguments_prop_put(jsdisp_t *jsdisp, DISPID id, jsval_t val)
     unsigned idx;
     HRESULT hres;
 
-    if(!get_extern_prop_idx(jsdisp, id, &idx))
+    if(!is_indexed_prop_id(id))
         return S_FALSE;
+    idx = indexed_prop_id_to_idx(id);
 
     TRACE("%p[%u] = %s\n", arguments, idx, debugstr_jsval(val));
 
@@ -189,8 +188,9 @@ static HRESULT Arguments_prop_get_desc(jsdisp_t *jsdisp, DISPID id, BOOL flags_o
     ArgumentsInstance *arguments = arguments_from_jsdisp(jsdisp);
     unsigned idx;
 
-    if(!get_extern_prop_idx(jsdisp, id, &idx))
+    if(!is_indexed_prop_id(id))
         return S_FALSE;
+    idx = indexed_prop_id_to_idx(id);
 
     if(!flags_only) {
         HRESULT hres = Arguments_prop_get(jsdisp, id, &desc->value);
@@ -211,8 +211,9 @@ static HRESULT Arguments_prop_define(jsdisp_t *jsdisp, DISPID id, const property
     unsigned idx;
     HRESULT hres;
 
-    if(!get_extern_prop_idx(jsdisp, id, &idx))
+    if(!is_indexed_prop_id(id))
         return S_FALSE;
+    idx = indexed_prop_id_to_idx(id);
 
     /* Need to keep track of props made read-only when going from writable to non-writable */
     if((desc->mask & PROPF_WRITABLE) && !(desc->flags & PROPF_WRITABLE) && !(arguments->readonly_flags[idx / 8] & (1u << idx % 8)) &&
@@ -228,12 +229,6 @@ static HRESULT Arguments_prop_define(jsdisp_t *jsdisp, DISPID id, const property
 
     /* Delegate the rest to the generic prop define */
     return S_FALSE;
-}
-
-static HRESULT Arguments_fill_props(jsdisp_t *jsdisp)
-{
-    ArgumentsInstance *arguments = arguments_from_jsdisp(jsdisp);
-    return jsdisp_fill_indices(&arguments->jsdisp, arguments->argc, PROPF_ENUMERABLE | PROPF_WRITABLE);
 }
 
 static HRESULT Arguments_gc_traverse(struct gc_ctx *gc_ctx, enum gc_traverse_op op, jsdisp_t *jsdisp)
@@ -296,12 +291,11 @@ static const builtin_info_t Arguments_info = {
     .props_cnt     = ARRAY_SIZE(Arguments_props),
     .props         = Arguments_props,
     .destructor    = Arguments_destructor,
-    .lookup_prop   = Arguments_lookup_prop,
+    .indexed_len   = Arguments_indexed_len,
     .prop_get      = Arguments_prop_get,
     .prop_put      = Arguments_prop_put,
     .prop_get_desc = Arguments_prop_get_desc,
     .prop_define   = Arguments_prop_define,
-    .fill_props    = Arguments_fill_props,
     .gc_traverse   = Arguments_gc_traverse
 };
 
@@ -309,12 +303,11 @@ static const builtin_info_t Arguments_ES5_info = {
     .class         = JSCLASS_ARGUMENTS,
     .call          = Arguments_value,
     .destructor    = Arguments_destructor,
-    .lookup_prop   = Arguments_lookup_prop,
+    .indexed_len   = Arguments_indexed_len,
     .prop_get      = Arguments_prop_get,
     .prop_put      = Arguments_prop_put,
     .prop_get_desc = Arguments_prop_get_desc,
     .prop_define   = Arguments_prop_define,
-    .fill_props    = Arguments_fill_props,
     .gc_traverse   = Arguments_gc_traverse
 };
 

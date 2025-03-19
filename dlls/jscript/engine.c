@@ -490,38 +490,32 @@ static void scope_destructor(jsdisp_t *dispex)
         IDispatch_Release(scope->obj);
 }
 
-static HRESULT scope_lookup_prop(jsdisp_t *jsdisp, const WCHAR *name, unsigned flags, struct property_info *desc)
+static unsigned scope_indexed_len(jsdisp_t *dispex)
 {
-    scope_chain_t *scope = scope_from_dispex(jsdisp);
-
-    return jsdisp_index_lookup(&scope->dispex, name, scope->detached_vars->argc, PROPF_ENUMERABLE | PROPF_WRITABLE, desc);
+    return scope_from_dispex(dispex)->detached_vars->argc;
 }
 
 static HRESULT scope_prop_get(jsdisp_t *dispex, DISPID id, jsval_t *r)
 {
-    scope_chain_t *scope = scope_from_dispex(dispex);
-    unsigned idx;
-
-    if(!get_extern_prop_idx(dispex, id, &idx))
+    if(!is_indexed_prop_id(id))
         return S_FALSE;
-    return jsval_copy(scope->detached_vars->var[idx], r);
+    return jsval_copy(scope_from_dispex(dispex)->detached_vars->var[indexed_prop_id_to_idx(id)], r);
 }
 
 static HRESULT scope_prop_put(jsdisp_t *dispex, DISPID id, jsval_t val)
 {
     scope_chain_t *scope = scope_from_dispex(dispex);
     jsval_t copy, *ref;
-    unsigned idx;
     HRESULT hres;
 
-    if(!get_extern_prop_idx(dispex, id, &idx))
+    if(!is_indexed_prop_id(id))
         return S_FALSE;
 
     hres = jsval_copy(val, &copy);
     if(FAILED(hres))
         return hres;
 
-    ref = &scope->detached_vars->var[idx];
+    ref = &scope->detached_vars->var[indexed_prop_id_to_idx(id)];
     jsval_release(*ref);
     *ref = copy;
     return S_OK;
@@ -529,13 +523,11 @@ static HRESULT scope_prop_put(jsdisp_t *dispex, DISPID id, jsval_t val)
 
 static HRESULT scope_prop_get_desc(jsdisp_t *dispex, DISPID id, BOOL flags_only, property_desc_t *desc)
 {
-    unsigned idx;
-
     if(!flags_only) {
         HRESULT hres = scope_prop_get(dispex, id, &desc->value);
         if(hres != S_OK)
             return hres;
-    }else if(!get_extern_prop_idx(dispex, id, &idx)) {
+    }else if(!is_indexed_prop_id(id)) {
         return S_FALSE;
     }
 
@@ -581,7 +573,7 @@ static HRESULT scope_gc_traverse(struct gc_ctx *gc_ctx, enum gc_traverse_op op, 
 static const builtin_info_t scope_info = {
     .class         = JSCLASS_NONE,
     .destructor    = scope_destructor,
-    .lookup_prop   = scope_lookup_prop,
+    .indexed_len   = scope_indexed_len,
     .prop_get      = scope_prop_get,
     .prop_put      = scope_prop_put,
     .prop_get_desc = scope_prop_get_desc,

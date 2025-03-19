@@ -183,6 +183,7 @@ typedef struct {
     ULONG (*addref)(jsdisp_t*);
     ULONG (*release)(jsdisp_t*);
     void (*on_put)(jsdisp_t*,const WCHAR*);
+    unsigned (*indexed_len)(jsdisp_t*);
     HRESULT (*lookup_prop)(jsdisp_t*,const WCHAR*,unsigned,struct property_info*);
     HRESULT (*prop_get)(jsdisp_t*,DISPID,jsval_t*);
     HRESULT (*prop_put)(jsdisp_t*,DISPID,jsval_t);
@@ -232,10 +233,24 @@ static inline BOOL is_dispex_prop_id(DISPID id)
     return id > 0;
 }
 
+static inline BOOL is_indexed_prop_id(DISPID id)
+{
+    return id < 0;
+}
+
+static inline unsigned indexed_prop_id_to_idx(DISPID id)
+{
+    return (unsigned)id - 0x80000000u;
+}
+
+static inline DISPID indexed_prop_idx_to_id(unsigned idx)
+{
+    return idx + 0x80000000u;
+}
+
 jsdisp_t *as_jsdisp(IDispatch*);
 jsdisp_t *to_jsdisp(IDispatch*);
 IWineJSDispatchHost *get_host_dispatch(IDispatch*);
-BOOL get_extern_prop_idx(jsdisp_t*,DISPID,unsigned*);
 
 jsdisp_t *jsdisp_addref(jsdisp_t*);
 ULONG jsdisp_release(jsdisp_t*);
@@ -272,8 +287,6 @@ HRESULT jsdisp_get_id(jsdisp_t*,const WCHAR*,DWORD,DISPID*);
 HRESULT jsdisp_get_idx_id(jsdisp_t*,DWORD,DISPID*);
 HRESULT disp_delete(IDispatch*,DISPID,BOOL*);
 HRESULT disp_delete_name(script_ctx_t*,IDispatch*,jsstr_t*,BOOL*);
-HRESULT jsdisp_index_lookup(jsdisp_t*,const WCHAR*,unsigned,unsigned,struct property_info*);
-HRESULT jsdisp_fill_indices(jsdisp_t*,unsigned,unsigned);
 HRESULT jsdisp_delete_idx(jsdisp_t*,DWORD);
 HRESULT jsdisp_get_own_property(jsdisp_t*,const WCHAR*,BOOL,property_desc_t*);
 HRESULT jsdisp_define_property(jsdisp_t*,const WCHAR*,property_desc_t*);
