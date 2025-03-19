@@ -3997,7 +3997,7 @@ sync_test("prototype props", function() {
 });
 
 sync_test("constructors", function() {
-    var v = document.documentMode, i, r;
+    var v = document.documentMode, i, r, old;
     if(v < 9)
         return;
 
@@ -4011,4 +4011,27 @@ sync_test("constructors", function() {
     }
     ok(window.Image.prototype === window.HTMLImageElement.prototype, "Image.prototype != HTMLImageElement.prototype");
     ok(window.Option.prototype === window.HTMLOptionElement.prototype, "Option.prototype != HTMLOptionElement.prototype");
+
+    r = Object.getOwnPropertyDescriptor(HTMLMetaElement, "prototype");
+    ok(r.value === HTMLMetaElement.prototype, "HTMLMetaElement.prototype value = " + r.value);
+    ok(!("get" in r), "HTMLMetaElement.prototype has getter");
+    ok(!("set" in r), "HTMLMetaElement.prototype has setter");
+    ok(r.writable === false, "HTMLMetaElement.prototype writable = " + r.writable);
+    ok(r.enumerable === false, "HTMLMetaElement.prototype enumerable = " + r.enumerable);
+    ok(r.configurable === false, "HTMLMetaElement.prototype configurable = " + r.configurable);
+
+    old = HTMLMetaElement.prototype;
+    HTMLMetaElement.prototype = Object.prototype;
+    ok(HTMLMetaElement.prototype === old, "HTMLMetaElement.prototype = " + HTMLMetaElement.prototype);
+
+    r = (delete HTMLMetaElement.prototype);
+    ok(r === false, "delete HTMLMetaElement.prototype returned " + r);
+    ok(HTMLMetaElement.hasOwnProperty("prototype"), "prototype not a prop anymore of HTMLMetaElement");
+
+    old = window.HTMLMetaElement;
+    r = (delete window.HTMLMetaElement);
+    ok(r === true, "delete HTMLMetaElement returned " + r);
+    todo_wine.
+    ok(!window.hasOwnProperty("HTMLMetaElement"), "HTMLMetaElement still a property of window");
+    window.HTMLMetaElement = old;
 });
