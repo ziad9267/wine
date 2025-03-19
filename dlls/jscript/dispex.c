@@ -264,6 +264,23 @@ static dispex_prop_t *alloc_protref(jsdisp_t *This, const WCHAR *name, DWORD ref
     return ret;
 }
 
+static void release_prop(dispex_prop_t *prop)
+{
+    switch(prop->type) {
+    case PROP_JSVAL:
+        jsval_release(prop->u.val);
+        break;
+    case PROP_ACCESSOR:
+        if(prop->u.accessor.getter)
+            jsdisp_release(prop->u.accessor.getter);
+        if(prop->u.accessor.setter)
+            jsdisp_release(prop->u.accessor.setter);
+        break;
+    default:
+        break;
+    }
+}
+
 static dispex_prop_t *lookup_dispex_prop(jsdisp_t *obj, unsigned hash, const WCHAR *name, BOOL case_insens)
 {
     unsigned bucket, pos, prev = ~0;
@@ -865,21 +882,7 @@ static void unlink_jsdisp(jsdisp_t *jsdisp)
     dispex_prop_t *prop = jsdisp->props, *end;
 
     for(end = prop + jsdisp->prop_cnt; prop < end; prop++) {
-        switch(prop->type) {
-        case PROP_DELETED:
-            continue;
-        case PROP_JSVAL:
-            jsval_release(prop->u.val);
-            break;
-        case PROP_ACCESSOR:
-            if(prop->u.accessor.getter)
-                jsdisp_release(prop->u.accessor.getter);
-            if(prop->u.accessor.setter)
-                jsdisp_release(prop->u.accessor.setter);
-            break;
-        default:
-            break;
-        }
+        release_prop(prop);
         prop->type = PROP_DELETED;
     }
 
@@ -1919,19 +1922,7 @@ static void jsdisp_free(jsdisp_t *obj)
     }
 
     for(prop = obj->props; prop < obj->props+obj->prop_cnt; prop++) {
-        switch(prop->type) {
-        case PROP_JSVAL:
-            jsval_release(prop->u.val);
-            break;
-        case PROP_ACCESSOR:
-            if(prop->u.accessor.getter)
-                jsdisp_release(prop->u.accessor.getter);
-            if(prop->u.accessor.setter)
-                jsdisp_release(prop->u.accessor.setter);
-            break;
-        default:
-            break;
-        };
+        release_prop(prop);
         free(prop->name);
     }
     free(obj->props);
@@ -2321,19 +2312,7 @@ static HRESULT delete_prop(jsdisp_t *obj, DISPID id, BOOL *ret)
 
     *ret = TRUE;
 
-    switch(prop->type) {
-    case PROP_JSVAL:
-        jsval_release(prop->u.val);
-        break;
-    case PROP_ACCESSOR:
-        if(prop->u.accessor.getter)
-            jsdisp_release(prop->u.accessor.getter);
-        if(prop->u.accessor.setter)
-            jsdisp_release(prop->u.accessor.setter);
-        break;
-    default:
-        break;
-    }
+    release_prop(prop);
     prop->type = PROP_DELETED;
     return S_OK;
 }
