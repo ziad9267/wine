@@ -3812,6 +3812,7 @@ sync_test("prototypes", function() {
     check(window.navigator, Navigator.prototype, "navigator");
     check(Navigator.prototype, Object.prototype, "navigator prototype");
     check(document.body, HTMLBodyElement.prototype, "body element");
+    check(new DOMParser().parseFromString("<tag>foobar</tag>", "text/xml").getElementsByTagName("tag")[0], Element.prototype, "xml element");
     check(HTMLBodyElement.prototype, HTMLElement.prototype, "body prototype");
     check(HTMLElement.prototype, Element.prototype, "html element prototype");
     check(Element.prototype, Node.prototype, "element prototype");

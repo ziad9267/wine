@@ -7396,6 +7396,8 @@ static void Element_init_dispex_info(dispex_data_t *info, compat_mode_t mode)
         DISPID_UNKNOWN
     };
 
+    HTMLDOMNode_init_dispex_info(info, mode);
+
     dispex_info_add_dispids(info, IHTMLElement2_tid, elem2_dispids);
     dispex_info_add_dispids(info, IHTMLElement6_tid, elem6_dispids);
     if(mode >= COMPAT_MODE_IE10) {
@@ -7414,6 +7416,7 @@ static void Element_init_dispex_info(dispex_data_t *info, compat_mode_t mode)
 dispex_static_data_t Element_dispex = {
     .id           = PROT_Element,
     .prototype_id = PROT_Node,
+    .vtbl         = &HTMLElement_event_target_vtbl.dispex_vtbl,
     .init_info    = Element_init_dispex_info,
 };
 
@@ -7470,6 +7473,8 @@ void HTMLElement_Init(HTMLElement *This, HTMLDocumentNode *doc, nsIDOMElement *n
 
 HRESULT HTMLElement_Create(HTMLDocumentNode *doc, nsIDOMNode *nsnode, BOOL use_generic, HTMLElement **ret)
 {
+    nsIDOMHTMLElement *nshtmlelem;
+    nsIDOMSVGElement *svg_element;
     nsIDOMElement *nselem;
     nsAString tag_name_str;
     const PRUnichar *tag_name;
@@ -7489,17 +7494,32 @@ HRESULT HTMLElement_Create(HTMLDocumentNode *doc, nsIDOMNode *nsnode, BOOL use_g
 
     nsAString_GetData(&tag_name_str, &tag_name);
 
+    /* Check this first, as Gecko treats svg elements as non-HTML */
+    nsres = nsIDOMElement_QueryInterface(nselem, &IID_nsIDOMSVGElement, (void**)&svg_element);
+    if(NS_SUCCEEDED(nsres)) {
+        hres = create_svg_element(doc, svg_element, tag_name, &elem);
+        nsIDOMSVGElement_Release(svg_element);
+        goto done;
+    }
+
+    nsres = nsIDOMElement_QueryInterface(nselem, &IID_nsIDOMHTMLElement, (void**)&nshtmlelem);
+    if(NS_FAILED(nsres)) {
+        if(!(elem = calloc(1, sizeof(HTMLElement))))
+            hres = E_OUTOFMEMORY;
+        else {
+            elem->node.vtbl = &HTMLElementImplVtbl;
+            HTMLElement_Init(elem, doc, nselem, &Element_dispex);
+            hres = S_OK;
+        }
+        goto done;
+    }
+    nsIDOMHTMLElement_Release(nshtmlelem);
+
     tag = get_tag_desc(tag_name);
     if(tag) {
         hres = tag->constructor(doc, nselem, &elem);
     }else {
-        nsIDOMSVGElement *svg_element;
-
-        nsres = nsIDOMElement_QueryInterface(nselem, &IID_nsIDOMSVGElement, (void**)&svg_element);
-        if(NS_SUCCEEDED(nsres)) {
-            hres = create_svg_element(doc, svg_element, tag_name, &elem);
-            nsIDOMSVGElement_Release(svg_element);
-        }else if(use_generic || dispex_compat_mode(&doc->node.event_target.dispex) >= COMPAT_MODE_IE9) {
+        if(use_generic || dispex_compat_mode(&doc->node.event_target.dispex) >= COMPAT_MODE_IE9) {
             hres = HTMLGenericElement_Create(doc, nselem, &elem);
         }else {
             elem = calloc(1, sizeof(HTMLElement));
@@ -7513,6 +7533,7 @@ HRESULT HTMLElement_Create(HTMLDocumentNode *doc, nsIDOMNode *nsnode, BOOL use_g
         }
     }
 
+done:
     TRACE("%s ret %p\n", debugstr_w(tag_name), elem);
 
     nsIDOMElement_Release(nselem);
