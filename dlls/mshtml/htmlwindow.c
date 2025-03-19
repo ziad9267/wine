@@ -4085,6 +4085,10 @@ static HRESULT HTMLWindow_fill_props(DispatchEx *dispex)
         This->static_props_filled = TRUE;
     }
 
+    hres = IWineJScript_FillGlobals(This->jscript, &This->event_target.dispex.IWineJSDispatchHost_iface);
+    if(FAILED(hres))
+        return hres;
+
     return S_FALSE;
 }
 

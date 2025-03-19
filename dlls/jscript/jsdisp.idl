@@ -85,4 +85,5 @@ interface IWineJScript : IUnknown
 {
     HRESULT InitHostObject(IWineJSDispatchHost *host_obj, IWineJSDispatch *prototype, UINT32 flags, IWineJSDispatch **ret);
     HRESULT InitHostConstructor(IWineJSDispatchHost *constr, IWineJSDispatch *prototype, IWineJSDispatch **ret);
+    HRESULT FillGlobals(IWineJSDispatchHost *script_global);
 }
