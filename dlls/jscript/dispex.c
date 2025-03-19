@@ -275,7 +275,7 @@ static HRESULT update_external_prop(jsdisp_t *obj, const WCHAR *name, dispex_pro
     if(desc->name)
         name = desc->name;
 
-    if(!desc->iid) {
+    if(!desc->prototype_id) {
         if(!prop && !(prop = alloc_prop(obj, name, PROP_DELETED, 0)))
             return E_OUTOFMEMORY;
         prop->type = PROP_EXTERN;
@@ -497,7 +497,7 @@ HRESULT jsdisp_index_lookup(jsdisp_t *obj, const WCHAR *name, unsigned length, s
         desc->flags |= PROPF_WRITABLE;
     desc->name = NULL;
     desc->index = idx;
-    desc->iid = 0;
+    desc->prototype_id = 0;
     return S_OK;
 }
 
@@ -512,7 +512,7 @@ HRESULT jsdisp_next_index(jsdisp_t *obj, unsigned length, unsigned id, struct pr
         desc->flags |= PROPF_WRITABLE;
     desc->name = NULL;
     desc->index = desc->id;
-    desc->iid = 0;
+    desc->prototype_id = 0;
     return S_OK;
 }
 

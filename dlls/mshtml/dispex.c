@@ -1075,7 +1075,7 @@ static HRESULT function_apply(func_disp_t *func, DISPPARAMS *dp, LCID lcid, VARI
         }
     }
 
-    hres = IWineJSDispatchHost_CallFunction(this_iface, func->info->id, func->info->tid, DISPATCH_METHOD, &params, res, ei, caller);
+    hres = IWineJSDispatchHost_CallFunction(this_iface, func->info->id, -func->info->tid, DISPATCH_METHOD, &params, res, ei, caller);
 
 fail:
     while(argc--)
@@ -1102,7 +1102,7 @@ static HRESULT function_call(func_disp_t *func, DISPPARAMS *dp, LCID lcid, VARIA
     if(FAILED(hres))
         return CTL_E_ILLEGALFUNCTIONCALL;
 
-    hres = IWineJSDispatchHost_CallFunction(this_iface, func->info->id, func->info->tid, DISPATCH_METHOD, &params, res, ei, caller);
+    hres = IWineJSDispatchHost_CallFunction(this_iface, func->info->id, -func->info->tid, DISPATCH_METHOD, &params, res, ei, caller);
     IWineJSDispatchHost_Release(this_iface);
     return (hres == E_UNEXPECTED) ? CTL_E_ILLEGALFUNCTIONCALL : hres;
 }
@@ -1179,7 +1179,7 @@ static HRESULT function_get_prop_desc(DispatchEx *dispex, DISPID id, struct prop
     desc->id = id;
     desc->flags = 0;
     desc->name = function_props[idx].name;
-    desc->iid = 0;
+    desc->prototype_id = 0;
     return S_OK;
 }
 
@@ -2578,7 +2578,7 @@ HRESULT dispex_index_prop_desc(DispatchEx *dispex, DISPID id, struct property_in
         desc->flags |= PROPF_ENUMERABLE;
     desc->name = NULL;
     desc->index = id - MSHTML_DISPID_CUSTOM_MIN;
-    desc->iid = 0;
+    desc->prototype_id = 0;
     return S_OK;
 }
 
@@ -2598,18 +2598,18 @@ static HRESULT get_host_property_descriptor(DispatchEx *This, DISPID id, struct 
         desc->flags = PROPF_CONFIGURABLE;
         desc->name = func->name;
         if(func->func_disp_idx >= 0) {
-            desc->iid = func->tid;
+            desc->prototype_id = This->info->desc->id ? This->info->desc->id : -func->tid;
             desc->flags |= PROPF_METHOD | PROPF_WRITABLE;
         }else {
             if(func->func_disp_idx == -1)
                 desc->flags |= PROPF_ENUMERABLE;
             if(This->info->is_prototype) {
-                desc->iid = func->tid;
+                desc->prototype_id = This->info->desc->id ? This->info->desc->id : -func->tid;
                 if(func->put_vtbl_off)
                     desc->flags |= PROPF_WRITABLE;
             }else {
                 desc->flags |= PROPF_WRITABLE;
-                desc->iid = 0;
+                desc->prototype_id = 0;
             }
         }
         break;
@@ -2618,7 +2618,7 @@ static HRESULT get_host_property_descriptor(DispatchEx *This, DISPID id, struct 
         dynamic_prop_t *prop = &This->dynamic_data->props[id - DISPID_DYNPROP_0];
         desc->flags = prop->flags & PROPF_PUBLIC_MASK;
         desc->name = prop->name;
-        desc->iid = 0;
+        desc->prototype_id = 0;
         break;
     }
     case DISPEXPROP_CUSTOM:
@@ -2705,18 +2705,30 @@ static HRESULT WINAPI JSDispatchHost_ConfigureProperty(IWineJSDispatchHost *ifac
     return S_OK;
 }
 
-static HRESULT WINAPI JSDispatchHost_CallFunction(IWineJSDispatchHost *iface, DISPID id, UINT32 iid, DWORD flags,
+static HRESULT WINAPI JSDispatchHost_CallFunction(IWineJSDispatchHost *iface, DISPID id, INT32 prototype_id, DWORD flags,
                                                   DISPPARAMS *dp, VARIANT *ret, EXCEPINFO *ei, IServiceProvider *caller)
 {
     DispatchEx *This = impl_from_IWineJSDispatchHost(iface);
+    dispex_static_data_t *desc = This->info->desc;
     func_info_t *func;
     HRESULT hres;
 
-    TRACE("%s (%p)->(%lx %x %lx %p %p %p %p)\n", This->info->name, This, id, iid, flags, dp, ret, ei, caller);
+    TRACE("%s (%p)->(%lx %d %lx %p %p %p %p)\n", This->info->name, This, id, prototype_id, flags, dp, ret, ei, caller);
 
     hres = get_builtin_func(This->info, id, &func);
-    if(FAILED(hres) || func->tid != iid)
+    if(FAILED(hres))
         return E_UNEXPECTED;
+
+    if(prototype_id <= 0) {
+        if(func->tid != -prototype_id)
+            return E_UNEXPECTED;
+    }else if(prototype_id != desc->id) {
+        while(prototype_id != desc->prototype_id) {
+            if(!desc->prototype_id)
+                return E_UNEXPECTED;
+            desc = object_descriptors[desc->prototype_id];
+        }
+    }
 
     switch(flags) {
     case DISPATCH_METHOD:

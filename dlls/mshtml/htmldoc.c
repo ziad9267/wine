@@ -5528,7 +5528,7 @@ static HRESULT HTMLDocumentNode_get_prop_desc(DispatchEx *dispex, DISPID id, str
     desc->name = This->elem_vars[idx];
     desc->id = id;
     desc->flags = PROPF_WRITABLE | PROPF_CONFIGURABLE | PROPF_ENUMERABLE;
-    desc->iid = 0;
+    desc->prototype_id = 0;
     return S_OK;
 }
 

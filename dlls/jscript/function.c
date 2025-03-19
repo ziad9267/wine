@@ -67,7 +67,7 @@ typedef struct {
     FunctionInstance function;
     const WCHAR *name;
     UINT32 id;
-    UINT32 iid;
+    INT32 prototype_id;
     UINT32 flags;
 } HostFunction;
 
@@ -1023,7 +1023,7 @@ static HRESULT HostFunction_call(script_ctx_t *ctx, FunctionInstance *func, jsva
 
     if(SUCCEEDED(hres)) {
         V_VT(&retv) = VT_EMPTY;
-        hres = IWineJSDispatchHost_CallFunction(obj, function->id, function->iid, function->flags, &dp,
+        hres = IWineJSDispatchHost_CallFunction(obj, function->id, function->prototype_id, function->flags, &dp,
                                                 r ? &retv : NULL, &ei, &ctx->jscaller->IServiceProvider_iface);
         if(hres == DISP_E_EXCEPTION)
             handle_dispatch_exception(ctx, &ei);
@@ -1084,7 +1084,7 @@ HRESULT create_host_function(script_ctx_t *ctx, const struct property_info *desc
 
     function->name = desc->name;
     function->id = desc->id;
-    function->iid = desc->iid;
+    function->prototype_id = desc->prototype_id;
     function->flags = flags;
     *ret = &function->function.dispex;
     return S_OK;
