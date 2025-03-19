@@ -2755,10 +2755,16 @@ static HRESULT WINAPI JSDispatchHost_FillProperties(IWineJSDispatchHost *iface)
 {
     DispatchEx *This = impl_from_IWineJSDispatchHost(iface);
     DISPID id = DISPID_STARTENUM;
+    HRESULT hres, retval = S_OK;
     struct property_info desc;
-    HRESULT hres;
 
     TRACE("%s (%p)->(%lx)\n", This->info->name, This, id);
+
+    if(This->info->vtbl->fill_props) {
+        retval = This->info->vtbl->fill_props(This);
+        if(FAILED(retval))
+            return retval;
+    }
 
     for(;;) {
         hres = dispex_next_id(This, id, TRUE, &id);
@@ -2776,7 +2782,7 @@ static HRESULT WINAPI JSDispatchHost_FillProperties(IWineJSDispatchHost *iface)
             return hres;
     }
 
-    return S_OK;
+    return retval;
 }
 
 static HRESULT WINAPI JSDispatchHost_GetOuterDispatch(IWineJSDispatchHost *iface, IWineJSDispatchHost **ret)

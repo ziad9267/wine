@@ -5532,6 +5532,11 @@ static HRESULT HTMLDocumentNode_get_prop_desc(DispatchEx *dispex, DISPID id, str
     return S_OK;
 }
 
+static HRESULT HTMLDocumentNode_fill_props(DispatchEx *dispex)
+{
+    return S_FALSE;
+}
+
 static HTMLInnerWindow *HTMLDocumentNode_get_script_global(DispatchEx *dispex, dispex_static_data_t **dispex_data)
 {
     HTMLDocumentNode *This = impl_from_DispatchEx(dispex);
@@ -5640,6 +5645,7 @@ static const event_target_vtbl_t HTMLDocument_event_target_vtbl = {
         .invoke              = HTMLDocumentNode_invoke,
         .disp_invoke         = HTMLDocumentNode_disp_invoke,
         .next_dispid         = HTMLDocumentNode_next_dispid,
+        .fill_props          = HTMLDocumentNode_fill_props,
         .get_script_global   = HTMLDocumentNode_get_script_global,
     },
     .get_gecko_target        = HTMLDocumentNode_get_gecko_target,

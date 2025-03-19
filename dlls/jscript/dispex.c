@@ -735,10 +735,15 @@ static HRESULT fill_props(jsdisp_t *obj)
 {
     HRESULT hres;
 
+    if(obj->props_filled)
+        return S_OK;
+
     if(obj->builtin_info->fill_props) {
         hres = obj->builtin_info->fill_props(obj);
         if(FAILED(hres))
             return hres;
+        if(hres == S_OK)
+            obj->props_filled = TRUE;
     }
 
     return S_OK;

@@ -4062,6 +4062,11 @@ HRESULT HTMLWindow_get_prop_desc(DispatchEx *dispex, DISPID id, struct property_
     return hres;
 }
 
+static HRESULT HTMLWindow_fill_props(DispatchEx *dispex)
+{
+    return S_FALSE;
+}
+
 static HTMLInnerWindow *HTMLWindow_get_script_global(DispatchEx *dispex, dispex_static_data_t **dispex_data)
 {
     HTMLInnerWindow *This = impl_from_DispatchEx(dispex);
@@ -4258,6 +4263,7 @@ static const event_target_vtbl_t HTMLWindow_event_target_vtbl = {
         .delete              = HTMLWindow_delete,
         .next_dispid         = HTMLWindow_next_dispid,
         .get_prop_desc       = HTMLWindow_get_prop_desc,
+        .fill_props          = HTMLWindow_fill_props,
         .get_script_global   = HTMLWindow_get_script_global,
         .get_outer_iface     = HTMLWindow_get_outer_iface,
     },

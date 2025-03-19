@@ -400,6 +400,9 @@ typedef struct {
     HRESULT (*next_dispid)(DispatchEx*,DISPID,DISPID*);
     HRESULT (*get_prop_desc)(DispatchEx*,DISPID,struct property_info*);
 
+    /* Used when the object has props it has to fill prior to enumeration, or if it's volatile to not cache it (return S_FALSE then) */
+    HRESULT (*fill_props)(DispatchEx*);
+
     /* Similar to invoke, but allows overriding all dispids */
     HRESULT (*disp_invoke)(DispatchEx*,DISPID,LCID,WORD,DISPPARAMS*,VARIANT*,EXCEPINFO*,IServiceProvider*);
 

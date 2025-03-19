@@ -1277,6 +1277,11 @@ static HRESULT HTMLStorage_get_prop_desc(DispatchEx *dispex, DISPID id, struct p
     return S_OK;
 }
 
+static HRESULT HTMLStorage_fill_props(DispatchEx *dispex)
+{
+    return S_FALSE;
+}
+
 static const dispex_static_data_vtbl_t Storage_dispex_vtbl = {
     .query_interface  = HTMLStorage_query_interface,
     .destructor       = HTMLStorage_destructor,
@@ -1287,6 +1292,7 @@ static const dispex_static_data_vtbl_t Storage_dispex_vtbl = {
     .delete           = HTMLStorage_delete,
     .next_dispid      = HTMLStorage_next_dispid,
     .get_prop_desc    = HTMLStorage_get_prop_desc,
+    .fill_props       = HTMLStorage_fill_props,
 };
 
 static const tid_t HTMLStorage_iface_tids[] = {
