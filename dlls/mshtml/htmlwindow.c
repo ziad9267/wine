@@ -4064,6 +4064,27 @@ HRESULT HTMLWindow_get_prop_desc(DispatchEx *dispex, DISPID id, struct property_
 
 static HRESULT HTMLWindow_fill_props(DispatchEx *dispex)
 {
+    HTMLInnerWindow *This = impl_from_DispatchEx(dispex);
+    DISPID dispid;
+    HRESULT hres;
+    unsigned i;
+
+    if(!This->static_props_filled) {
+        hres = dispex_get_id(&This->event_target.dispex, L"Image", 0, &dispid);
+        if(SUCCEEDED(hres))
+            hres = dispex_get_id(&This->event_target.dispex, L"Option", 0, &dispid);
+        if(FAILED(hres))
+            return hres;
+
+        for(i = 0; i < ARRAYSIZE(constructor_names); i++) {
+            hres = dispex_get_id(&This->event_target.dispex, constructor_names[i], 0, &dispid);
+            if(FAILED(hres) && hres != DISP_E_UNKNOWNNAME)
+                return hres;
+        }
+
+        This->static_props_filled = TRUE;
+    }
+
     return S_FALSE;
 }
 

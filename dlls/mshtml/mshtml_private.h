@@ -786,7 +786,8 @@ struct HTMLInnerWindow {
     IHTMLStorage *local_storage;
     IWineMSHTMLConsole *console;
 
-    BOOL performance_initialized;
+    BOOLEAN static_props_filled;
+    BOOLEAN performance_initialized;
     VARIANT performance;
 
     unsigned blocking_depth;
