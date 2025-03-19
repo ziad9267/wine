@@ -1142,8 +1142,8 @@ static HRESULT HostConstructor_call(script_ctx_t *ctx, FunctionInstance *func, j
 
     if(SUCCEEDED(hres)) {
         V_VT(&ret) = VT_EMPTY;
-        hres = IWineJSDispatchHost_Construct(function->host_iface, ctx->lcid, flags, &dp, &ret, &ei,
-                                             &ctx->jscaller->IServiceProvider_iface);
+        hres = IWineJSDispatchHost_Construct(function->host_iface, ctx->lcid, flags, &dp, r ? &ret : NULL,
+                                             &ei, &ctx->jscaller->IServiceProvider_iface);
         if(hres == DISP_E_EXCEPTION)
             handle_dispatch_exception(ctx, &ei);
         if(SUCCEEDED(hres) && r) {
