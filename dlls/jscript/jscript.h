@@ -186,7 +186,7 @@ typedef struct {
     HRESULT (*lookup_prop)(jsdisp_t*,const WCHAR*,unsigned,struct property_info*);
     HRESULT (*prop_get)(jsdisp_t*,DISPID,jsval_t*);
     HRESULT (*prop_put)(jsdisp_t*,DISPID,jsval_t);
-    HRESULT (*prop_delete)(jsdisp_t*,unsigned);
+    HRESULT (*prop_delete)(jsdisp_t*,DISPID);
     HRESULT (*prop_config)(jsdisp_t*,unsigned,unsigned);
     HRESULT (*fill_props)(jsdisp_t*);
     HRESULT (*to_string)(jsdisp_t*,jsstr_t**);
