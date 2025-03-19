@@ -4031,6 +4031,11 @@ sync_test("constructors", function() {
             continue;
         ok(window.hasOwnProperty(r), r + " not prop of window");
         ok(!Object.getPrototypeOf(window).hasOwnProperty(r), r + " is a prop of window's prototype");
+
+        ok(window[r].hasOwnProperty("arguments"), "arguments not a prop of " + r);
+        ok(window[r].hasOwnProperty("caller"), "caller not a prop of " + r);
+        ok(window[r].hasOwnProperty("prototype"), "prototype not a prop of " + r);
+        ok(!window[r].hasOwnProperty("length"), "length is a prop of " + r);
     }
     ok(window.Image.prototype === window.HTMLImageElement.prototype, "Image.prototype != HTMLImageElement.prototype");
     ok(window.Option.prototype === window.HTMLOptionElement.prototype, "Option.prototype != HTMLOptionElement.prototype");
