@@ -43,25 +43,6 @@ struct device
 {
     HID_DEVICE_EXTENSION hid; /* must be first */
 
-    union
-    {
-        struct
-        {
-            HID_DEVICE_ATTRIBUTES attrs;
-            HIDP_DEVICE_DESC device_desc;
-            WCHAR serial[256];
-
-            ULONG poll_interval;
-            KEVENT halt_event;
-            HANDLE thread;
-
-            DEVICE_OBJECT **child_pdos;
-            UINT child_count;
-        } fdo;
-    } u;
-
-    /* These are unique to the parent FDO, but stored in the children as well
-     * for convenience. */
     WCHAR device_id[MAX_DEVICE_ID_LEN];
     WCHAR instance_id[MAX_DEVICE_ID_LEN];
     WCHAR container_id[MAX_GUID_STRING_LEN];
@@ -70,6 +51,21 @@ struct device
     HANDLE steam_overlay_event;
 
     BOOL is_fdo;
+};
+
+struct func_device
+{
+    struct device base;
+    HID_DEVICE_ATTRIBUTES attrs;
+    HIDP_DEVICE_DESC device_desc;
+    WCHAR serial[256];
+
+    ULONG poll_interval;
+    KEVENT halt_event;
+    HANDLE thread;
+
+    DEVICE_OBJECT **child_pdos;
+    UINT child_count;
 };
 
 struct phys_device
@@ -97,6 +93,13 @@ static inline struct phys_device *pdo_from_DEVICE_OBJECT( DEVICE_OBJECT *device 
 {
     struct device *impl = device->DeviceExtension;
     return CONTAINING_RECORD( impl, struct phys_device, base );
+}
+
+static inline struct func_device *fdo_from_DEVICE_OBJECT( DEVICE_OBJECT *device )
+{
+    struct device *impl = device->DeviceExtension;
+    if (!impl->is_fdo) impl = pdo_from_DEVICE_OBJECT( device )->parent_fdo->DeviceExtension;
+    return CONTAINING_RECORD( impl, struct func_device, base );
 }
 
 struct hid_report
