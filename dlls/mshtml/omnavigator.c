@@ -311,7 +311,13 @@ DISPEX_IDISPATCH_IMPL(dom_parser, IDOMParser, impl_from_IDOMParser(iface)->dispe
 static HRESULT WINAPI dom_parser_parseFromString(IDOMParser *iface, BSTR string, BSTR mimeType, IHTMLDocument2 **ppNode)
 {
     struct dom_parser *This = impl_from_IDOMParser(iface);
+    nsIDOMDocument *nsdoc = NULL;
+    HTMLDocumentNode *xml_doc;
     document_type_t doc_type;
+    nsAString errns, errtag;
+    nsIDOMNodeList *nodes;
+    nsIDOMParser *parser;
+    nsresult nsres;
     HRESULT hres;
 
     TRACE("(%p)->(%s %s %p)\n", This, debugstr_w(string), debugstr_w(mimeType), ppNode);
@@ -354,8 +360,42 @@ static HRESULT WINAPI dom_parser_parseFromString(IDOMParser *iface, BSTR string,
         return hres;
     }
 
-    FIXME("Not implemented for XML Document\n");
-    return E_NOTIMPL;
+    if(!(parser = create_nsdomparser(This->doc)))
+        return E_FAIL;
+    nsres = nsIDOMParser_ParseFromString(parser, string ? string : L"",
+            doc_type == DOCTYPE_SVG   ? "image/svg+xml" :
+            doc_type == DOCTYPE_XHTML ? "application/xhtml+xml" :
+                                        "text/xml", &nsdoc);
+    nsIDOMParser_Release(parser);
+    if(NS_FAILED(nsres) || !nsdoc) {
+        ERR("ParseFromString failed: 0x%08lx\n", nsres);
+        return NS_FAILED(nsres) ? map_nsresult(nsres) : E_FAIL;
+    }
+
+    nsAString_InitDepend(&errns, L"http://www.mozilla.org/newlayout/xml/parsererror.xml");
+    nsAString_InitDepend(&errtag, L"parsererror");
+    nsres = nsIDOMDocument_GetElementsByTagNameNS(nsdoc, &errns, &errtag, &nodes);
+    nsAString_Finish(&errtag);
+    nsAString_Finish(&errns);
+    if(NS_SUCCEEDED(nsres)) {
+        UINT32 length;
+        nsres = nsIDOMNodeList_GetLength(nodes, &length);
+        nsIDOMNodeList_Release(nodes);
+        if(NS_SUCCEEDED(nsres) && length) {
+            nsIDOMDocument_Release(nsdoc);
+            return MSHTML_E_SYNTAX;
+        }
+    }
+
+    hres = create_document_node(nsdoc, This->doc->browser, NULL, This->doc->script_global, doc_type, This->doc->document_mode, &xml_doc);
+    nsIDOMDocument_Release(nsdoc);
+    if(FAILED(hres))
+        return hres;
+
+    /* make sure dispex info is initialized */
+    dispex_compat_mode(&xml_doc->node.event_target.dispex);
+    *ppNode = &xml_doc->IHTMLDocument2_iface;
+    return hres;
 }
 
 static const IDOMParserVtbl dom_parser_vtbl = {
