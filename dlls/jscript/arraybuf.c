@@ -647,18 +647,27 @@ static HRESULT DataView_gc_traverse(struct gc_ctx *gc_ctx, enum gc_traverse_op o
     return gc_process_linked_obj(gc_ctx, op, dispex, &view->buffer->dispex, (void**)&view->buffer);
 }
 
+static void DataView_cc_traverse(jsdisp_t *dispex, nsCycleCollectionTraversalCallback *cb)
+{
+    DataViewInstance *view = dataview_from_jsdisp(dispex);
+    if(view->buffer)
+        cc_api.note_edge((IUnknown*)&view->buffer->dispex.IWineJSDispatch_iface, "buffer", cb);
+}
+
 static const builtin_info_t DataView_info = {
     .class       = JSCLASS_DATAVIEW,
     .props_cnt   = ARRAY_SIZE(DataView_props),
     .props       = DataView_props,
     .destructor  = DataView_destructor,
-    .gc_traverse = DataView_gc_traverse
+    .gc_traverse = DataView_gc_traverse,
+    .cc_traverse = DataView_cc_traverse
 };
 
 static const builtin_info_t DataViewInst_info = {
     .class       = JSCLASS_DATAVIEW,
     .destructor  = DataView_destructor,
-    .gc_traverse = DataView_gc_traverse
+    .gc_traverse = DataView_gc_traverse,
+    .cc_traverse = DataView_cc_traverse
 };
 
 static HRESULT DataViewConstr_value(script_ctx_t *ctx, jsval_t vthis, WORD flags, unsigned argc, jsval_t *argv,
@@ -1014,6 +1023,13 @@ static HRESULT TypedArray_gc_traverse(struct gc_ctx *gc_ctx, enum gc_traverse_op
     return gc_process_linked_obj(gc_ctx, op, dispex, &typedarr->buffer->dispex, (void**)&typedarr->buffer);
 }
 
+static void TypedArray_cc_traverse(jsdisp_t *dispex, nsCycleCollectionTraversalCallback *cb)
+{
+    TypedArrayInstance *typedarr = typedarr_from_jsdisp(dispex);
+    if(typedarr->buffer)
+        cc_api.note_edge((IUnknown*)&typedarr->buffer->dispex.IWineJSDispatch_iface, "buffer", cb);
+}
+
 static const builtin_prop_t TypedArrayInst_props[] = {
     {L"buffer",                NULL, 0,                    TypedArray_get_buffer},
     {L"byteLength",            NULL, 0,                    TypedArray_get_byteLength},
@@ -1093,6 +1109,7 @@ TYPEDARRAY_LIST
     .prop_put       = NAME ##_prop_put,           \
     .prop_get_desc  = TypedArray_prop_get_desc,   \
     .gc_traverse    = TypedArray_gc_traverse,     \
+    .cc_traverse    = TypedArray_cc_traverse,     \
 },
 static const builtin_info_t TypedArray_info[] = { TYPEDARRAY_LIST };
 #undef X
@@ -1109,6 +1126,7 @@ static const builtin_info_t TypedArray_info[] = { TYPEDARRAY_LIST };
     .prop_put       = NAME ##_prop_put,           \
     .prop_get_desc  = TypedArray_prop_get_desc,   \
     .gc_traverse    = TypedArray_gc_traverse,     \
+    .cc_traverse    = TypedArray_cc_traverse,     \
 },
 static const builtin_info_t TypedArrayInst_info[] = { TYPEDARRAY_LIST };
 #undef X

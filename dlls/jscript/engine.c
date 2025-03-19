@@ -570,6 +570,27 @@ static HRESULT scope_gc_traverse(struct gc_ctx *gc_ctx, enum gc_traverse_op op, 
     return scope->obj && (jsobj = to_jsdisp(scope->obj)) ? gc_process_linked_obj(gc_ctx, op, dispex, jsobj, (void**)&scope->obj) : S_OK;
 }
 
+static void scope_cc_traverse(jsdisp_t *dispex, nsCycleCollectionTraversalCallback *cb)
+{
+    scope_chain_t *scope = scope_from_dispex(dispex);
+    note_edge_t note_edge = cc_api.note_edge;
+
+    if(scope->detached_vars) {
+        struct vars_buffer *vars = scope->detached_vars;
+        unsigned i, cnt = vars->argc;
+
+        for(i = 0; i < cnt; i++)
+            if(is_object_instance(vars->var[i]))
+                note_edge(get_edge_obj(get_object(vars->var[i])), "var", cb);
+    }
+
+    if(scope->next)
+        note_edge((IUnknown*)&scope->next->dispex.IWineJSDispatch_iface, "next", cb);
+
+    if(scope->obj)
+        note_edge(get_edge_obj(scope->obj), "obj", cb);
+}
+
 static const builtin_info_t scope_info = {
     .class         = JSCLASS_NONE,
     .destructor    = scope_destructor,
@@ -577,7 +598,8 @@ static const builtin_info_t scope_info = {
     .prop_get      = scope_prop_get,
     .prop_put      = scope_prop_put,
     .prop_get_desc = scope_prop_get_desc,
-    .gc_traverse   = scope_gc_traverse
+    .gc_traverse   = scope_gc_traverse,
+    .cc_traverse   = scope_cc_traverse
 };
 
 static HRESULT scope_push(script_ctx_t *ctx, scope_chain_t *scope, IDispatch *obj, scope_chain_t **ret)

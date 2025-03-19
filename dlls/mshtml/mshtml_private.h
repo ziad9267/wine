@@ -559,6 +559,7 @@ ALL_PROTOTYPES
 #undef X
 
 extern dispex_static_data_t *object_descriptors[PROT_LAST];
+extern struct list cc_api_list;
 extern DISPID propput_dispid;
 
 typedef HRESULT (*dispex_hook_invoke_t)(DispatchEx*,WORD,DISPPARAMS*,VARIANT*,
@@ -1228,6 +1229,8 @@ void ConnectionPointContainer_Destroy(ConnectionPointContainer*);
 
 HRESULT create_gecko_browser(HTMLDocumentObj*,GeckoBrowser**);
 void detach_gecko_browser(GeckoBrowser*);
+void cycle_collect(nsIDOMWindowUtils*);
+void __cdecl cc_api_collect(void);
 
 DWORD get_compat_mode_version(compat_mode_t compat_mode);
 compat_mode_t lock_document_mode(HTMLDocumentNode*);
@@ -1526,6 +1529,7 @@ typedef struct {
     struct list *pending_xhr_events_tail;
     struct wine_rb_tree session_storage_map;
     void *blocking_xhr;
+    unsigned full_cc_in_progress;
     unsigned tasks_locked;
     BOOL timer_blocked;
 } thread_data_t;
