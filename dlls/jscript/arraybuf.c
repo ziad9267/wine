@@ -20,7 +20,14 @@
 #include <math.h>
 #include <limits.h>
 #include <assert.h>
+#include <stdarg.h>
+#include <stdlib.h>
 
+#include "ntstatus.h"
+#define WIN32_NO_STATUS
+#include "windef.h"
+#include "winbase.h"
+#include "ntsecapi.h"
 #include "jscript.h"
 
 #include "wine/debug.h"
@@ -1113,6 +1120,33 @@ static HRESULT create_typedarr(script_ctx_t *ctx, jsclass_t jsclass, ArrayBuffer
     typedarr->length = length;
 
     *ret = &typedarr->dispex;
+    return S_OK;
+}
+
+HRESULT typed_array_get_random_values(IDispatch *disp)
+{
+    jsdisp_t *obj = to_jsdisp(disp);
+    TypedArrayInstance *typedarr;
+    DWORD size;
+
+    if(!obj || obj->builtin_info->class < FIRST_TYPEDARRAY_JSCLASS || obj->builtin_info->class > LAST_TYPEDARRAY_JSCLASS)
+        return E_INVALIDARG;
+
+    if(obj->builtin_info->class == JSCLASS_FLOAT32ARRAY || obj->builtin_info->class == JSCLASS_FLOAT64ARRAY) {
+        /* FIXME: Return TypeMismatchError */
+        return E_FAIL;
+    }
+
+    typedarr = typedarr_from_jsdisp(obj);
+    size = typedarr->length * TypedArray_elem_size[TYPEDARRAY_INDEX(obj->builtin_info->class)];
+    if(size > 65536) {
+        /* FIXME: Return QuotaExceededError */
+        return E_FAIL;
+    }
+
+    if(!RtlGenRandom(&typedarr->buffer->buf[typedarr->offset], size))
+        return HRESULT_FROM_WIN32(GetLastError());
+
     return S_OK;
 }
 

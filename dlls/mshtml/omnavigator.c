@@ -2956,10 +2956,19 @@ static HRESULT WINAPI crypto_get_subtle(IWineMSHTMLCrypto *iface, IDispatch **su
 static HRESULT WINAPI crypto_getRandomValues(IWineMSHTMLCrypto *iface, VARIANT *typedArray, IDispatch **ret)
 {
     struct crypto *crypto = impl_from_IWineMSHTMLCrypto(iface);
+    HRESULT hres;
 
-    FIXME("(%p)->(%p %p)\n", crypto, typedArray, ret);
+    TRACE("(%p)->(%p %p)\n", crypto, typedArray, ret);
 
-    return E_NOTIMPL;
+    if(V_VT(typedArray) != VT_DISPATCH || !V_DISPATCH(typedArray))
+        return E_INVALIDARG;
+
+    hres = IWineJSDispatch_GetRandomValues(crypto->dispex.jsdisp, V_DISPATCH(typedArray));
+    if(SUCCEEDED(hres) && ret) {
+        *ret = V_DISPATCH(typedArray);
+        IDispatch_AddRef(*ret);
+    }
+    return hres;
 }
 
 static const IWineMSHTMLCryptoVtbl WineMSHTMLCryptoVtbl = {
