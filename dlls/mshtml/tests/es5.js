@@ -865,6 +865,16 @@ sync_test("defineProperty", function() {
     test_accessor_prop_desc(child.prototype, "funcprop_prot", desc);
     ok(obj.funcprop_prot(100) === 10, "obj.funcprop_prot() = " + obj.funcprop_prot(100));
 
+    (function() {
+        ok(arguments.length === 3, "arguments.length = " + arguments.length);
+        ok(arguments[0] === 1, "arguments[0] = " + arguments[0]);
+        ok(arguments[1] === 2, "arguments[1] = " + arguments[1]);
+        ok(arguments[2] === 3, "arguments[2] = " + arguments[2]);
+        Object.defineProperty(arguments, "1", {value: "foobar", writable: false, enumerable: true, configurable: false});
+        test_own_data_prop_desc(arguments, "1", false, true, false);
+        ok(arguments[1] === "foobar", "arguments[1] after defineProperty = " + arguments[1]);
+    })(1, 2, 3);
+
     expect_exception(function() {
         Object.defineProperty(null, "funcprop", desc);
     }, JS_E_OBJECT_EXPECTED);

@@ -81,6 +81,7 @@ typedef struct {
     jsval_t *buf;
     scope_chain_t *scope;
     unsigned argc;
+    BYTE readonly_flags[];
 } ArgumentsInstance;
 
 static HRESULT create_bind_function(script_ctx_t*,FunctionInstance*,jsval_t,unsigned,jsval_t*,jsdisp_t**r);
@@ -170,6 +171,9 @@ static HRESULT Arguments_prop_put(jsdisp_t *jsdisp, DISPID id, jsval_t val)
 
     TRACE("%p[%u] = %s\n", arguments, idx, debugstr_jsval(val));
 
+    if(arguments->readonly_flags[idx / 8] & (1u << idx % 8))
+        return S_OK;
+
     hres = jsval_copy(val, &copy);
     if(FAILED(hres))
         return hres;
@@ -178,6 +182,52 @@ static HRESULT Arguments_prop_put(jsdisp_t *jsdisp, DISPID id, jsval_t val)
     jsval_release(*ref);
     *ref = copy;
     return S_OK;
+}
+
+static HRESULT Arguments_prop_get_desc(jsdisp_t *jsdisp, DISPID id, BOOL flags_only, property_desc_t *desc)
+{
+    ArgumentsInstance *arguments = arguments_from_jsdisp(jsdisp);
+    unsigned idx;
+
+    if(!get_extern_prop_idx(jsdisp, id, &idx))
+        return S_FALSE;
+
+    if(!flags_only) {
+        HRESULT hres = Arguments_prop_get(jsdisp, id, &desc->value);
+        if(hres != S_OK)
+            return hres;
+    }
+
+    desc->flags = PROPF_ENUMERABLE;
+    if(!(arguments->readonly_flags[idx / 8] & (1u << idx % 8)))
+        desc->flags |= PROPF_WRITABLE;
+
+    return S_OK;
+}
+
+static HRESULT Arguments_prop_define(jsdisp_t *jsdisp, DISPID id, const property_desc_t *desc)
+{
+    ArgumentsInstance *arguments = arguments_from_jsdisp(jsdisp);
+    unsigned idx;
+    HRESULT hres;
+
+    if(!get_extern_prop_idx(jsdisp, id, &idx))
+        return S_FALSE;
+
+    /* Need to keep track of props made read-only when going from writable to non-writable */
+    if((desc->mask & PROPF_WRITABLE) && !(desc->flags & PROPF_WRITABLE) && !(arguments->readonly_flags[idx / 8] & (1u << idx % 8)) &&
+       ((desc->mask & desc->flags & (PROPF_CONFIGURABLE | PROPF_ENUMERABLE)) == (desc->mask & PROPF_ENUMERABLE))) {
+        if(desc->explicit_value) {
+            hres = Arguments_prop_put(jsdisp, id, desc->value);
+            if(FAILED(hres))
+                return hres;
+        }
+        arguments->readonly_flags[idx / 8] |= 1u << idx % 8;
+        return S_OK;
+    }
+
+    /* Delegate the rest to the generic prop define */
+    return S_FALSE;
 }
 
 static HRESULT Arguments_fill_props(jsdisp_t *jsdisp)
@@ -241,27 +291,31 @@ static const builtin_prop_t Arguments_props[] = {
 };
 
 static const builtin_info_t Arguments_info = {
-    .class       = JSCLASS_ARGUMENTS,
-    .call        = Arguments_value,
-    .props_cnt   = ARRAY_SIZE(Arguments_props),
-    .props       = Arguments_props,
-    .destructor  = Arguments_destructor,
-    .lookup_prop = Arguments_lookup_prop,
-    .prop_get    = Arguments_prop_get,
-    .prop_put    = Arguments_prop_put,
-    .fill_props  = Arguments_fill_props,
-    .gc_traverse = Arguments_gc_traverse
+    .class         = JSCLASS_ARGUMENTS,
+    .call          = Arguments_value,
+    .props_cnt     = ARRAY_SIZE(Arguments_props),
+    .props         = Arguments_props,
+    .destructor    = Arguments_destructor,
+    .lookup_prop   = Arguments_lookup_prop,
+    .prop_get      = Arguments_prop_get,
+    .prop_put      = Arguments_prop_put,
+    .prop_get_desc = Arguments_prop_get_desc,
+    .prop_define   = Arguments_prop_define,
+    .fill_props    = Arguments_fill_props,
+    .gc_traverse   = Arguments_gc_traverse
 };
 
 static const builtin_info_t Arguments_ES5_info = {
-    .class       = JSCLASS_ARGUMENTS,
-    .call        = Arguments_value,
-    .destructor  = Arguments_destructor,
-    .lookup_prop = Arguments_lookup_prop,
-    .prop_get    = Arguments_prop_get,
-    .prop_put    = Arguments_prop_put,
-    .fill_props  = Arguments_fill_props,
-    .gc_traverse = Arguments_gc_traverse
+    .class         = JSCLASS_ARGUMENTS,
+    .call          = Arguments_value,
+    .destructor    = Arguments_destructor,
+    .lookup_prop   = Arguments_lookup_prop,
+    .prop_get      = Arguments_prop_get,
+    .prop_put      = Arguments_prop_put,
+    .prop_get_desc = Arguments_prop_get_desc,
+    .prop_define   = Arguments_prop_define,
+    .fill_props    = Arguments_fill_props,
+    .gc_traverse   = Arguments_gc_traverse
 };
 
 HRESULT setup_arguments_object(script_ctx_t *ctx, call_frame_t *frame)
@@ -269,7 +323,7 @@ HRESULT setup_arguments_object(script_ctx_t *ctx, call_frame_t *frame)
     ArgumentsInstance *args;
     HRESULT hres;
 
-    args = calloc(1, sizeof(*args));
+    args = calloc(1, FIELD_OFFSET(ArgumentsInstance, readonly_flags[(frame->argc + 7) / 8]));
     if(!args)
         return E_OUTOFMEMORY;
 
