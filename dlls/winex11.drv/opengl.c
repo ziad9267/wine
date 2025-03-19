@@ -1858,20 +1858,13 @@ BOOL enable_fullscreen_hack( HWND hwnd, BOOL check_gamma )
 
 static RECT get_client_rect( HWND hwnd, BOOL raw )
 {
-    struct x11drv_win_data *data;
+    UINT dpi = NtUserGetDpiForWindow( hwnd );
     RECT rect;
 
-    if (!raw)
-        NtUserGetClientRect( hwnd, &rect, NtUserGetDpiForWindow( hwnd ) );
-    else if (!(data = get_win_data( hwnd )))
-        NtUserGetClientRect( hwnd, &rect, NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI ) );
-    else
-    {
-        rect = data->rects.client;
-        OffsetRect( &rect, -rect.left, -rect.top );
-        release_win_data( data );
-    }
-
+    NtUserGetClientRect( hwnd, &rect, dpi );
+    if (!raw) return rect;
+    rect = map_rect_virt_to_raw_for_monitor( NtUserMonitorFromWindow( hwnd, MONITOR_DEFAULTTONEAREST ), rect, dpi );
+    OffsetRect( &rect, -rect.left, -rect.top );
     return rect;
 }
 
