@@ -32,6 +32,31 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(mshtml);
 
+static document_type_t document_type_from_content_type(const WCHAR *content_type)
+{
+    static const struct {
+        const WCHAR *content_type;
+        document_type_t doc_type;
+    } table[] = {
+        { L"application/xhtml+xml", DOCTYPE_XHTML },
+        { L"application/xml",       DOCTYPE_XML },
+        { L"image/svg+xml",         DOCTYPE_SVG },
+        { L"text/html",             DOCTYPE_HTML },
+        { L"text/xml",              DOCTYPE_XML },
+    };
+    unsigned int i, a = 0, b = ARRAY_SIZE(table);
+    int c;
+
+    while(a < b) {
+        i = (a + b) / 2;
+        c = wcsicmp(table[i].content_type, content_type);
+        if(!c) return table[i].doc_type;
+        if(c > 0) b = i;
+        else      a = i + 1;
+    }
+    return DOCTYPE_INVALID;
+}
+
 typedef struct HTMLPluginsCollection HTMLPluginsCollection;
 typedef struct HTMLMimeTypesCollection HTMLMimeTypesCollection;
 
@@ -272,6 +297,8 @@ void detach_dom_implementation(IHTMLDOMImplementation *iface)
 struct dom_parser {
     DispatchEx dispex;
     IDOMParser IDOMParser_iface;
+
+    HTMLDocumentNode *doc;
 };
 
 static inline struct dom_parser *impl_from_IDOMParser(IDOMParser *iface)
@@ -284,9 +311,50 @@ DISPEX_IDISPATCH_IMPL(dom_parser, IDOMParser, impl_from_IDOMParser(iface)->dispe
 static HRESULT WINAPI dom_parser_parseFromString(IDOMParser *iface, BSTR string, BSTR mimeType, IHTMLDocument2 **ppNode)
 {
     struct dom_parser *This = impl_from_IDOMParser(iface);
+    document_type_t doc_type;
+    HRESULT hres;
 
-    FIXME("(%p)->(%s %s %p)\n", This, debugstr_w(string), debugstr_w(mimeType), ppNode);
+    TRACE("(%p)->(%s %s %p)\n", This, debugstr_w(string), debugstr_w(mimeType), ppNode);
 
+    if(!string || !mimeType || (doc_type = document_type_from_content_type(mimeType)) == DOCTYPE_INVALID)
+        return E_INVALIDARG;
+
+    if(doc_type == DOCTYPE_HTML) {
+        IHTMLDOMImplementation *impl_iface;
+        HTMLDOMImplementation *impl;
+        IHTMLDocument7 *html_doc;
+        IHTMLElement *html_elem;
+        HTMLDocumentNode *doc;
+
+        hres = IHTMLDocument5_get_implementation(&This->doc->IHTMLDocument5_iface, &impl_iface);
+        if(FAILED(hres))
+            return hres;
+
+        impl = impl_from_IHTMLDOMImplementation(impl_iface);
+        hres = HTMLDOMImplementation2_createHTMLDocument(&impl->IHTMLDOMImplementation2_iface, NULL, &html_doc);
+        HTMLDOMImplementation_Release(impl_iface);
+        if(FAILED(hres))
+            return hres;
+        doc = CONTAINING_RECORD(html_doc, HTMLDocumentNode, IHTMLDocument7_iface);
+
+        hres = IHTMLDocument3_get_documentElement(&doc->IHTMLDocument3_iface, &html_elem);
+        if(FAILED(hres)) {
+            IHTMLDocument7_Release(html_doc);
+            return hres;
+        }
+
+        hres = IHTMLElement_put_innerHTML(html_elem, string);
+        IHTMLElement_Release(html_elem);
+        if(FAILED(hres)) {
+            IHTMLDocument7_Release(html_doc);
+            return hres;
+        }
+
+        *ppNode = &doc->IHTMLDocument2_iface;
+        return hres;
+    }
+
+    FIXME("Not implemented for XML Document\n");
     return E_NOTIMPL;
 }
 
@@ -316,6 +384,23 @@ static void *dom_parser_query_interface(DispatchEx *dispex, REFIID riid)
     return NULL;
 }
 
+static void dom_parser_traverse(DispatchEx *dispex, nsCycleCollectionTraversalCallback *cb)
+{
+    struct dom_parser *This = dom_parser_from_DispatchEx(dispex);
+    if(This->doc)
+        note_cc_edge((nsISupports*)&This->doc->node.IHTMLDOMNode_iface, "doc", cb);
+}
+
+static void dom_parser_unlink(DispatchEx *dispex)
+{
+    struct dom_parser *This = dom_parser_from_DispatchEx(dispex);
+    if(This->doc) {
+        HTMLDocumentNode *doc = This->doc;
+        This->doc = NULL;
+        IHTMLDOMNode_Release(&doc->node.IHTMLDOMNode_iface);
+    }
+}
+
 static void dom_parser_destructor(DispatchEx *dispex)
 {
     struct dom_parser *This = dom_parser_from_DispatchEx(dispex);
@@ -327,6 +412,8 @@ static HRESULT create_dom_parser_ctor(HTMLInnerWindow *script_global, DispatchEx
 static const dispex_static_data_vtbl_t dom_parser_dispex_vtbl = {
     .query_interface  = dom_parser_query_interface,
     .destructor       = dom_parser_destructor,
+    .traverse         = dom_parser_traverse,
+    .unlink           = dom_parser_unlink
 };
 
 static const tid_t dom_parser_iface_tids[] = {
@@ -361,6 +448,7 @@ static HRESULT dom_parser_ctor_value(DispatchEx *dispex, LCID lcid, WORD flags, 
         VARIANT *res, EXCEPINFO *ei, IServiceProvider *caller)
 {
     struct dom_parser_ctor *This = dom_parser_ctor_from_DispatchEx(dispex);
+    HTMLInnerWindow *window;
     struct dom_parser *ret;
 
     TRACE("\n");
@@ -381,8 +469,13 @@ static HRESULT dom_parser_ctor_value(DispatchEx *dispex, LCID lcid, WORD flags, 
     if(!(ret = calloc(1, sizeof(*ret))))
         return E_OUTOFMEMORY;
 
+    window = get_script_global(&This->dispex);
     ret->IDOMParser_iface.lpVtbl = &dom_parser_vtbl;
-    init_dispatch_with_owner(&ret->dispex, &DOMParser_dispex, &This->dispex);
+    ret->doc = window->doc;
+    IHTMLDOMNode_AddRef(&ret->doc->node.IHTMLDOMNode_iface);
+
+    init_dispatch(&ret->dispex, &DOMParser_dispex, window, dispex_compat_mode(&This->dispex));
+    IHTMLWindow2_Release(&window->base.IHTMLWindow2_iface);
 
     V_VT(res) = VT_DISPATCH;
     V_DISPATCH(res) = (IDispatch*)&ret->IDOMParser_iface;
