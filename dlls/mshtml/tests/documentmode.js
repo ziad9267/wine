@@ -387,12 +387,19 @@ sync_test("builtin_obj", function() {
             window.toString.call(null);
             ok(false, "expected exception calling window.toString with null context");
         }catch(ex) {}
+
+        ok(!Object.hasOwnProperty.call(f, "arguments"), "arguments is a prop of createElement");
+        ok(!Object.hasOwnProperty.call(f, "caller"), "caller is a prop of createElement");
+        ok(!Object.hasOwnProperty.call(f, "length"), "length is a prop of createElement");
     }else {
         ok(Object.getPrototypeOf(f) === Function.prototype, "unexpected document.createElement prototype");
         e = window.toString.call(null);
         ok(e === "[object Window]", "window.toString with null context = " + e);
         e = window.toString.call(external.nullDisp);
         ok(e === "[object Window]", "window.toString with nullDisp context = " + e);
+
+        ok(f.hasOwnProperty("arguments"), "arguments not a prop of createElement");
+        ok(!f.hasOwnProperty("length"), "length is a prop of createElement");
     }
 
     e = 0;
@@ -4026,6 +4033,9 @@ sync_test("constructors", function() {
     }
     ok(window.Image.prototype === window.HTMLImageElement.prototype, "Image.prototype != HTMLImageElement.prototype");
     ok(window.Option.prototype === window.HTMLOptionElement.prototype, "Option.prototype != HTMLOptionElement.prototype");
+
+    ok(XMLHttpRequest.create.hasOwnProperty("arguments"), "arguments not a prop of XMLHttpRequest.create");
+    ok(!XMLHttpRequest.create.hasOwnProperty("length"), "length is a prop of XMLHttpRequest.create");
 
     r = Object.getOwnPropertyDescriptor(HTMLMetaElement, "prototype");
     ok(r.value === HTMLMetaElement.prototype, "HTMLMetaElement.prototype value = " + r.value);
