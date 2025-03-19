@@ -579,13 +579,23 @@ static HRESULT convert_params(script_ctx_t *ctx, const DISPPARAMS *dp, jsval_t *
 
 static HRESULT prop_get(jsdisp_t *This, IDispatch *jsthis, DISPID id, jsval_t *r)
 {
-    dispex_prop_t *prop = &This->props[prop_id_to_idx(id)];
     jsdisp_t *prop_obj = This;
+    dispex_prop_t *prop;
     HRESULT hres;
 
-    while(prop->type == PROP_PROTREF) {
+    for(;;) {
+        if(prop_obj->builtin_info->prop_get) {
+            hres = prop_obj->builtin_info->prop_get(prop_obj, id, r);
+            if(hres != S_FALSE)
+                return hres;
+        }
+
+        prop = &prop_obj->props[prop_id_to_idx(id)];
+        if(prop->type != PROP_PROTREF)
+            break;
+
         prop_obj = prop_obj->prototype;
-        prop = prop_obj->props + prop->u.ref;
+        id = prop->u.ref + 1;
     }
 
     switch(prop->type) {
@@ -604,11 +614,9 @@ static HRESULT prop_get(jsdisp_t *This, IDispatch *jsthis, DISPID id, jsval_t *r
             hres = S_OK;
         }
         break;
-    case PROP_EXTERN:
-        hres = prop_obj->builtin_info->prop_get(prop_obj, prop->u.id, r);
-        break;
     default:
         ERR("type %d\n", prop->type);
+        assert(0);
         return E_FAIL;
     }
 
@@ -3517,15 +3525,19 @@ static HRESULT HostObject_lookup_prop(jsdisp_t *jsdisp, const WCHAR *name, unsig
     return IWineJSDispatchHost_LookupProperty(This->host_iface, name, flags, desc);
 }
 
-static HRESULT HostObject_prop_get(jsdisp_t *jsdisp, unsigned idx, jsval_t *r)
+static HRESULT HostObject_prop_get(jsdisp_t *jsdisp, DISPID id, jsval_t *r)
 {
+    dispex_prop_t *prop = &jsdisp->props[prop_id_to_idx(id)];
     HostObject *This = HostObject_from_jsdisp(jsdisp);
     EXCEPINFO ei = { 0 };
     VARIANT v;
     HRESULT hres;
 
+    if(prop->type != PROP_EXTERN)
+        return S_FALSE;
+
     V_VT(&v) = VT_EMPTY;
-    hres = IWineJSDispatchHost_GetProperty(This->host_iface, idx, jsdisp->ctx->lcid, &v, &ei,
+    hres = IWineJSDispatchHost_GetProperty(This->host_iface, prop->u.id, jsdisp->ctx->lcid, &v, &ei,
                                            &jsdisp->ctx->jscaller->IServiceProvider_iface);
     if(hres == DISP_E_EXCEPTION)
         handle_dispatch_exception(jsdisp->ctx, &ei);
@@ -3668,4 +3680,14 @@ HRESULT fill_globals(script_ctx_t *ctx, IWineJSDispatchHost *script_global)
     }
 
     return S_OK;
+}
+
+BOOL get_extern_prop_idx(jsdisp_t *jsdisp, DISPID id, unsigned *ret)
+{
+    dispex_prop_t *prop = &jsdisp->props[prop_id_to_idx(id)];
+
+    if(prop->type != PROP_EXTERN)
+        return FALSE;
+    *ret = prop->u.id;
+    return TRUE;
 }

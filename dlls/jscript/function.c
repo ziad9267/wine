@@ -145,9 +145,13 @@ static jsval_t *get_argument_ref(ArgumentsInstance *arguments, unsigned idx)
     return arguments->scope->detached_vars->var + idx;
 }
 
-static HRESULT Arguments_prop_get(jsdisp_t *jsdisp, unsigned idx, jsval_t *r)
+static HRESULT Arguments_prop_get(jsdisp_t *jsdisp, DISPID id, jsval_t *r)
 {
     ArgumentsInstance *arguments = arguments_from_jsdisp(jsdisp);
+    unsigned idx;
+
+    if(!get_extern_prop_idx(jsdisp, id, &idx))
+        return S_FALSE;
 
     TRACE("%p[%u]\n", arguments, idx);
 

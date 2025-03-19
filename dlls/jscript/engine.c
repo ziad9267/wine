@@ -497,10 +497,13 @@ static HRESULT scope_lookup_prop(jsdisp_t *jsdisp, const WCHAR *name, unsigned f
     return jsdisp_index_lookup(&scope->dispex, name, scope->detached_vars->argc, desc);
 }
 
-static HRESULT scope_prop_get(jsdisp_t *dispex, unsigned idx, jsval_t *r)
+static HRESULT scope_prop_get(jsdisp_t *dispex, DISPID id, jsval_t *r)
 {
     scope_chain_t *scope = scope_from_dispex(dispex);
+    unsigned idx;
 
+    if(!get_extern_prop_idx(dispex, id, &idx))
+        return S_FALSE;
     return jsval_copy(scope->detached_vars->var[idx], r);
 }
 

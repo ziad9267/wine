@@ -184,7 +184,7 @@ typedef struct {
     ULONG (*release)(jsdisp_t*);
     void (*on_put)(jsdisp_t*,const WCHAR*);
     HRESULT (*lookup_prop)(jsdisp_t*,const WCHAR*,unsigned,struct property_info*);
-    HRESULT (*prop_get)(jsdisp_t*,unsigned,jsval_t*);
+    HRESULT (*prop_get)(jsdisp_t*,DISPID,jsval_t*);
     HRESULT (*prop_put)(jsdisp_t*,unsigned,jsval_t);
     HRESULT (*prop_delete)(jsdisp_t*,unsigned);
     HRESULT (*prop_config)(jsdisp_t*,unsigned,unsigned);
@@ -233,6 +233,7 @@ static inline BOOL is_dispex_prop_id(DISPID id)
 jsdisp_t *as_jsdisp(IDispatch*);
 jsdisp_t *to_jsdisp(IDispatch*);
 IWineJSDispatchHost *get_host_dispatch(IDispatch*);
+BOOL get_extern_prop_idx(jsdisp_t*,DISPID,unsigned*);
 
 jsdisp_t *jsdisp_addref(jsdisp_t*);
 ULONG jsdisp_release(jsdisp_t*);

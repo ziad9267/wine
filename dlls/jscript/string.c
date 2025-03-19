@@ -1517,10 +1517,14 @@ static HRESULT String_lookup_prop(jsdisp_t *jsdisp, const WCHAR *name, unsigned 
     return jsdisp_index_lookup(&string->dispex, name, jsstr_length(string->str), desc);
 }
 
-static HRESULT String_prop_get(jsdisp_t *jsdisp, unsigned idx, jsval_t *r)
+static HRESULT String_prop_get(jsdisp_t *jsdisp, DISPID id, jsval_t *r)
 {
     StringInstance *string = string_from_jsdisp(jsdisp);
+    unsigned idx;
     jsstr_t *ret;
+
+    if(!get_extern_prop_idx(jsdisp, id, &idx))
+        return S_FALSE;
 
     ret = jsstr_substr(string->str, idx, 1);
     if(!ret)
