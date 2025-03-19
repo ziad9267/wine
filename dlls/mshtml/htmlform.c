@@ -868,6 +868,31 @@ static HRESULT HTMLFormElement_invoke(DispatchEx *dispex, DISPID id, LCID lcid, 
     return S_OK;
 }
 
+static HRESULT HTMLFormElement_override(DispatchEx *dispex, const WCHAR *name, VARIANT *get_value)
+{
+    HTMLFormElement *This = impl_from_DispatchEx(dispex);
+    IDispatch *ret;
+    HRESULT hres;
+    DISPID id;
+
+    if(get_value) {
+        hres = HTMLFormElement_get_dispid(&This->element.node.event_target.dispex, (WCHAR*)name, 0, &id);
+        if(FAILED(hres))
+            return (hres == DISP_E_UNKNOWNNAME) ? S_FALSE : hres;
+        hres = htmlform_item(This, id - MSHTML_DISPID_CUSTOM_MIN, &ret);
+        if(FAILED(hres))
+            return hres;
+        if(ret) {
+            V_VT(get_value) = VT_DISPATCH;
+            V_DISPATCH(get_value) = ret;
+        }else {
+            V_VT(get_value) = VT_NULL;
+        }
+    }
+
+    return S_OK;
+}
+
 static HRESULT HTMLFormElement_handle_event(DispatchEx *dispex, DOMEvent *event, BOOL *prevent_default)
 {
     HTMLFormElement *This = impl_from_DispatchEx(dispex);
@@ -896,7 +921,8 @@ static const event_target_vtbl_t HTMLFormElement_event_target_vtbl = {
         .unlink         = HTMLFormElement_unlink,
         .get_dispid     = HTMLFormElement_get_dispid,
         .get_prop_desc  = dispex_index_prop_desc,
-        .invoke         = HTMLFormElement_invoke
+        .invoke         = HTMLFormElement_invoke,
+        .override       = HTMLFormElement_override,
     },
     HTMLELEMENT_EVENT_TARGET_VTBL_ENTRIES,
     .handle_event       = HTMLFormElement_handle_event

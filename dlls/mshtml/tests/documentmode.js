@@ -3612,6 +3612,7 @@ async_test("postMessage", function() {
 });
 
 sync_test("form", function() {
+    var v = document.documentMode;
     document.body.innerHTML = "";
     var form = document.createElement("form");
     document.body.appendChild(form);
@@ -3623,6 +3624,59 @@ sync_test("form", function() {
     ok(typeof(form[1]) === "object", "form[1] = " + form[1]);
     form.innerHTML = "";
     ok(form[0] === "test", "form[0] = " + form[0]);
+
+    if(v >= 9) {
+        var setval;
+        function getter() { return 42; }
+        function setter(v) { setval = v + 1; }
+
+        Object.defineProperty(form, "0", { get: getter, set: setter, configurable: true, enumerable: false });
+        var desc = Object.getOwnPropertyDescriptor(form, "0");
+        ok(desc.value === undefined, "value = " + desc.value);
+        ok(desc.get === getter, "get = " + desc.get);
+        ok(desc.set === setter, "set = " + desc.set);
+        ok(desc.writable === undefined, "writable = " + desc.writable);
+        ok(desc.enumerable === false, "enumerable = " + desc.enumerable);
+        ok(desc.configurable === true, "configurable = " + desc.configurable);
+        ok(form[0] === 42, "form[0] = " + form[0]);
+        form[0] = 1336;
+        ok(setval === 1337, "setval = " + setval);
+
+        form.innerHTML = "<input type=\"text\" id = \"i1\" /><input type=\"text\" id = \"i2\" />";
+        ok(form.length === 2, "form.length = " + form.length);
+        ok(typeof(form[0]) === "object", "form[0] = " + form[0]);
+        form[0] = 32;
+        ok(setval === 33, "setval = " + setval);
+
+        desc = Object.getOwnPropertyDescriptor(form, "0");
+        ok(desc.value === undefined, "[0] value = " + desc.value);
+        ok(desc.get === getter, "[0] get = " + desc.get);
+        ok(desc.set === setter, "[0] set = " + desc.set);
+        ok(desc.writable === undefined, "[0] writable = " + desc.writable);
+        ok(desc.enumerable === false, "[0] enumerable = " + desc.enumerable);
+        ok(desc.configurable === true, "[0] configurable = " + desc.configurable);
+
+        desc = Object.getOwnPropertyDescriptor(form, "1");
+        ok(typeof(desc.value) === "object", "[1] value = " + desc.value);
+        ok(desc.get === undefined, "[1] get = " + desc.get);
+        ok(desc.set === undefined, "[1] set = " + desc.set);
+        ok(desc.writable === true, "[1] writable = " + desc.writable);
+        todo_wine.
+        ok(desc.enumerable === true, "[1] enumerable = " + desc.enumerable);
+        ok(desc.configurable === true, "[1] configurable = " + desc.configurable);
+
+        form.innerHTML = "";
+        desc = Object.getOwnPropertyDescriptor(form, "0");
+        ok(desc.value === undefined, "value = " + desc.value);
+        ok(desc.get === getter, "get = " + desc.get);
+        ok(desc.set === setter, "set = " + desc.set);
+        ok(desc.writable === undefined, "writable = " + desc.writable);
+        ok(desc.enumerable === false, "enumerable = " + desc.enumerable);
+        ok(desc.configurable === true, "configurable = " + desc.configurable);
+        ok(form[0] === 42, "form[0] = " + form[0]);
+        form[0] = 100;
+        ok(setval === 101, "setval = " + setval);
+    }
 });
 
 function test_own_props(obj, name, props, todos, flaky) {
