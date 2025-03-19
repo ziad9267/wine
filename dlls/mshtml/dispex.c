@@ -34,6 +34,7 @@ WINE_DEFAULT_DEBUG_CHANNEL(mshtml);
 
 #define MAX_ARGS 16
 
+DISPID propput_dispid = DISPID_PROPERTYPUT;
 static ExternalCycleCollectionParticipant dispex_ccp;
 
 static CRITICAL_SECTION cs_dispex_static_data;
@@ -2200,8 +2201,6 @@ HRESULT dispex_prop_get(DispatchEx *dispex, DISPID id, LCID lcid, VARIANT *r, EX
 
 HRESULT dispex_prop_put(DispatchEx *dispex, DISPID id, LCID lcid, VARIANT *v, EXCEPINFO *ei, IServiceProvider *caller)
 {
-    static DISPID propput_dispid = DISPID_PROPERTYPUT;
-
     switch(get_dispid_type(id)) {
     case DISPEXPROP_CUSTOM: {
         DISPPARAMS dp = { .cArgs = 1, .rgvarg = v, .cNamedArgs = 1, .rgdispidNamedArgs = &propput_dispid };

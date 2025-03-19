@@ -2889,13 +2889,12 @@ static HRESULT WINAPI HTMLStyle_setAttribute(IHTMLStyle *iface, BSTR strAttribut
     if(hres == S_OK)
     {
         VARIANT ret;
-        DISPID dispidNamed = DISPID_PROPERTYPUT;
         DISPPARAMS params;
 
         params.cArgs = 1;
         params.rgvarg = &AttributeValue;
         params.cNamedArgs = 1;
-        params.rgdispidNamedArgs = &dispidNamed;
+        params.rgdispidNamedArgs = &propput_dispid;
 
         hres = HTMLStyle_Invoke(iface, dispid, &IID_NULL, LOCALE_SYSTEM_DEFAULT,
             DISPATCH_PROPERTYPUT, &params, &ret, NULL, NULL);

@@ -556,6 +556,7 @@ ALL_PROTOTYPES
 #undef X
 
 extern dispex_static_data_t *object_descriptors[PROT_LAST];
+extern DISPID propput_dispid;
 
 typedef HRESULT (*dispex_hook_invoke_t)(DispatchEx*,WORD,DISPPARAMS*,VARIANT*,
                                         EXCEPINFO*,IServiceProvider*);
