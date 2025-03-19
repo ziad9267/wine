@@ -196,8 +196,7 @@ typedef struct {
     DWORD props_cnt;
     const builtin_prop_t *props;
     void (*destructor)(jsdisp_t*);
-    ULONG (*addref)(jsdisp_t*);
-    ULONG (*release)(jsdisp_t*);
+    IWineJSDispatchHost *(*get_host_disp)(jsdisp_t*);
     void (*on_put)(jsdisp_t*,const WCHAR*);
     unsigned (*indexed_len)(jsdisp_t*);
     HRESULT (*lookup_prop)(jsdisp_t*,const WCHAR*,unsigned,struct property_info*);
