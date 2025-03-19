@@ -39,6 +39,13 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(mshtml);
 
+static dispex_static_data_t *const dispex_from_document_type[] = {
+    [DOCTYPE_HTML]  = &HTMLDocument_dispex,
+    [DOCTYPE_XHTML] = &XMLDocument_dispex,
+    [DOCTYPE_XML]   = &XMLDocument_dispex,
+    [DOCTYPE_SVG]   = &XMLDocument_dispex,
+};
+
 static HRESULT create_document_fragment(nsIDOMNode *nsnode, HTMLDocumentNode *doc_node, HTMLDocumentNode **ret);
 
 HRESULT get_doc_elem_by_id(HTMLDocumentNode *doc, const WCHAR *id, HTMLElement **ret)
@@ -5547,7 +5554,7 @@ static HTMLInnerWindow *HTMLDocumentNode_get_script_global(DispatchEx *dispex, d
     if(This->node.vtbl != &HTMLDocumentNodeImplVtbl)
         *dispex_data = &DocumentFragment_dispex;
     else
-        *dispex_data = This->document_mode < COMPAT_MODE_IE11 ? &Document_dispex : &HTMLDocument_dispex;
+        *dispex_data = This->document_mode < COMPAT_MODE_IE11 ? &Document_dispex : dispex_from_document_type[This->doc_type];
     return This->script_global;
 }
 
@@ -5784,6 +5791,17 @@ dispex_static_data_t HTMLDocument_dispex = {
     .min_compat_mode = COMPAT_MODE_IE11,
 };
 
+dispex_static_data_t XMLDocument_dispex = {
+    .id           = PROT_XMLDocument,
+    .prototype_id = PROT_Document,
+    .vtbl         = &HTMLDocument_event_target_vtbl.dispex_vtbl,
+    .disp_tid     = DispHTMLDocument_tid,
+    .iface_tids   = HTMLDocumentNode_iface_tids,
+    .init_info    = HTMLDocumentNode_init_dispex_info,
+    .js_flags     = HOSTOBJ_VOLATILE_PROPS,
+    .min_compat_mode = COMPAT_MODE_IE11,
+};
+
 static HTMLDocumentNode *alloc_doc_node(HTMLDocumentObj *doc_obj, HTMLInnerWindow *window, HTMLInnerWindow *script_global)
 {
     HTMLDocumentNode *doc;
@@ -5833,7 +5851,7 @@ static HTMLDocumentNode *alloc_doc_node(HTMLDocumentObj *doc_obj, HTMLInnerWindo
 }
 
 HRESULT create_document_node(nsIDOMDocument *nsdoc, GeckoBrowser *browser, HTMLInnerWindow *window,
-                             HTMLInnerWindow *script_global, compat_mode_t parent_mode, HTMLDocumentNode **ret)
+        HTMLInnerWindow *script_global, document_type_t doc_type, compat_mode_t parent_mode, HTMLDocumentNode **ret)
 {
     HTMLDocumentObj *doc_obj = browser->doc;
     HTMLDocumentNode *doc;
@@ -5841,6 +5859,7 @@ HRESULT create_document_node(nsIDOMDocument *nsdoc, GeckoBrowser *browser, HTMLI
     doc = alloc_doc_node(doc_obj, window, script_global);
     if(!doc)
         return E_OUTOFMEMORY;
+    doc->doc_type = doc_type;
 
     if(parent_mode >= COMPAT_MODE_IE9) {
         TRACE("using parent mode %u\n", parent_mode);
@@ -5860,7 +5879,7 @@ HRESULT create_document_node(nsIDOMDocument *nsdoc, GeckoBrowser *browser, HTMLI
         doc->html_document = NULL;
     }
 
-    HTMLDOMNode_Init(doc, &doc->node, (nsIDOMNode*)doc->dom_document, &HTMLDocument_dispex);
+    HTMLDOMNode_Init(doc, &doc->node, (nsIDOMNode*)doc->dom_document, dispex_from_document_type[doc_type]);
 
     init_document_mutation(doc);
     doc_init_events(doc);
