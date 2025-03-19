@@ -151,34 +151,34 @@ sync_test("window own props", function() {
     ], [
         ["AesGcmEncryptResult",11], ["ANGLE_instanced_arrays",11], ["AnimationEvent",10], ["ApplicationCache",10], ["ArrayBuffer",9,9], "Audio", ["AudioTrack",10], ["AudioTrackList",10],
         "BeforeUnloadEvent", ["Blob",10], "BookmarkCollection", "CanvasGradient", "CanvasPattern", "CanvasPixelArray", "CanvasRenderingContext2D", "CDATASection", ["CloseEvent",10],
-        "CompositionEvent", "ControlRangeCollection", "Coordinates", ["Crypto",11], ["CryptoOperation",11], "CSSFontFaceRule", "CSSImportRule", ["CSSKeyframeRule",10], ["CSSKeyframesRule",10],
-        "CSSMediaRule", "CSSNamespaceRule", "CSSPageRule", "CSSRuleList", "DataTransfer", ["DataView",9,9], "Debug", ["DeviceAcceleration",11], ["DeviceMotionEvent",11],
-        ["DeviceOrientationEvent",11], ["DeviceRotationRate",11], ["DOMError",10], "DOMException", ["DOMSettableTokenList",10], ["DOMStringList",10], ["DOMStringMap",11], "DragEvent",
-        ["ErrorEvent",10], "EventException", ["EXT_texture_filter_anisotropic",11], ["File",10], ["FileList",10], ["FileReader",10], ["Float32Array",9,9], ["Float64Array",9,9], "FocusEvent",
-        ["FormData",10], "Geolocation", "GetObject", ["HTMLAllCollection",11], "HTMLAppletElement", "HTMLAreasCollection", "HTMLAudioElement", "HTMLBaseElement", "HTMLBaseFontElement",
-        "HTMLBGSoundElement", "HTMLBlockElement", "HTMLBRElement", "HTMLCanvasElement", ["HTMLDataListElement",10], "HTMLDDElement", "HTMLDirectoryElement", "HTMLDivElement", "HTMLDListElement",
-        "HTMLDTElement", "HTMLFieldSetElement", "HTMLFontElement", "HTMLFrameSetElement", "HTMLHeadingElement", "HTMLHRElement", "HTMLIsIndexElement", "HTMLLegendElement", "HTMLLIElement",
-        "HTMLMapElement", "HTMLMarqueeElement", "HTMLMediaElement", "HTMLMenuElement", "HTMLModElement", "HTMLNextIdElement", "HTMLOListElement", "HTMLOptGroupElement", "HTMLParagraphElement",
-        "HTMLParamElement", "HTMLPhraseElement", "HTMLPreElement", ["HTMLProgressElement",10], "HTMLQuoteElement", "HTMLSourceElement", "HTMLSpanElement", "HTMLTableCaptionElement",
-        "HTMLTableColElement", "HTMLTableHeaderCellElement", "HTMLTableSectionElement", ["HTMLTrackElement",10], "HTMLUListElement", "HTMLVideoElement", ["IDBCursor",10], ["IDBCursorWithValue",10],
-        ["IDBDatabase",10], ["IDBFactory",10], ["IDBIndex",10], ["IDBKeyRange",10], ["IDBObjectStore",10], ["IDBOpenDBRequest",10], ["IDBRequest",10], ["IDBTransaction",10],
-        ["IDBVersionChangeEvent",10], "ImageData", ["Int16Array",9,9], ["Int32Array",9,9], ["Int8Array",9,9], ["Intl",11], ["Key",11], ["KeyOperation",11], ["KeyPair",11], "Location", "MediaError",
-        "MediaList", ["MediaSource",11], ["MessageChannel",10], ["MessagePort",10], ["MimeType",11], ["MimeTypeArray",9,10], "MouseWheelEvent", "MSBehaviorUrnsCollection", ["MSBlobBuilder",10],
-        "MSCompatibleInfo", "MSCompatibleInfoCollection", ["MSCSSMatrix",10], ["MSGesture",10], ["MSGestureEvent",10], ["MSGraphicsTrust",11], ["MSInputMethodContext",11], ["MSManipulationEvent",10],
-        ["MSMediaKeyError",11], ["MSMediaKeyMessageEvent",11], ["MSMediaKeyNeededEvent",11], ["MSMediaKeys",11], ["MSMediaKeySession",11], "MSMimeTypesCollection", ["MSNamespaceInfo",0,9],
-        "MSPluginsCollection", ["MSPointerEvent",10], ["MSPopupWindow",0,10], ["MSRangeCollection",10], "MSSiteModeEvent", ["MSStream",10], ["MSStreamReader",10], "MutationEvent", ["MutationRecord",11],
-        "NodeFilter", "NodeIterator", ["OES_element_index_uint",11], ["OES_standard_derivatives",11], ["OES_texture_float",11], ["OES_texture_float_linear",11], "PerformanceEntry", "PerformanceMark",
-        "PerformanceMeasure", ["PerformanceNavigationTiming",11], "PerformanceResourceTiming", ["Plugin",11], ["PluginArray",9,10], ["PointerEvent",11], ["PopStateEvent",10], "Position",
-        "PositionError", "ProcessingInstruction", "RangeException", "RegExpError", "Selection", ["SourceBuffer",11], ["SourceBufferList",11], "StyleMedia", "StyleSheetPageList", ["SubtleCrypto",11],
-        "SVGAElement", "SVGAngle", "SVGAnimatedAngle", "SVGAnimatedBoolean", "SVGAnimatedEnumeration", "SVGAnimatedInteger", "SVGAnimatedLength", "SVGAnimatedLengthList", "SVGAnimatedNumber",
-        "SVGAnimatedNumberList", "SVGAnimatedPreserveAspectRatio", "SVGAnimatedRect", "SVGAnimatedString", "SVGAnimatedTransformList", "SVGClipPathElement", ["SVGComponentTransferFunctionElement",10],
-        "SVGDefsElement", "SVGDescElement", "SVGElementInstance", "SVGElementInstanceList", "SVGEllipseElement", "SVGException", ["SVGFEBlendElement",10], ["SVGFEColorMatrixElement",10],
+        "CompositionEvent", "ControlRangeCollection", "Coordinates", ["CryptoOperation",11], "CSSFontFaceRule", "CSSImportRule", ["CSSKeyframeRule",10], ["CSSKeyframesRule",10], "CSSMediaRule",
+        "CSSNamespaceRule", "CSSPageRule", "CSSRuleList", "DataTransfer", ["DataView",9,9], "Debug", ["DeviceAcceleration",11], ["DeviceMotionEvent",11], ["DeviceOrientationEvent",11],
+        ["DeviceRotationRate",11], ["DOMError",10], "DOMException", ["DOMSettableTokenList",10], ["DOMStringList",10], ["DOMStringMap",11], "DragEvent", ["ErrorEvent",10], "EventException",
+        ["EXT_texture_filter_anisotropic",11], ["File",10], ["FileList",10], ["FileReader",10], ["Float32Array",9,9], ["Float64Array",9,9], "FocusEvent", ["FormData",10], "Geolocation", "GetObject",
+        ["HTMLAllCollection",11], "HTMLAppletElement", "HTMLAreasCollection", "HTMLAudioElement", "HTMLBaseElement", "HTMLBaseFontElement", "HTMLBGSoundElement", "HTMLBlockElement", "HTMLBRElement",
+        "HTMLCanvasElement", ["HTMLDataListElement",10], "HTMLDDElement", "HTMLDirectoryElement", "HTMLDivElement", "HTMLDListElement", "HTMLDTElement", "HTMLFieldSetElement", "HTMLFontElement",
+        "HTMLFrameSetElement", "HTMLHeadingElement", "HTMLHRElement", "HTMLIsIndexElement", "HTMLLegendElement", "HTMLLIElement", "HTMLMapElement", "HTMLMarqueeElement", "HTMLMediaElement",
+        "HTMLMenuElement", "HTMLModElement", "HTMLNextIdElement", "HTMLOListElement", "HTMLOptGroupElement", "HTMLParagraphElement", "HTMLParamElement", "HTMLPhraseElement", "HTMLPreElement",
+        ["HTMLProgressElement",10], "HTMLQuoteElement", "HTMLSourceElement", "HTMLSpanElement", "HTMLTableCaptionElement", "HTMLTableColElement", "HTMLTableHeaderCellElement",
+        "HTMLTableSectionElement", ["HTMLTrackElement",10], "HTMLUListElement", "HTMLVideoElement", ["IDBCursor",10], ["IDBCursorWithValue",10], ["IDBDatabase",10], ["IDBFactory",10], ["IDBIndex",10],
+        ["IDBKeyRange",10], ["IDBObjectStore",10], ["IDBOpenDBRequest",10], ["IDBRequest",10], ["IDBTransaction",10], ["IDBVersionChangeEvent",10], "ImageData", ["Int16Array",9,9], ["Int32Array",9,9],
+        ["Int8Array",9,9], ["Intl",11], ["Key",11], ["KeyOperation",11], ["KeyPair",11], "Location", "MediaError", "MediaList", ["MediaSource",11], ["MessageChannel",10], ["MessagePort",10],
+        ["MimeType",11], ["MimeTypeArray",9,10], "MouseWheelEvent", "MSBehaviorUrnsCollection", ["MSBlobBuilder",10], "MSCompatibleInfo", "MSCompatibleInfoCollection", ["MSCSSMatrix",10],
+        ["MSGesture",10], ["MSGestureEvent",10], ["MSGraphicsTrust",11], ["MSInputMethodContext",11], ["MSManipulationEvent",10], ["MSMediaKeyError",11], ["MSMediaKeyMessageEvent",11],
+        ["MSMediaKeyNeededEvent",11], ["MSMediaKeys",11], ["MSMediaKeySession",11], "MSMimeTypesCollection", ["MSNamespaceInfo",0,9], "MSPluginsCollection", ["MSPointerEvent",10],
+        ["MSPopupWindow",0,10], ["MSRangeCollection",10], "MSSiteModeEvent", ["MSStream",10], ["MSStreamReader",10], "MutationEvent", ["MutationRecord",11], "NodeFilter", "NodeIterator",
+        ["OES_element_index_uint",11], ["OES_standard_derivatives",11], ["OES_texture_float",11], ["OES_texture_float_linear",11], "PerformanceEntry", "PerformanceMark", "PerformanceMeasure",
+        ["PerformanceNavigationTiming",11], "PerformanceResourceTiming", ["Plugin",11], ["PluginArray",9,10], ["PointerEvent",11], ["PopStateEvent",10], "Position", "PositionError",
+        "ProcessingInstruction", "RangeException", "RegExpError", "Selection", ["SourceBuffer",11], ["SourceBufferList",11], "StyleMedia", "StyleSheetPageList", ["SubtleCrypto",11], "SVGAElement",
+        "SVGAngle", "SVGAnimatedAngle", "SVGAnimatedBoolean", "SVGAnimatedEnumeration", "SVGAnimatedInteger", "SVGAnimatedLength", "SVGAnimatedLengthList", "SVGAnimatedNumber", "SVGAnimatedNumberList",
+        "SVGAnimatedPreserveAspectRatio", "SVGAnimatedRect", "SVGAnimatedString", "SVGAnimatedTransformList", "SVGClipPathElement", ["SVGComponentTransferFunctionElement",10], "SVGDefsElement",
+        "SVGDescElement", "SVGElementInstance", "SVGElementInstanceList", "SVGEllipseElement", "SVGException", ["SVGFEBlendElement",10], ["SVGFEColorMatrixElement",10],
         ["SVGFEComponentTransferElement",10], ["SVGFECompositeElement",10], ["SVGFEConvolveMatrixElement",10], ["SVGFEDiffuseLightingElement",10], ["SVGFEDisplacementMapElement",10],
-        ["SVGFEDistantLightElement",10], ["SVGFEFloodElement",10], ["SVGFEFuncAElement",10], ["SVGFEFuncBElement",10], ["SVGFEFuncGElement",10], ["SVGFEFuncRElement",10], ["SVGFEGaussianBlurElement",10],
-        ["SVGFEImageElement",10], ["SVGFEMergeElement",10], ["SVGFEMergeNodeElement",10], ["SVGFEMorphologyElement",10], ["SVGFEOffsetElement",10], ["SVGFEPointLightElement",10],
-        ["SVGFESpecularLightingElement",10], ["SVGFESpotLightElement",10], ["SVGFETileElement",10], ["SVGFETurbulenceElement",10], ["SVGFilterElement",10], "SVGGElement", "SVGGradientElement",
-        "SVGImageElement", "SVGLength", "SVGLengthList", "SVGLinearGradientElement", "SVGLineElement", "SVGMarkerElement", "SVGMaskElement", "SVGMatrix", "SVGMetadataElement", "SVGNumber",
-        "SVGNumberList", "SVGPathElement", "SVGPathSeg", "SVGPathSegArcAbs", "SVGPathSegArcRel", "SVGPathSegClosePath", "SVGPathSegCurvetoCubicAbs", "SVGPathSegCurvetoCubicRel",
+        ["SVGFEDistantLightElement",10], ["SVGFEFloodElement",10], ["SVGFEFuncAElement",10], ["SVGFEFuncBElement",10], ["SVGFEFuncGElement",10], ["SVGFEFuncRElement",10],
+        ["SVGFEGaussianBlurElement",10], ["SVGFEImageElement",10], ["SVGFEMergeElement",10], ["SVGFEMergeNodeElement",10], ["SVGFEMorphologyElement",10], ["SVGFEOffsetElement",10],
+        ["SVGFEPointLightElement",10], ["SVGFESpecularLightingElement",10], ["SVGFESpotLightElement",10], ["SVGFETileElement",10], ["SVGFETurbulenceElement",10], ["SVGFilterElement",10], "SVGGElement",
+        "SVGGradientElement", "SVGImageElement", "SVGLength", "SVGLengthList", "SVGLinearGradientElement", "SVGLineElement", "SVGMarkerElement", "SVGMaskElement", "SVGMatrix", "SVGMetadataElement",
+        "SVGNumber", "SVGNumberList", "SVGPathElement", "SVGPathSeg", "SVGPathSegArcAbs", "SVGPathSegArcRel", "SVGPathSegClosePath", "SVGPathSegCurvetoCubicAbs", "SVGPathSegCurvetoCubicRel",
         "SVGPathSegCurvetoCubicSmoothAbs", "SVGPathSegCurvetoCubicSmoothRel", "SVGPathSegCurvetoQuadraticAbs", "SVGPathSegCurvetoQuadraticRel", "SVGPathSegCurvetoQuadraticSmoothAbs",
         "SVGPathSegCurvetoQuadraticSmoothRel", "SVGPathSegLinetoAbs", "SVGPathSegLinetoHorizontalAbs", "SVGPathSegLinetoHorizontalRel", "SVGPathSegLinetoRel", "SVGPathSegLinetoVerticalAbs",
         "SVGPathSegLinetoVerticalRel", "SVGPathSegList", "SVGPathSegMovetoAbs", "SVGPathSegMovetoRel", "SVGPatternElement", "SVGPoint", "SVGPointList", "SVGPolygonElement", "SVGPolylineElement",
@@ -459,6 +459,7 @@ sync_test("builtin_toString", function() {
         test("mediaQueryList", window.matchMedia("(hover:hover)"), "MediaQueryList");
     }
     if(v >= 11) {
+        test("crypto", window.msCrypto, "Crypto");
         test("MutationObserver", new window.MutationObserver(function() {}), "MutationObserver");
     }
     if(v >= 9) {
@@ -815,6 +816,7 @@ sync_test("window_props", function() {
     test_exposed("performance", true);
     test_exposed("console", v >= 10);
     test_exposed("matchMedia", v >= 10);
+    test_exposed("msCrypto", v >= 11);
     test_exposed("Document", v >= 9);
     test_exposed("HTMLDocument", v === 8 || v >= 11, v === 8);
     test_exposed("XMLDocument", v >= 11);
@@ -3460,6 +3462,15 @@ sync_test("__defineSetter__", function() {
     x.bar = 10;
     ok(x.bar === undefined, "x.bar with setter = " + x.bar);
     ok(x.setterVal === 9, "x.setterVal after setting bar = " + x.setterVal);
+});
+
+sync_test("Crypto", function() {
+    var crypto = window.msCrypto;
+    if(!crypto) return;
+
+    ok("subtle" in crypto, "subtle not in crypto");
+    ok("getRandomValues" in crypto, "getRandomValues not in crypto");
+    ok(!("randomUUID" in crypto), "randomUUID is in crypto");
 });
 
 sync_test("MutationObserver", function() {
