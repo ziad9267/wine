@@ -225,6 +225,11 @@ static inline IDispatchEx *to_dispex(jsdisp_t *jsdisp)
     return (IDispatchEx *)&jsdisp->IWineJSDispatch_iface;
 }
 
+static inline BOOL is_dispex_prop_id(DISPID id)
+{
+    return id > 0;
+}
+
 jsdisp_t *as_jsdisp(IDispatch*);
 jsdisp_t *to_jsdisp(IDispatch*);
 IWineJSDispatchHost *get_host_dispatch(IDispatch*);
