@@ -1514,7 +1514,7 @@ static HRESULT String_lookup_prop(jsdisp_t *jsdisp, const WCHAR *name, unsigned 
     if(string->dispex.ctx->version < 2)
         return DISP_E_UNKNOWNNAME;
 
-    return jsdisp_index_lookup(&string->dispex, name, jsstr_length(string->str), desc);
+    return jsdisp_index_lookup(&string->dispex, name, jsstr_length(string->str), PROPF_ENUMERABLE, desc);
 }
 
 static HRESULT String_prop_get(jsdisp_t *jsdisp, DISPID id, jsval_t *r)
@@ -1536,6 +1536,15 @@ static HRESULT String_prop_get(jsdisp_t *jsdisp, DISPID id, jsval_t *r)
     return S_OK;
 }
 
+static HRESULT String_prop_put(jsdisp_t *jsdisp, DISPID id, jsval_t val)
+{
+    unsigned idx;
+
+    if(!get_extern_prop_idx(jsdisp, id, &idx))
+        return S_FALSE;
+    return S_OK;
+}
+
 static HRESULT String_fill_props(jsdisp_t *jsdisp)
 {
     StringInstance *string = string_from_jsdisp(jsdisp);
@@ -1543,7 +1552,7 @@ static HRESULT String_fill_props(jsdisp_t *jsdisp)
     if(string->dispex.ctx->version < 2)
         return S_OK;
 
-    return jsdisp_fill_indices(&string->dispex, jsstr_length(string->str));
+    return jsdisp_fill_indices(&string->dispex, jsstr_length(string->str), PROPF_ENUMERABLE);
 }
 
 static const builtin_prop_t String_props[] = {
@@ -1601,6 +1610,7 @@ static const builtin_info_t StringInst_info = {
     .destructor  = String_destructor,
     .lookup_prop = String_lookup_prop,
     .prop_get    = String_prop_get,
+    .prop_put    = String_prop_put,
     .fill_props  = String_fill_props,
 };
 

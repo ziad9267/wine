@@ -503,7 +503,7 @@ static HRESULT ensure_prop_name(jsdisp_t *This, const WCHAR *name, DWORD create_
     return S_OK;
 }
 
-HRESULT jsdisp_index_lookup(jsdisp_t *obj, const WCHAR *name, unsigned length, struct property_info *desc)
+HRESULT jsdisp_index_lookup(jsdisp_t *obj, const WCHAR *name, unsigned length, unsigned flags, struct property_info *desc)
 {
     const WCHAR *ptr;
     unsigned idx = 0;
@@ -517,9 +517,7 @@ HRESULT jsdisp_index_lookup(jsdisp_t *obj, const WCHAR *name, unsigned length, s
         return DISP_E_UNKNOWNNAME;
 
     desc->id = idx;
-    desc->flags = PROPF_ENUMERABLE;
-    if(obj->builtin_info->prop_put)
-        desc->flags |= PROPF_WRITABLE;
+    desc->flags = flags;
     desc->name = NULL;
     desc->index = idx;
     desc->prototype_id = 0;
@@ -631,9 +629,16 @@ static HRESULT prop_get(jsdisp_t *This, IDispatch *jsthis, DISPID id, jsval_t *r
 
 static HRESULT prop_put(jsdisp_t *This, DISPID id, jsval_t val)
 {
-    dispex_prop_t *prop = &This->props[prop_id_to_idx(id)];
+    dispex_prop_t *prop;
     HRESULT hres;
 
+    if(This->builtin_info->prop_put) {
+        hres = This->builtin_info->prop_put(This, id, val);
+        if(hres != S_FALSE)
+            return hres;
+    }
+
+    prop = &This->props[prop_id_to_idx(id)];
     if(prop->type == PROP_PROTREF) {
         dispex_prop_t *prop_iter = prop;
         jsdisp_t *prototype_iter = This;
@@ -674,22 +679,9 @@ static HRESULT prop_put(jsdisp_t *This, DISPID id, jsval_t val)
             return S_OK;
         }
         return jsdisp_call_value(prop->u.accessor.setter, jsval_obj(This), DISPATCH_METHOD, 1, &val, NULL);
-    case PROP_EXTERN:
-        if(!This->builtin_info->prop_put) {
-            TRACE("no prop_put\n");
-            return S_OK;
-        }
-        if(!(prop->flags & PROPF_WRITABLE))
-            return S_OK;
-        hres = This->builtin_info->prop_put(This, prop->u.id, val);
-        if(hres != S_FALSE)
-            return hres;
-        prop->type = PROP_JSVAL;
-        prop->flags = PROPF_ENUMERABLE | PROPF_CONFIGURABLE | PROPF_WRITABLE;
-        prop->u.val = jsval_undefined();
-        break;
     default:
         ERR("type %d\n", prop->type);
+        assert(0);
         return E_FAIL;
     }
 
@@ -3096,14 +3088,12 @@ HRESULT disp_delete(IDispatch *disp, DISPID id, BOOL *ret)
     return S_OK;
 }
 
-HRESULT jsdisp_fill_indices(jsdisp_t *obj, unsigned length)
+HRESULT jsdisp_fill_indices(jsdisp_t *obj, unsigned length, unsigned flags)
 {
     struct property_info desc;
     HRESULT hres;
 
-    desc.flags = PROPF_ENUMERABLE;
-    if(obj->builtin_info->prop_put)
-        desc.flags |= PROPF_WRITABLE;
+    desc.flags = flags;
     desc.name = NULL;
     desc.prototype_id = 0;
 
@@ -3549,23 +3539,36 @@ static HRESULT HostObject_prop_get(jsdisp_t *jsdisp, DISPID id, jsval_t *r)
     return hres;
 }
 
-static HRESULT HostObject_prop_put(jsdisp_t *jsdisp, unsigned idx, jsval_t v)
+static HRESULT HostObject_prop_put(jsdisp_t *jsdisp, DISPID id, jsval_t v)
 {
+    dispex_prop_t *prop = &jsdisp->props[prop_id_to_idx(id)];
     HostObject *This = HostObject_from_jsdisp(jsdisp);
     EXCEPINFO ei = { 0 };
     VARIANT var;
     HRESULT hres;
 
+    if(prop->type != PROP_EXTERN)
+        return S_FALSE;
+
+    if(!(prop->flags & PROPF_WRITABLE))
+        return S_OK;
+
     hres = jsval_to_variant(v, &var);
     if(FAILED(hres))
         return hres;
 
-    hres = IWineJSDispatchHost_SetProperty(This->host_iface, idx, jsdisp->ctx->lcid, &var, &ei,
+    hres = IWineJSDispatchHost_SetProperty(This->host_iface, prop->u.id, jsdisp->ctx->lcid, &var, &ei,
                                            &jsdisp->ctx->jscaller->IServiceProvider_iface);
     if(hres == DISP_E_EXCEPTION)
         handle_dispatch_exception(jsdisp->ctx, &ei);
     VariantClear(&var);
-    return hres;
+    if(hres != S_FALSE)
+        return hres;
+
+    prop->type = PROP_JSVAL;
+    prop->flags = PROPF_ENUMERABLE | PROPF_CONFIGURABLE | PROPF_WRITABLE;
+    prop->u.val = jsval_undefined();
+    return jsval_copy(v, &prop->u.val);
 }
 
 static HRESULT HostObject_prop_delete(jsdisp_t *jsdisp, unsigned id)

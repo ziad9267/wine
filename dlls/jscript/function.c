@@ -133,7 +133,7 @@ static void Arguments_destructor(jsdisp_t *jsdisp)
 static HRESULT Arguments_lookup_prop(jsdisp_t *jsdisp, const WCHAR *name, unsigned flags, struct property_info *desc)
 {
     ArgumentsInstance *arguments = arguments_from_jsdisp(jsdisp);
-    return jsdisp_index_lookup(&arguments->jsdisp, name, arguments->argc, desc);
+    return jsdisp_index_lookup(&arguments->jsdisp, name, arguments->argc, PROPF_ENUMERABLE | PROPF_WRITABLE, desc);
 }
 
 static jsval_t *get_argument_ref(ArgumentsInstance *arguments, unsigned idx)
@@ -158,11 +158,15 @@ static HRESULT Arguments_prop_get(jsdisp_t *jsdisp, DISPID id, jsval_t *r)
     return jsval_copy(*get_argument_ref(arguments, idx), r);
 }
 
-static HRESULT Arguments_prop_put(jsdisp_t *jsdisp, unsigned idx, jsval_t val)
+static HRESULT Arguments_prop_put(jsdisp_t *jsdisp, DISPID id, jsval_t val)
 {
     ArgumentsInstance *arguments = arguments_from_jsdisp(jsdisp);
     jsval_t copy, *ref;
+    unsigned idx;
     HRESULT hres;
+
+    if(!get_extern_prop_idx(jsdisp, id, &idx))
+        return S_FALSE;
 
     TRACE("%p[%u] = %s\n", arguments, idx, debugstr_jsval(val));
 
@@ -179,7 +183,7 @@ static HRESULT Arguments_prop_put(jsdisp_t *jsdisp, unsigned idx, jsval_t val)
 static HRESULT Arguments_fill_props(jsdisp_t *jsdisp)
 {
     ArgumentsInstance *arguments = arguments_from_jsdisp(jsdisp);
-    return jsdisp_fill_indices(&arguments->jsdisp, arguments->argc);
+    return jsdisp_fill_indices(&arguments->jsdisp, arguments->argc, PROPF_ENUMERABLE | PROPF_WRITABLE);
 }
 
 static HRESULT Arguments_gc_traverse(struct gc_ctx *gc_ctx, enum gc_traverse_op op, jsdisp_t *jsdisp)

@@ -494,7 +494,7 @@ static HRESULT scope_lookup_prop(jsdisp_t *jsdisp, const WCHAR *name, unsigned f
 {
     scope_chain_t *scope = scope_from_dispex(jsdisp);
 
-    return jsdisp_index_lookup(&scope->dispex, name, scope->detached_vars->argc, desc);
+    return jsdisp_index_lookup(&scope->dispex, name, scope->detached_vars->argc, PROPF_ENUMERABLE | PROPF_WRITABLE, desc);
 }
 
 static HRESULT scope_prop_get(jsdisp_t *dispex, DISPID id, jsval_t *r)
@@ -507,11 +507,15 @@ static HRESULT scope_prop_get(jsdisp_t *dispex, DISPID id, jsval_t *r)
     return jsval_copy(scope->detached_vars->var[idx], r);
 }
 
-static HRESULT scope_prop_put(jsdisp_t *dispex, unsigned idx, jsval_t val)
+static HRESULT scope_prop_put(jsdisp_t *dispex, DISPID id, jsval_t val)
 {
     scope_chain_t *scope = scope_from_dispex(dispex);
     jsval_t copy, *ref;
+    unsigned idx;
     HRESULT hres;
+
+    if(!get_extern_prop_idx(dispex, id, &idx))
+        return S_FALSE;
 
     hres = jsval_copy(val, &copy);
     if(FAILED(hres))
