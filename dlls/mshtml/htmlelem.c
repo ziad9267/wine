@@ -1129,6 +1129,7 @@ dispex_static_data_t ClientRectList_dispex = {
     .vtbl       = &HTMLRectCollection_dispex_vtbl,
     .disp_tid   = IHTMLRectCollection_tid,
     .iface_tids = ClientRectList_iface_tids,
+    .js_flags   = HOSTOBJ_VOLATILE_PROPS
 };
 
 DISPEX_IDISPATCH_IMPL(HTMLElement, IHTMLElement,
@@ -7211,6 +7212,7 @@ dispex_static_data_t DOMTokenList_dispex = {
     .vtbl            = &token_list_dispex_vtbl,
     .disp_tid        = IWineDOMTokenList_tid,
     .iface_tids      = DOMTokenList_tids,
+    .js_flags        = HOSTOBJ_VOLATILE_PROPS,
     .min_compat_mode = COMPAT_MODE_IE10,
 };
 
@@ -8268,6 +8270,7 @@ dispex_static_data_t NamedNodeMap_dispex = {
     .vtbl       = &HTMLAttributeCollection_dispex_vtbl,
     .disp_tid   = DispHTMLAttributeCollection_tid,
     .iface_tids = NamedNodeMap_iface_tids,
+    .js_flags   = HOSTOBJ_VOLATILE_PROPS
 };
 
 HRESULT HTMLElement_get_attr_col(HTMLDOMNode *iface, HTMLAttributeCollection **ac)

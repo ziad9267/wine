@@ -1305,6 +1305,7 @@ dispex_static_data_t HTMLSelectElement_dispex = {
     .disp_tid     = DispHTMLSelectElement_tid,
     .iface_tids   = HTMLSelectElement_tids,
     .init_info    = HTMLElement_init_dispex_info,
+    .js_flags     = HOSTOBJ_VOLATILE_PROPS
 };
 
 HRESULT HTMLSelectElement_Create(HTMLDocumentNode *doc, nsIDOMElement *nselem, HTMLElement **elem)

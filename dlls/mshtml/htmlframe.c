@@ -934,6 +934,7 @@ dispex_static_data_t HTMLFrameElement_dispex = {
     .disp_tid     = DispHTMLFrameElement_tid,
     .iface_tids   = HTMLFrameElement_iface_tids,
     .init_info    = HTMLElement_init_dispex_info,
+    .js_flags     = HOSTOBJ_VOLATILE_PROPS
 };
 
 HRESULT HTMLFrameElement_Create(HTMLDocumentNode *doc, nsIDOMElement *nselem, HTMLElement **elem)
@@ -1371,6 +1372,7 @@ dispex_static_data_t HTMLIFrameElement_dispex = {
     .disp_tid     = DispHTMLIFrame_tid,
     .iface_tids   = HTMLIFrameElement_iface_tids,
     .init_info    = HTMLElement_init_dispex_info,
+    .js_flags     = HOSTOBJ_VOLATILE_PROPS
 };
 
 HRESULT HTMLIFrame_Create(HTMLDocumentNode *doc, nsIDOMElement *nselem, HTMLElement **elem)

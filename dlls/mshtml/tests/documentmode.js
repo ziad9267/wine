@@ -3679,6 +3679,70 @@ sync_test("form", function() {
     }
 });
 
+sync_test("indexed hostobj props", function() {
+    var v = document.documentMode;
+    if(v < 9)
+        return;
+    function getter() { return 42; }
+
+    function check(obj, value, overridden) {
+        var name = Object.prototype.toString.call(obj).slice(8, -1);
+        if(value === null)
+            ok(typeof(obj[0]) === "object", name + "[0] = " + obj[0]);
+        else
+            ok(obj[0] === value, name + "[0] post-del = " + obj[0]);
+
+        Object.defineProperty(obj, "0", { get: getter, set: undefined, configurable: true, enumerable: false });
+        var desc = Object.getOwnPropertyDescriptor(obj, "0");
+        ok(desc.value === undefined, name + "[0] value = " + desc.value);
+        ok(desc.get === getter, name + "[0] get = " + desc.get);
+        ok(desc.set === undefined, name + "[0] set = " + desc.set);
+        ok(desc.writable === undefined, name + "[0] writable = " + desc.writable);
+        ok(desc.enumerable === false, name + "[0] enumerable = " + desc.enumerable);
+        ok(desc.configurable === true, name + "[0] configurable = " + desc.configurable);
+
+        if(!overridden)
+            ok(obj[0] === 42, name + "[0] = " + obj[0]);
+        else if(value === null)
+            ok(typeof(obj[0]) === "object", name + "[0] = " + obj[0]);
+        else
+            ok(obj[0] === value, name + "[0] = " + obj[0]);
+
+        delete obj["0"];
+        desc = Object.getOwnPropertyDescriptor(obj, "0");
+        if(value === null)
+            ok(typeof(desc.value) === "object", name + "[0] value post-del = " + desc.value);
+        else
+            ok(desc.value === value, name + "[0] value post-del = " + desc.value);
+        ok(desc.get === undefined, name + "[0] get post-del = " + desc.get);
+        ok(desc.set === undefined, name + "[0] set post-del = " + desc.set);
+        ok(desc.writable === true, name + "[0] writable post-del = " + desc.writable);
+        todo_wine.
+        ok(desc.enumerable === true, name + "[0] enumerable post-del = " + desc.enumerable);
+        ok(desc.configurable === true, name + "[0] configurable post-del = " + desc.configurable);
+        if(value === null)
+            ok(typeof(obj[0]) === "object", name + "[0] post-del = " + obj[0]);
+        else
+            ok(obj[0] === value, name + "[0] post-del = " + obj[0]);
+        ok(obj.hasOwnProperty("0"), "0 not a prop of " + name);
+    }
+
+    document.body.innerHTML = "<style>div { margin-left: 1px; }</style>";
+    var e = document.createElement("select");
+    e.innerHTML = '<option value="wine"/>'
+    e.setAttribute("class", "wine");
+
+    check(document.all, null);
+    check(document.childNodes, null);
+    check(document.styleSheets, null);
+    check(document.styleSheets[0].rules, null);
+    check(document.body.getClientRects(), null);
+    check(e, null);
+    check(e.attributes, null);
+    if(v > 9)
+        check(e.classList, "wine");
+});
+
 function test_own_props(obj, name, props, todos, flaky) {
     var v = document.documentMode, prop, expected = {}, enumerated = Object.getOwnPropertyNames(obj).sort();
 

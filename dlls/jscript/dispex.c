@@ -359,7 +359,7 @@ static HRESULT update_external_prop(jsdisp_t *obj, const WCHAR *name, dispex_pro
 
 static HRESULT find_external_prop(jsdisp_t *This, const WCHAR *name, BOOL case_insens, dispex_prop_t *prop, dispex_prop_t **ret)
 {
-    if(This->builtin_info->lookup_prop) {
+    if((!prop || prop->type != PROP_EXTERN || This->has_volatile_props) && This->builtin_info->lookup_prop) {
         struct property_info desc;
         HRESULT hres;
 
@@ -539,7 +539,7 @@ static HRESULT ensure_prop_name(jsdisp_t *This, const WCHAR *name, DWORD create_
 
     TRACE("creating prop %s flags %lx\n", debugstr_w(name), create_flags);
 
-    if(This->builtin_info->lookup_prop) {
+    if(This->has_volatile_props && This->builtin_info->lookup_prop) {
         struct property_info desc;
         hres = This->builtin_info->lookup_prop(This, name, fdexNameEnsure, &desc);
         if(hres == S_OK)
@@ -3806,6 +3806,8 @@ HRESULT init_host_object(script_ctx_t *ctx, IWineJSDispatchHost *host_iface, IWi
     host_obj->host_iface = host_iface;
     if(flags & HOSTOBJ_CONSTRUCTOR)
         host_obj->jsdisp.is_constructor = TRUE;
+    if(flags & HOSTOBJ_VOLATILE_PROPS)
+        host_obj->jsdisp.has_volatile_props = TRUE;
     *ret = &host_obj->jsdisp.IWineJSDispatch_iface;
     return S_OK;
 }

@@ -940,6 +940,7 @@ dispex_static_data_t HTMLFormElement_dispex = {
     .disp_tid     = DispHTMLFormElement_tid,
     .iface_tids   = HTMLFormElement_iface_tids,
     .init_info    = HTMLElement_init_dispex_info,
+    .js_flags     = HOSTOBJ_VOLATILE_PROPS
 };
 
 HRESULT HTMLFormElement_Create(HTMLDocumentNode *doc, nsIDOMElement *nselem, HTMLElement **elem)
