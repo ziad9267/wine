@@ -3220,15 +3220,21 @@ HRESULT jsdisp_get_own_property(jsdisp_t *obj, const WCHAR *name, BOOL flags_onl
 
     if(hres != S_OK)
         return DISP_E_UNKNOWNNAME;
-    prop = &obj->props[prop_id_to_idx(id)];
-
     memset(desc, 0, sizeof(*desc));
+    desc->mask = PROPF_ENUMERABLE | PROPF_WRITABLE | PROPF_CONFIGURABLE;
 
+    if(obj->builtin_info->prop_get_desc) {
+        hres = obj->builtin_info->prop_get_desc(obj, id, flags_only, desc);
+        if(hres != S_FALSE) {
+            desc->explicit_value = TRUE;
+            return hres;
+        }
+    }
+
+    prop = &obj->props[prop_id_to_idx(id)];
     switch(prop->type) {
     case PROP_BUILTIN:
     case PROP_JSVAL:
-    case PROP_EXTERN:
-        desc->mask |= PROPF_WRITABLE;
         desc->explicit_value = TRUE;
         if(!flags_only) {
             hres = prop_get(obj, to_disp(obj), id, &desc->value);
@@ -3237,6 +3243,7 @@ HRESULT jsdisp_get_own_property(jsdisp_t *obj, const WCHAR *name, BOOL flags_onl
         }
         break;
     case PROP_ACCESSOR:
+        desc->mask = PROPF_ENUMERABLE | PROPF_CONFIGURABLE;
         desc->explicit_getter = desc->explicit_setter = TRUE;
         if(!flags_only) {
             desc->getter = prop->u.accessor.getter
@@ -3250,7 +3257,6 @@ HRESULT jsdisp_get_own_property(jsdisp_t *obj, const WCHAR *name, BOOL flags_onl
     }
 
     desc->flags = prop->flags & (PROPF_ENUMERABLE | PROPF_WRITABLE | PROPF_CONFIGURABLE);
-    desc->mask |= PROPF_ENUMERABLE | PROPF_CONFIGURABLE;
     return S_OK;
 }
 
@@ -3588,6 +3594,23 @@ static HRESULT HostObject_prop_delete(jsdisp_t *jsdisp, DISPID id)
     return hres;
 }
 
+static HRESULT HostObject_prop_get_desc(jsdisp_t *jsdisp, DISPID id, BOOL flags_only, property_desc_t *desc)
+{
+    dispex_prop_t *prop = &jsdisp->props[prop_id_to_idx(id)];
+
+    if(prop->type != PROP_EXTERN)
+        return S_FALSE;
+
+    if(!flags_only) {
+        HRESULT hres = HostObject_prop_get(jsdisp, id, &desc->value);
+        if(hres != S_OK)
+            return hres;
+    }
+
+    desc->flags = prop->flags & (PROPF_ENUMERABLE | PROPF_WRITABLE | PROPF_CONFIGURABLE);
+    return S_OK;
+}
+
 static HRESULT HostObject_prop_config(jsdisp_t *jsdisp, unsigned id, unsigned flags)
 {
     HostObject *This = HostObject_from_jsdisp(jsdisp);
@@ -3618,16 +3641,17 @@ static HRESULT HostObject_to_string(jsdisp_t *jsdisp, jsstr_t **ret)
 }
 
 static const builtin_info_t HostObject_info = {
-    .class       = JSCLASS_HOST,
-    .addref      = HostObject_addref,
-    .release     = HostObject_release,
-    .lookup_prop = HostObject_lookup_prop,
-    .prop_get    = HostObject_prop_get,
-    .prop_put    = HostObject_prop_put,
-    .prop_delete = HostObject_prop_delete,
-    .prop_config = HostObject_prop_config,
-    .fill_props  = HostObject_fill_props,
-    .to_string   = HostObject_to_string,
+    .class         = JSCLASS_HOST,
+    .addref        = HostObject_addref,
+    .release       = HostObject_release,
+    .lookup_prop   = HostObject_lookup_prop,
+    .prop_get      = HostObject_prop_get,
+    .prop_put      = HostObject_prop_put,
+    .prop_delete   = HostObject_prop_delete,
+    .prop_get_desc = HostObject_prop_get_desc,
+    .prop_config   = HostObject_prop_config,
+    .fill_props    = HostObject_fill_props,
+    .to_string     = HostObject_to_string,
 };
 
 HRESULT init_host_object(script_ctx_t *ctx, IWineJSDispatchHost *host_iface, IWineJSDispatch *prototype_iface,

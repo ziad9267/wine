@@ -1545,6 +1545,22 @@ static HRESULT String_prop_put(jsdisp_t *jsdisp, DISPID id, jsval_t val)
     return S_OK;
 }
 
+static HRESULT String_prop_get_desc(jsdisp_t *jsdisp, DISPID id, BOOL flags_only, property_desc_t *desc)
+{
+    unsigned idx;
+
+    if(!flags_only) {
+        HRESULT hres = String_prop_get(jsdisp, id, &desc->value);
+        if(hres != S_OK)
+            return hres;
+    }else if(!get_extern_prop_idx(jsdisp, id, &idx)) {
+        return S_FALSE;
+    }
+
+    desc->flags = PROPF_ENUMERABLE;
+    return S_OK;
+}
+
 static HRESULT String_fill_props(jsdisp_t *jsdisp)
 {
     StringInstance *string = string_from_jsdisp(jsdisp);
@@ -1604,14 +1620,15 @@ static const builtin_prop_t StringInst_props[] = {
 };
 
 static const builtin_info_t StringInst_info = {
-    .class       = JSCLASS_STRING,
-    .props_cnt   = ARRAY_SIZE(StringInst_props),
-    .props       = StringInst_props,
-    .destructor  = String_destructor,
-    .lookup_prop = String_lookup_prop,
-    .prop_get    = String_prop_get,
-    .prop_put    = String_prop_put,
-    .fill_props  = String_fill_props,
+    .class         = JSCLASS_STRING,
+    .props_cnt     = ARRAY_SIZE(StringInst_props),
+    .props         = StringInst_props,
+    .destructor    = String_destructor,
+    .lookup_prop   = String_lookup_prop,
+    .prop_get      = String_prop_get,
+    .prop_put      = String_prop_put,
+    .prop_get_desc = String_prop_get_desc,
+    .fill_props    = String_fill_props,
 };
 
 /* ECMA-262 3rd Edition    15.5.3.2 */

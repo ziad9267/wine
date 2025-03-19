@@ -527,6 +527,22 @@ static HRESULT scope_prop_put(jsdisp_t *dispex, DISPID id, jsval_t val)
     return S_OK;
 }
 
+static HRESULT scope_prop_get_desc(jsdisp_t *dispex, DISPID id, BOOL flags_only, property_desc_t *desc)
+{
+    unsigned idx;
+
+    if(!flags_only) {
+        HRESULT hres = scope_prop_get(dispex, id, &desc->value);
+        if(hres != S_OK)
+            return hres;
+    }else if(!get_extern_prop_idx(dispex, id, &idx)) {
+        return S_FALSE;
+    }
+
+    desc->flags = PROPF_ENUMERABLE | PROPF_WRITABLE;
+    return S_OK;
+}
+
 static HRESULT scope_gc_traverse(struct gc_ctx *gc_ctx, enum gc_traverse_op op, jsdisp_t *dispex)
 {
     scope_chain_t *scope = scope_from_dispex(dispex);
@@ -563,12 +579,13 @@ static HRESULT scope_gc_traverse(struct gc_ctx *gc_ctx, enum gc_traverse_op op, 
 }
 
 static const builtin_info_t scope_info = {
-    JSCLASS_NONE,
-    .destructor  = scope_destructor,
-    .lookup_prop = scope_lookup_prop,
-    .prop_get    = scope_prop_get,
-    .prop_put    = scope_prop_put,
-    .gc_traverse = scope_gc_traverse
+    .class         = JSCLASS_NONE,
+    .destructor    = scope_destructor,
+    .lookup_prop   = scope_lookup_prop,
+    .prop_get      = scope_prop_get,
+    .prop_put      = scope_prop_put,
+    .prop_get_desc = scope_prop_get_desc,
+    .gc_traverse   = scope_gc_traverse
 };
 
 static HRESULT scope_push(script_ctx_t *ctx, scope_chain_t *scope, IDispatch *obj, scope_chain_t **ret)
