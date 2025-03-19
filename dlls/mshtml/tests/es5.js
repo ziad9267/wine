@@ -2845,7 +2845,6 @@ async_test("script_global", function() {
     // Created documents share script global, so their objects are instances of Object from
     // the current script context.
     var doc = document.implementation.createHTMLDocument("test");
-    todo_wine.
     ok(doc instanceof Object, "created doc is not an instance of Object");
     ok(doc.implementation instanceof Object, "created doc.implementation is not an instance of Object");
     ok(doc.implementation instanceof DOMImplementation, "created doc.implementation is not an instance of DOMImplementation");
