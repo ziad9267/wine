@@ -758,9 +758,29 @@ static HRESULT fill_props(jsdisp_t *obj)
     return S_OK;
 }
 
+static HRESULT fill_protref(jsdisp_t *This, unsigned hash, const WCHAR *name, DWORD ref)
+{
+    dispex_prop_t *prop;
+    HRESULT hres;
+
+    hres = find_prop_name(This, hash, name, FALSE, NULL, &prop);
+    if(FAILED(hres))
+        return hres;
+    if(prop) {
+        if(prop->type != PROP_DELETED)
+            return S_OK;
+        prop->type = PROP_PROTREF;
+        prop->flags = 0;
+        prop->u.ref = ref;
+    }else if(!alloc_protref(This, name, ref)) {
+        return E_OUTOFMEMORY;
+    }
+    return S_OK;
+}
+
 static HRESULT fill_protrefs(jsdisp_t *This)
 {
-    dispex_prop_t *iter, *prop;
+    dispex_prop_t *iter;
     HRESULT hres;
 
     hres = fill_props(This);
@@ -775,20 +795,9 @@ static HRESULT fill_protrefs(jsdisp_t *This)
         return hres;
 
     for(iter = This->prototype->props; iter < This->prototype->props+This->prototype->prop_cnt; iter++) {
-        hres = find_prop_name(This, iter->hash, iter->name, FALSE, NULL, &prop);
-        if(FAILED(hres))
+        hres = fill_protref(This, iter->hash, iter->name, iter - This->prototype->props);
+        if(hres != S_OK)
             return hres;
-        if(!prop || prop->type==PROP_DELETED) {
-            if(prop) {
-                prop->type = PROP_PROTREF;
-                prop->flags = 0;
-                prop->u.ref = iter - This->prototype->props;
-            }else {
-                prop = alloc_protref(This, iter->name, iter - This->prototype->props);
-                if(!prop)
-                    return E_OUTOFMEMORY;
-            }
-        }
     }
 
     return S_OK;
