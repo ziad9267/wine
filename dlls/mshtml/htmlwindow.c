@@ -3448,6 +3448,12 @@ static HRESULT WINAPI WindowDispEx_LookupProperty(IWineJSDispatchHost *iface, co
                                               name, flags, desc);
 }
 
+static HRESULT WINAPI WindowDispEx_OverrideProperty(IWineJSDispatchHost *iface, const WCHAR *name,
+                                                    struct property_info *get_desc, VARIANT *get_value)
+{
+    return S_FALSE;
+}
+
 static HRESULT WINAPI WindowDispEx_FillProperties(IWineJSDispatchHost *iface)
 {
     HTMLOuterWindow *This = impl_from_IWineJSDispatchHost(iface);
@@ -3539,6 +3545,7 @@ static const IWineJSDispatchHostVtbl WindowDispExVtbl = {
     WindowDispEx_GetNameSpaceParent,
     WindowDispEx_GetJSDispatch,
     WindowDispEx_LookupProperty,
+    WindowDispEx_OverrideProperty,
     WindowDispEx_GetProperty,
     WindowDispEx_SetProperty,
     WindowDispEx_DeleteProperty,

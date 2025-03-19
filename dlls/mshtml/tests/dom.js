@@ -630,38 +630,26 @@ sync_test("storage", function() {
 
     Object.defineProperty(sessionStorage, "barfoo", {writable: false, enumerable: false, configurable: false, value: 1234});
     desc = Object.getOwnPropertyDescriptor(sessionStorage, "barfoo");
-    todo_wine.
     ok(desc.value === "1234", "barfoo desc.value = " + desc.value);
-    todo_wine.
     ok(desc.writable === true, "barfoo desc.writable = " + desc.writable);
-    todo_wine.
     ok(desc.enumerable === true, "barfoo desc.enumerable = " + desc.enumerable);
-    todo_wine.
     ok(desc.configurable === true, "barfoo desc.configurable = " + desc.configurable);
 
     item = sessionStorage.barfoo;
-    todo_wine.
     ok(item === "1234", "'barfoo' prop after defineProperty = " + item);
     item = sessionStorage.getItem("barfoo");
-    todo_wine.
     ok(item === "1234", "'barfoo' item after defineProperty = " + item);
 
     sessionStorage.barfoo = 4321;
     item = sessionStorage.barfoo;
-    todo_wine.
     ok(item === "4321", "'barfoo' prop after re-set = " + item);
     item = sessionStorage.getItem("barfoo");
-    todo_wine.
     ok(item === "4321", "'barfoo' item after re-set = " + item);
 
-    todo_wine.
     ok((delete sessionStorage.barfoo) === true, "delete sessionStorage.barfoo returned false");
-    todo_wine.
     ok(!("barfoo" in sessionStorage), "barfoo in sessionStorage after defined prop deleted");
-    todo_wine.
     ok(!Object.prototype.hasOwnProperty.call(sessionStorage, "barfoo"), "barfoo prop of sessionStorage after defined prop deleted");
     item = sessionStorage.barfoo;
-    todo_wine.
     ok(item === undefined, "[barfoo] item after second delete = " + item);
     item = sessionStorage.getItem("barfoo");
     ok(item === null, "'barfoo' item after second delete = " + item);
@@ -683,7 +671,6 @@ sync_test("storage", function() {
 
     sessionStorage.setItem("winetest", "test");
     item = sessionStorage.winetest;
-    todo_wine.
     ok(item === "test", "'winetest' prop after setItem = " + item);
     item = sessionStorage.getItem("winetest");
     ok(item === "test", "'winetest' item after setItem = " + item);
@@ -694,12 +681,10 @@ sync_test("storage", function() {
     ok(desc.configurable === true, "winetest desc.configurable after setItem = " + desc.configurable);
 
     item = sessionStorage.winetest;
-    todo_wine.
     ok(item === "test", "'winetest' prop before second setter = " + item);
     sessionStorage.winetest = 0;
     ok(item === 1234, "'winetest' item after second setter = " + item);
     item = sessionStorage.winetest;
-    todo_wine.
     ok(item === "test", "'winetest' prop after second setter = " + item);
 
     sessionStorage.removeItem("winetest");
@@ -710,7 +695,6 @@ sync_test("storage", function() {
 
     sessionStorage.setItem("winetest", "wine");
     item = sessionStorage.winetest;
-    todo_wine.
     ok(item === "wine", "'winetest' prop after second setItem = " + item);
     item = sessionStorage.getItem("winetest");
     ok(item === "wine", "'winetest' item after second setItem = " + item);
@@ -719,19 +703,14 @@ sync_test("storage", function() {
     ok("winetest" in sessionStorage, "'winetest' not in sessionStorage after delete");
     ok(Object.prototype.hasOwnProperty.call(sessionStorage, "winetest"), "'winetest' not prop of sessionStorage after delete");
     item = sessionStorage.winetest;
-    todo_wine.
     ok(item === 42, "'winetest' item after delete = " + item);
     item = sessionStorage.getItem("winetest");
-    todo_wine.
     ok(item === null, "'winetest' item after delete = " + item);
 
     ok((delete sessionStorage.winetest) === true, "second delete sessionStorage.winetest returned false");
-    todo_wine.
     ok("winetest" in sessionStorage, "'winetest' not in sessionStorage after second delete");
-    todo_wine.
     ok(Object.prototype.hasOwnProperty.call(sessionStorage, "winetest"), "'winetest' not prop of sessionStorage after second delete");
     item = sessionStorage.winetest;
-    todo_wine.
     ok(item === 42, "'winetest' item after second delete = " + item);
     item = sessionStorage.getItem("winetest");
     ok(item === null, "'winetest' item after second delete = " + item);
@@ -745,7 +724,6 @@ sync_test("storage", function() {
 
     sessionStorage.setItem("nonconf", "test");
     item = sessionStorage.nonconf;
-    todo_wine.
     ok(item === "test", "'nonconf' prop after setItem = " + item);
     item = sessionStorage.getItem("nonconf");
     ok(item === "test", "'nonconf' item after setItem = " + item);
@@ -755,14 +733,12 @@ sync_test("storage", function() {
     ok(desc.enumerable === false, "nonconf desc.enumerable after setItem = " + desc.enumerable);
     ok(desc.configurable === false, "nonconf desc.configurable after setItem = " + desc.configurable);
 
-    todo_wine.
     ok((delete sessionStorage.nonconf) === true, "delete sessionStorage.nonconf returned false");
     ok("nonconf" in sessionStorage, "'nonconf' not in sessionStorage after delete");
     ok(Object.prototype.hasOwnProperty.call(sessionStorage, "nonconf"), "'nonconf' not prop of sessionStorage after delete");
     item = sessionStorage.nonconf;
     ok(item === 1, "'nonconf' item after delete = " + item);
     item = sessionStorage.getItem("nonconf");
-    todo_wine.
     ok(item === null, "'nonconf' item after delete = " + item);
 
     sessionStorage.setItem("protoprop", "1111");

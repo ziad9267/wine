@@ -1277,6 +1277,29 @@ static HRESULT HTMLStorage_get_prop_desc(DispatchEx *dispex, DISPID id, struct p
     return S_OK;
 }
 
+static HRESULT HTMLStorage_override(DispatchEx *dispex, const WCHAR *name, VARIANT *get_value)
+{
+    HTMLStorage *This = impl_from_DispatchEx(dispex);
+    BSTR bstrName;
+    HRESULT hres;
+
+    if(!(bstrName = SysAllocString(name)))
+        return E_OUTOFMEMORY;
+
+    if(get_value) {
+        hres = HTMLStorage_getItem(&This->IHTMLStorage_iface, bstrName, get_value);
+        if(SUCCEEDED(hres))
+            hres = (V_VT(get_value) != VT_NULL) ? S_OK : S_FALSE;
+    }else {
+        hres = HTMLStorage_removeItem(&This->IHTMLStorage_iface, bstrName);
+        if(SUCCEEDED(hres))
+            hres = S_OK;
+    }
+
+    SysFreeString(bstrName);
+    return hres;
+}
+
 static HRESULT HTMLStorage_fill_props(DispatchEx *dispex)
 {
     return S_FALSE;
@@ -1292,6 +1315,7 @@ static const dispex_static_data_vtbl_t Storage_dispex_vtbl = {
     .delete           = HTMLStorage_delete,
     .next_dispid      = HTMLStorage_next_dispid,
     .get_prop_desc    = HTMLStorage_get_prop_desc,
+    .override         = HTMLStorage_override,
     .fill_props       = HTMLStorage_fill_props,
 };
 

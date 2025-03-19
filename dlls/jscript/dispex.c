@@ -3615,14 +3615,17 @@ static HRESULT HostObject_prop_get(jsdisp_t *jsdisp, DISPID id, jsval_t *r)
     VARIANT v;
     HRESULT hres;
 
-    if(prop->type != PROP_EXTERN)
-        return S_FALSE;
+    hres = IWineJSDispatchHost_OverrideProperty(This->host_iface, prop->name, NULL, &v);
+    if(hres == S_FALSE) {
+        if(prop->type != PROP_EXTERN)
+            return S_FALSE;
 
-    V_VT(&v) = VT_EMPTY;
-    hres = IWineJSDispatchHost_GetProperty(This->host_iface, prop->u.id, jsdisp->ctx->lcid, &v, &ei,
-                                           &jsdisp->ctx->jscaller->IServiceProvider_iface);
-    if(hres == DISP_E_EXCEPTION)
-        handle_dispatch_exception(jsdisp->ctx, &ei);
+        V_VT(&v) = VT_EMPTY;
+        hres = IWineJSDispatchHost_GetProperty(This->host_iface, prop->u.id, jsdisp->ctx->lcid, &v, &ei,
+                                               &jsdisp->ctx->jscaller->IServiceProvider_iface);
+        if(hres == DISP_E_EXCEPTION)
+            handle_dispatch_exception(jsdisp->ctx, &ei);
+    }
     if(FAILED(hres))
         return hres;
 
@@ -3669,6 +3672,10 @@ static HRESULT HostObject_prop_delete(jsdisp_t *jsdisp, DISPID id)
     HostObject *This = HostObject_from_jsdisp(jsdisp);
     HRESULT hres;
 
+    hres = IWineJSDispatchHost_OverrideProperty(This->host_iface, prop->name, NULL, NULL);
+    if(hres != S_FALSE)
+        return hres;
+
     if(prop->type != PROP_EXTERN || !(prop->flags & PROPF_CONFIGURABLE))
         return S_FALSE;
 
@@ -3693,6 +3700,43 @@ static HRESULT HostObject_prop_get_desc(jsdisp_t *jsdisp, DISPID id, BOOL flags_
 
     desc->flags = prop->flags & (PROPF_ENUMERABLE | PROPF_WRITABLE | PROPF_CONFIGURABLE);
     return S_OK;
+}
+
+static HRESULT HostObject_prop_define(jsdisp_t *jsdisp, DISPID id, const property_desc_t *desc)
+{
+    dispex_prop_t *prop = &jsdisp->props[prop_id_to_idx(id)];
+    HostObject *This = HostObject_from_jsdisp(jsdisp);
+    struct property_info info;
+    EXCEPINFO ei = { 0 };
+    HRESULT hres;
+    VARIANT var;
+
+    /* Only defining values can be overridden */
+    if(!desc->explicit_value)
+        return S_FALSE;
+
+    hres = IWineJSDispatchHost_OverrideProperty(This->host_iface, prop->name, &info, NULL);
+    if(hres != S_OK)
+        return hres;
+    if(info.prototype_id)
+        return S_FALSE;
+
+    hres = jsval_to_variant(desc->value, &var);
+    if(FAILED(hres))
+        return hres;
+
+    hres = IWineJSDispatchHost_SetProperty(This->host_iface, info.id, jsdisp->ctx->lcid, &var, &ei,
+                                           &jsdisp->ctx->jscaller->IServiceProvider_iface);
+    if(hres == DISP_E_EXCEPTION)
+        handle_dispatch_exception(jsdisp->ctx, &ei);
+    VariantClear(&var);
+    if(hres == S_OK) {
+        release_prop(prop);
+        prop->type = PROP_EXTERN;
+        prop->u.id = info.id;
+        prop->flags = info.flags & PROPF_ALL;
+    }
+    return hres;
 }
 
 static HRESULT HostObject_prop_config(jsdisp_t *jsdisp, unsigned id, unsigned flags)
@@ -3733,6 +3777,7 @@ static const builtin_info_t HostObject_info = {
     .prop_put      = HostObject_prop_put,
     .prop_delete   = HostObject_prop_delete,
     .prop_get_desc = HostObject_prop_get_desc,
+    .prop_define   = HostObject_prop_define,
     .prop_config   = HostObject_prop_config,
     .fill_props    = HostObject_fill_props,
     .to_string     = HostObject_to_string,

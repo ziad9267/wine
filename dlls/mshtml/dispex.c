@@ -2652,6 +2652,29 @@ static HRESULT WINAPI JSDispatchHost_LookupProperty(IWineJSDispatchHost *iface, 
     return get_host_property_descriptor(This, id, desc);
 }
 
+static HRESULT WINAPI JSDispatchHost_OverrideProperty(IWineJSDispatchHost *iface, const WCHAR *name,
+                                                      struct property_info *get_desc, VARIANT *get_value)
+{
+    DispatchEx *This = impl_from_IWineJSDispatchHost(iface);
+    HRESULT hres;
+    DISPID id;
+
+    if(!This->info->vtbl->override)
+        return S_FALSE;
+
+    TRACE("%s (%p)->(%s %p)\n", This->info->name, This, debugstr_w(name), get_value);
+
+    if(get_desc) {
+        hres = dispex_get_id(This, name, fdexNameCaseSensitive, &id);
+        if(FAILED(hres))
+            return (hres == DISP_E_UNKNOWNNAME) ? S_FALSE : hres;
+
+        return get_host_property_descriptor(This, id, get_desc);
+    }
+
+    return This->info->vtbl->override(This, name, get_value);
+}
+
 static HRESULT WINAPI JSDispatchHost_GetProperty(IWineJSDispatchHost *iface, DISPID id, LCID lcid, VARIANT *r,
                                                  EXCEPINFO *ei, IServiceProvider *caller)
 {
@@ -2820,6 +2843,7 @@ static IWineJSDispatchHostVtbl JSDispatchHostVtbl = {
     DispatchEx_GetNameSpaceParent,
     JSDispatchHost_GetJSDispatch,
     JSDispatchHost_LookupProperty,
+    JSDispatchHost_OverrideProperty,
     JSDispatchHost_GetProperty,
     JSDispatchHost_SetProperty,
     JSDispatchHost_DeleteProperty,

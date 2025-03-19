@@ -400,6 +400,9 @@ typedef struct {
     HRESULT (*next_dispid)(DispatchEx*,DISPID,BOOL,DISPID*);
     HRESULT (*get_prop_desc)(DispatchEx*,DISPID,struct property_info*);
 
+    /* Used when the object wants to override existing props get/delete operations (by name) */
+    HRESULT (*override)(DispatchEx*,const WCHAR*,VARIANT*);
+
     /* Used when the object has props it has to fill prior to enumeration, or if it's volatile to not cache it (return S_FALSE then) */
     HRESULT (*fill_props)(DispatchEx*);
 

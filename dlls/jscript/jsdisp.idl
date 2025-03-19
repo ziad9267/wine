@@ -65,6 +65,7 @@ interface IWineJSDispatchHost : IDispatchEx
 {
     HRESULT GetJSDispatch(IWineJSDispatch **ret);
     HRESULT LookupProperty(const WCHAR *name, DWORD flags, struct property_info *desc);
+    HRESULT OverrideProperty(const WCHAR *name, struct property_info *get_desc, VARIANT *get_value);
     HRESULT GetProperty(DISPID id, LCID lcid, VARIANT *r, EXCEPINFO *ei, IServiceProvider *caller);
     HRESULT SetProperty(DISPID id, LCID lcid, VARIANT *v, EXCEPINFO *ei, IServiceProvider *caller);
     HRESULT DeleteProperty(DISPID id);
