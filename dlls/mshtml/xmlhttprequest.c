@@ -145,6 +145,7 @@ struct HTMLXMLHttpRequest {
     IProvideClassInfo2 IProvideClassInfo2_iface;
     LONG task_magic;
     LONG ready_state;
+    document_type_t doctype_override;
     response_type_t response_type;
     BOOLEAN synchronous;
     DWORD magic;
@@ -583,8 +584,11 @@ static HRESULT WINAPI HTMLXMLHttpRequest_get_responseXML(IHTMLXMLHttpRequest *if
     }
 
     if(dispex_compat_mode(&This->event_target.dispex) >= COMPAT_MODE_IE10) {
+        nsACString header, nscstr;
+        document_type_t doctype;
         HTMLDocumentNode *doc;
         nsIDOMDocument *nsdoc;
+        const char *type;
         nsresult nsres;
 
         nsres = nsIXMLHttpRequest_GetResponseXML(This->nsxhr, &nsdoc);
@@ -597,9 +601,27 @@ static HRESULT WINAPI HTMLXMLHttpRequest_get_responseXML(IHTMLXMLHttpRequest *if
 
         if(!This->window->base.outer_window || !This->window->base.outer_window->browser)
             hres = E_UNEXPECTED;
-        else
+        else {
+            if(This->doctype_override != DOCTYPE_INVALID)
+                doctype = This->doctype_override;
+            else {
+                doctype = DOCTYPE_XML;
+                nsACString_InitDepend(&header, "Content-Type");
+                nsACString_InitDepend(&nscstr, NULL);
+                nsres = nsIXMLHttpRequest_GetResponseHeader(This->nsxhr, &header, &nscstr);
+                nsACString_Finish(&header);
+                if(NS_SUCCEEDED(nsres)) {
+                    nsACString_GetData(&nscstr, &type);
+                    if(!stricmp(type, "application/xhtml+xml"))
+                        doctype = DOCTYPE_XHTML;
+                    else if(!stricmp(type, "image/svg+xml"))
+                        doctype = DOCTYPE_SVG;
+                }
+                nsACString_Finish(&nscstr);
+            }
             hres = create_document_node(nsdoc, This->window->base.outer_window->browser, NULL, This->window,
-                                        DOCTYPE_XML, dispex_compat_mode(&This->window->event_target.dispex), &doc);
+                                        doctype, dispex_compat_mode(&This->window->event_target.dispex), &doc);
+        }
         nsIDOMDocument_Release(nsdoc);
         if(FAILED(hres))
             return hres;
@@ -1174,6 +1196,7 @@ static HRESULT WINAPI HTMLXMLHttpRequest_private_overrideMimeType(IWineXMLHttpRe
 {
     HTMLXMLHttpRequest *This = impl_from_IWineXMLHttpRequestPrivate(iface);
     static const WCHAR generic_type[] = L"application/octet-stream";
+    document_type_t doctype = DOCTYPE_XML;
     const WCHAR *type = NULL;
     WCHAR *lowercase = NULL;
     nsAString nsstr;
@@ -1187,6 +1210,11 @@ static HRESULT WINAPI HTMLXMLHttpRequest_private_overrideMimeType(IWineXMLHttpRe
                 return E_OUTOFMEMORY;
             _wcslwr(lowercase);
             type = lowercase;
+
+            if(!wcscmp(type, L"application/xhtml+xml"))
+                doctype = DOCTYPE_XHTML;
+            else if(!wcscmp(type, L"image/svg+xml"))
+                doctype = DOCTYPE_SVG;
         }else
             type = generic_type;
     }
@@ -1195,6 +1223,8 @@ static HRESULT WINAPI HTMLXMLHttpRequest_private_overrideMimeType(IWineXMLHttpRe
     nsres = nsIXMLHttpRequest_SlowOverrideMimeType(This->nsxhr, &nsstr);
     nsAString_Finish(&nsstr);
     free(lowercase);
+    if(NS_SUCCEEDED(nsres))
+        This->doctype_override = doctype;
     return map_nsresult(nsres);
 }
 
@@ -1557,6 +1587,7 @@ static HRESULT WINAPI HTMLXMLHttpRequestFactory_create(IHTMLXMLHttpRequestFactor
 
     ret->nsxhr = nsxhr;
     ret->window = This->window;
+    ret->doctype_override = DOCTYPE_INVALID;
     ret->task_magic = get_task_target_magic();
     IHTMLWindow2_AddRef(&This->window->base.IHTMLWindow2_iface);
 
