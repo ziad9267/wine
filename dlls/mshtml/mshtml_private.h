@@ -107,6 +107,7 @@ typedef struct ScriptHost ScriptHost;
     XDIID(DispDOMStorageEvent) \
     XDIID(DispDOMUIEvent) \
     XDIID(DispDOMDocumentType) \
+    XDIID(DispDOMParser) \
     XDIID(DispHTMLAnchorElement) \
     XDIID(DispHTMLAreaElement) \
     XDIID(DispHTMLAttributeCollection) \
@@ -171,6 +172,7 @@ typedef struct ScriptHost ScriptHost;
     XIID(IDOMStorageEvent) \
     XIID(IDOMUIEvent) \
     XIID(IDOMDocumentType) \
+    XIID(IDOMParser) \
     XIID(IDocumentEvent) \
     XIID(IDocumentRange) \
     XIID(IDocumentSelector) \
@@ -432,6 +434,7 @@ typedef struct {
     X(Console)                             \
     X(CustomEvent)                         \
     X(DOMImplementation)                   \
+    X(DOMParser)                           \
     X(DOMTokenList)                        \
     X(Document)                            \
     X(DocumentFragment)                    \
