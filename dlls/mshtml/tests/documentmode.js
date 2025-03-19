@@ -4001,7 +4001,7 @@ sync_test("constructors", function() {
     if(v < 9)
         return;
 
-    var ctors = [ "Image", "MutationObserver", "XMLHttpRequest" ];
+    var ctors = [ "Image", "MutationObserver", "Option", "XMLHttpRequest" ];
     for(i = 0; i < ctors.length; i++) {
         r = ctors[i];
         if(!(r in window))
@@ -4010,4 +4010,5 @@ sync_test("constructors", function() {
         ok(!Object.getPrototypeOf(window).hasOwnProperty(r), r + " is a prop of window's prototype");
     }
     ok(window.Image.prototype === window.HTMLImageElement.prototype, "Image.prototype != HTMLImageElement.prototype");
+    ok(window.Option.prototype === window.HTMLOptionElement.prototype, "Option.prototype != HTMLOptionElement.prototype");
 });

@@ -531,7 +531,7 @@ static dispex_static_data_t HTMLOptionElementFactory_dispex = {
     .iface_tids     = HTMLOptionElementFactory_iface_tids,
 };
 
-HRESULT HTMLOptionElementFactory_Create(HTMLInnerWindow *window, HTMLOptionElementFactory **ret_ptr)
+HRESULT HTMLOptionElementFactory_Create(HTMLInnerWindow *window, DispatchEx **ret_ptr)
 {
     HTMLOptionElementFactory *ret;
 
@@ -546,7 +546,7 @@ HRESULT HTMLOptionElementFactory_Create(HTMLInnerWindow *window, HTMLOptionEleme
     init_dispatch(&ret->dispex, &HTMLOptionElementFactory_dispex, window,
                   dispex_compat_mode(&window->event_target.dispex));
 
-    *ret_ptr = ret;
+    *ret_ptr = &ret->dispex;
     return S_OK;
 }
 

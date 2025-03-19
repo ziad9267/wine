@@ -1236,18 +1236,13 @@ static HRESULT WINAPI HTMLWindow2_get_Option(IHTMLWindow2 *iface, IHTMLOptionEle
 
     TRACE("(%p)->(%p)\n", This, p);
 
-    if(!window->option_factory) {
-        HRESULT hres;
-
-        hres = HTMLOptionElementFactory_Create(window, &window->option_factory);
+    if(!window->constructors[CTOR_OPTION]) {
+        HRESULT hres = HTMLOptionElementFactory_Create(window, &window->constructors[CTOR_OPTION]);
         if(FAILED(hres))
             return hres;
     }
 
-    *p = &window->option_factory->IHTMLOptionElementFactory_iface;
-    IHTMLOptionElementFactory_AddRef(*p);
-
-    return S_OK;
+    return IWineJSDispatchHost_QueryInterface(&window->constructors[CTOR_OPTION]->IWineJSDispatchHost_iface, &IID_IHTMLOptionElementFactory, (void**)p);
 }
 
 static HRESULT WINAPI HTMLWindow2_focus(IHTMLWindow2 *iface)
@@ -3702,8 +3697,6 @@ static void HTMLWindow_traverse(DispatchEx *dispex, nsCycleCollectionTraversalCa
         note_cc_edge((nsISupports*)&This->doc->node.IHTMLDOMNode_iface, "doc", cb);
     if(This->console)
         note_cc_edge((nsISupports*)This->console, "console", cb);
-    if(This->option_factory)
-        note_cc_edge((nsISupports*)&This->option_factory->IHTMLOptionElementFactory_iface, "option_factory", cb);
     if(This->screen)
         note_cc_edge((nsISupports*)This->screen, "screen", cb);
     if(This->history)
@@ -3742,11 +3735,6 @@ static void HTMLWindow_unlink(DispatchEx *dispex)
 
     release_event_target(&This->event_target);
 
-    if(This->option_factory) {
-        HTMLOptionElementFactory *option_factory = This->option_factory;
-        This->option_factory = NULL;
-        IHTMLOptionElementFactory_Release(&option_factory->IHTMLOptionElementFactory_iface);
-    }
     unlink_ref(&This->screen);
     if(This->history) {
         OmHistory *history = This->history;
@@ -3841,6 +3829,13 @@ static HRESULT HTMLWindow_find_dispid(DispatchEx *dispex, const WCHAR *name, DWO
                         return hres;
                 }
                 constr = This->constructors[CTOR_IMAGE];
+            }else if(!wcscmp(name, L"Option")) {
+                if(!This->constructors[CTOR_OPTION]) {
+                    hres = HTMLOptionElementFactory_Create(This, &This->constructors[CTOR_OPTION]);
+                    if(FAILED(hres))
+                        return hres;
+                }
+                constr = This->constructors[CTOR_OPTION];
             }
         }
 
@@ -4199,13 +4194,14 @@ static void HTMLWindow_init_dispex_info(dispex_data_t *info, compat_mode_t compa
 
         /* IE9+ */
         {DISPID_IHTMLWINDOW2_IMAGE},
+        {DISPID_IHTMLWINDOW2_OPTION},
 
         /* Common for all modes */
         {DISPID_IHTMLWINDOW2_LOCATION, IHTMLWindow2_location_hook},
         {DISPID_UNKNOWN}
     };
     const dispex_hook_t *const window2_ie9_hooks = window2_ie11_hooks + 1;
-    const dispex_hook_t *const window2_hooks     = window2_ie9_hooks  + 1;
+    const dispex_hook_t *const window2_hooks     = window2_ie9_hooks  + 2;
     static const dispex_hook_t window3_hooks[] = {
         {DISPID_IHTMLWINDOW3_SETTIMEOUT, IHTMLWindow3_setTimeout_hook},
         {DISPID_UNKNOWN}

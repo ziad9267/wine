@@ -513,6 +513,7 @@ typedef enum {
 
     /* Extra constructors without new prototypes */
     CTOR_IMAGE = PROT_LAST,
+    CTOR_OPTION,
     CTOR_LAST
 } prototype_id_t;
 
@@ -775,7 +776,6 @@ struct HTMLInnerWindow {
 
     IHTMLEventObj *event;
 
-    HTMLOptionElementFactory *option_factory;
     IHTMLScreen *screen;
     OmHistory *history;
     IOmNavigator *navigator;
@@ -1173,7 +1173,7 @@ HRESULT create_outer_window(GeckoBrowser*,mozIDOMWindowProxy*,HTMLOuterWindow*,H
 HRESULT update_window_doc(HTMLInnerWindow*);
 HTMLOuterWindow *mozwindow_to_window(const mozIDOMWindowProxy*);
 void get_top_window(HTMLOuterWindow*,HTMLOuterWindow**);
-HRESULT HTMLOptionElementFactory_Create(HTMLInnerWindow*,HTMLOptionElementFactory**);
+HRESULT HTMLOptionElementFactory_Create(HTMLInnerWindow*,DispatchEx**);
 HRESULT HTMLImageElementFactory_Create(HTMLInnerWindow*,DispatchEx**);
 HRESULT HTMLXMLHttpRequestFactory_Create(HTMLInnerWindow*,DispatchEx**);
 HRESULT create_location(HTMLOuterWindow*,HTMLLocation**);
