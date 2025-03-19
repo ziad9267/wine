@@ -186,7 +186,7 @@ sync_test("window own props", function() {
         "SVGScriptElement", "SVGStopElement", "SVGStringList", "SVGStyleElement", "SVGSwitchElement", "SVGSymbolElement", "SVGTextElement", "SVGTextPathElement", "SVGTitleElement",
         "SVGTransform", "SVGTransformList", "SVGUnitTypes", "SVGUseElement", "SVGViewElement", "SVGZoomAndPan", "SVGZoomEvent", "TextEvent", "TextMetrics", "TextRangeCollection", ["TextTrack",10],
         ["TextTrackCue",10], ["TextTrackCueList",10], ["TextTrackList",10], "TimeRanges", ["TrackEvent",10], ["TransitionEvent",10], "TreeWalker", ["Uint16Array",9,9], ["Uint32Array",9,9],
-        ["Uint8Array",9,9], ["Uint8ClampedArray",11], ["URL",10], ["ValidityState",10], ["VideoPlaybackQuality",11], ["WebGLActiveInfo",11], ["WebGLBuffer",11], ["WebGLContextEvent",11],
+        ["Uint8Array",9,9], ["Uint8ClampedArray",9,10], ["URL",10], ["ValidityState",10], ["VideoPlaybackQuality",11], ["WebGLActiveInfo",11], ["WebGLBuffer",11], ["WebGLContextEvent",11],
         ["WebGLFramebuffer",11], ["WebGLObject",11], ["WebGLProgram",11], ["WebGLRenderbuffer",11], ["WebGLRenderingContext",11], ["WebGLShader",11], ["WebGLShaderPrecisionFormat",11],
         ["WebGLTexture",11], ["WebGLUniformLocation",11], ["WEBGL_compressed_texture_s3tc",11], ["WEBGL_debug_renderer_info",11], ["WebSocket",10], "WheelEvent", ["Worker",10],
         ["XDomainRequest",9,10], ["XMLDocument",11], ["XMLHttpRequestEventTarget",10], "XMLSerializer"
