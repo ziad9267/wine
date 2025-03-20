@@ -1806,6 +1806,12 @@ static UINT window_update_client_config( struct x11drv_win_data *data )
     if (rect.right == old_rect.right && rect.bottom == old_rect.bottom) flags |= SWP_NOSIZE;
     else if (IsRectEmpty( &rect )) flags |= SWP_NOSIZE;
 
+    /* ignore window position changes if it is still fullscreen and old/new rects intersect */
+    if ((data->current_state.net_wm_state & (1 << NET_WM_STATE_FULLSCREEN)) && (flags & SWP_NOSIZE) &&
+        intersect_rect( &rect, &data->rects.visible, &data->current_state.rect ) &&
+        X11DRV_HasWindowManager( "KWin" ) /* lets keep it KWin specific for now... */)
+        flags |= SWP_NOMOVE;
+
     /* don't sync win32 position for offscreen windows */
     if ((data->is_offscreen = !is_window_rect_mapped( &new_rect ))) flags |= SWP_NOMOVE;
 
@@ -3279,8 +3285,8 @@ void X11DRV_WindowPosChanged( HWND hwnd, HWND insert_after, HWND owner_hint, UIN
     data->rects = *new_rects;
     data->is_fullscreen = fullscreen;
 
-    TRACE( "win %p/%lx new_rects %s style %08x flags %08x\n", hwnd, data->whole_window,
-           debugstr_window_rects(new_rects), new_style, swp_flags );
+    TRACE( "win %p/%lx new_rects %s style %08x flags %08x fullscreen %u\n", hwnd, data->whole_window,
+           debugstr_window_rects(new_rects), new_style, swp_flags, fullscreen );
 
     XFlush( gdi_display );  /* make sure painting is done before we move the window */
 
