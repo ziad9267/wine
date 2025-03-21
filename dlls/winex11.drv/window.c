@@ -3269,7 +3269,6 @@ void X11DRV_WindowPosChanged( HWND hwnd, HWND insert_after, HWND owner_hint, UIN
     struct window_rects old_rects;
     BOOL was_fullscreen;
 
-    sync_gl_drawable( hwnd, FALSE );
     set_surface_window_rects( surface, new_rects );
 
     if (!(data = get_win_data( hwnd ))) return;
@@ -3295,20 +3294,24 @@ void X11DRV_WindowPosChanged( HWND hwnd, HWND insert_after, HWND owner_hint, UIN
     if (!data->whole_window)
     {
         release_win_data( data );
+        sync_gl_drawable( hwnd, FALSE );
         return;
     }
 
+    release_win_data( data );
+
+    sync_gl_drawable( hwnd, FALSE );
     if (old_style & WS_VISIBLE)
     {
         if (((swp_flags & SWP_HIDEWINDOW) && !(new_style & WS_VISIBLE)) ||
             (!(new_style & WS_MINIMIZE) && !is_window_rect_mapped( &new_rects->window ) && is_window_rect_mapped( &old_rects.window )))
         {
-            release_win_data( data );
             unmap_window( hwnd );
             if (was_fullscreen) NtUserClipCursor( NULL );
-            if (!(data = get_win_data( hwnd ))) return;
         }
     }
+
+    if (!(data = get_win_data( hwnd ))) return;
 
     /* don't change position if we are about to minimize or maximize a managed window */
     if (!(data->managed && (swp_flags & SWP_STATECHANGED) && (new_style & (WS_MINIMIZE|WS_MAXIMIZE)))
