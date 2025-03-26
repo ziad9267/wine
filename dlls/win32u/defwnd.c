@@ -2653,7 +2653,7 @@ LRESULT default_window_proc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam, 
     case WM_SETTEXT:
         result = set_window_text( hwnd, (void *)lparam, ansi );
         if (result)
-            NtUserNotifyWinEvent( EVENT_OBJECT_NAMECHANGE, hwnd, OBJID_WINDOW, 0 );
+            NtUserNotifyWinEvent( EVENT_OBJECT_NAMECHANGE, hwnd, OBJID_WINDOW, CHILDID_SELF );
         if (result && (get_window_long( hwnd, GWL_STYLE ) & WS_CAPTION) == WS_CAPTION)
             handle_nc_paint( hwnd , (HRGN)1 );  /* repaint caption */
         break;
