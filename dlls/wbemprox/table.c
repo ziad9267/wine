@@ -346,45 +346,31 @@ void free_table( struct table *table )
     free( (WCHAR *)table->name );
     free_columns( (struct column *)table->columns, table->num_cols );
     free( table->data );
-
-    table->cs.DebugInfo->Spare[0] = 0;
-    DeleteCriticalSection( &table->cs );
     free( table );
 }
 
-void release_table( struct table *table )
+void release_table( const struct table *ctable )
 {
-    if (!--table->refs)
-    {
-        clear_table( table );
-        if (table->flags & TABLE_FLAG_DYNAMIC)
-        {
-            EnterCriticalSection( &table_list_cs );
-            list_remove( &table->entry );
-            table->removed = TRUE;
-            LeaveCriticalSection( &table_list_cs );
+    struct table *table = (struct table *)ctable;
 
-            LeaveCriticalSection( &table->cs );
-            free_table( table );
-            return;
-        }
-    }
-    LeaveCriticalSection( &table->cs );
+    if (InterlockedDecrement( &table->refs )) return;
+    clear_table( table );
+    if (!(table->flags & TABLE_FLAG_DYNAMIC)) return;
+    EnterCriticalSection( &table_list_cs );
+    list_remove( &table->entry );
+    table->removed = TRUE;
+    LeaveCriticalSection( &table_list_cs );
+    free_table( table );
 }
 
-struct table *grab_table( struct table *table )
+const struct table *grab_table( const struct table *table )
 {
-    EnterCriticalSection( &table->cs );
-    if (table->removed)
-    {
-        LeaveCriticalSection( &table->cs );
-        return NULL;
-    }
-    table->refs++;
+    if (table->removed) return NULL;
+    InterlockedIncrement( (LONG *)&table->refs );
     return table;
 }
 
-struct table *find_table( enum wbm_namespace ns, const WCHAR *name )
+const struct table *find_table( enum wbm_namespace ns, const WCHAR *name )
 {
     struct table *table;
 
@@ -419,9 +405,39 @@ struct table *create_table( const WCHAR *name, UINT num_cols, const struct colum
     table->refs               = 0;
     table->removed            = FALSE;
     list_init( &table->entry );
-    InitializeCriticalSectionEx( &table->cs, 0, RTL_CRITICAL_SECTION_FLAG_FORCE_DEBUG_INFO );
-    table->cs.DebugInfo->Spare[0] = (DWORD_PTR)(__FILE__ ": table.cs");
     return table;
+}
+
+struct table *get_table_writeable_copy( const struct table *src )
+{
+    struct table *table;
+    BYTE *data = NULL;
+    ULONG_PTR size;
+    unsigned int i;
+
+    if (src->flags & TABLE_FLAG_DYNAMIC)
+    {
+        TRACE( "Table %p is dynamic.\n", src );
+        return (struct table *)grab_table( src );
+    }
+
+    size = 0;
+    for (i = 0; i < src->num_cols; ++i)
+        size += get_column_size( src, i );
+    size *= src->num_rows_allocated;
+
+    if (size && src->data)
+    {
+        if (!(data = malloc( size ))) return NULL;
+        memcpy( data, src->data, size );
+    }
+    if (!(table = create_table( src->name, src->num_cols, src->columns, src->num_rows, src->num_rows_allocated,
+                                data, src->fill )))
+    {
+        free( data );
+        return NULL;
+    }
+    return (struct table *)grab_table( table );
 }
 
 BOOL add_table( enum wbm_namespace ns, struct table *table )
@@ -449,7 +465,7 @@ BOOL add_table( enum wbm_namespace ns, struct table *table )
 
 BSTR get_method_name( enum wbm_namespace ns, const WCHAR *class, UINT index )
 {
-    struct table *table;
+    const struct table *table;
     UINT i, count = 0;
     BSTR ret;
 
@@ -474,7 +490,7 @@ BSTR get_method_name( enum wbm_namespace ns, const WCHAR *class, UINT index )
 
 WCHAR *get_first_key_property( enum wbm_namespace ns, const WCHAR *class )
 {
-    struct table *table;
+    const struct table *table;
     WCHAR *ret = NULL;
     UINT i;
 

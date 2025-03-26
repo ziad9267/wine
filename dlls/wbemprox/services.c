@@ -886,7 +886,7 @@ static HRESULT WINAPI wbem_services_ExecMethod(
     struct path *path;
     WCHAR *str;
     class_method *func;
-    struct table *table;
+    const struct table *table;
     HRESULT hr;
 
     TRACE( "%p, %s, %s, %#lx, %p, %p, %p, %p\n", iface, debugstr_w(strObjectPath),

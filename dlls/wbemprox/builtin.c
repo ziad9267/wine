@@ -4432,12 +4432,7 @@ void init_table_list( void )
     {
         list_init( &tables[ns] );
         for (i = 0; i < builtin_namespaces[ns].table_count; i++)
-        {
-            struct table *table = &builtin_namespaces[ns].tables[i];
-            InitializeCriticalSectionEx( &table->cs, 0, RTL_CRITICAL_SECTION_FLAG_FORCE_DEBUG_INFO );
-            table->cs.DebugInfo->Spare[0] = (DWORD_PTR)(__FILE__ ": table.cs" );
-            list_add_tail( &tables[ns], &table->entry );
-        }
+            list_add_tail( &tables[ns], &builtin_namespaces[ns].tables[i].entry );
         table_list[ns] = &tables[ns];
     }
 }

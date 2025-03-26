@@ -114,7 +114,7 @@ static HRESULT WINAPI enum_class_object_Next(
 {
     struct enum_class_object *ec = impl_from_IEnumWbemClassObject( iface );
     struct view *view = ec->query->view;
-    struct table *table;
+    const struct table *table;
     static int once = 0;
     HRESULT hr;
     ULONG i, j;
@@ -219,7 +219,7 @@ HRESULT EnumWbemClassObject_create( struct query *query, LPVOID *ppObj )
     return S_OK;
 }
 
-static struct record *create_record( struct table *table )
+static struct record *create_record( const struct table *table )
 {
     UINT i;
     struct record *record;
@@ -536,7 +536,7 @@ static HRESULT WINAPI class_object_Next(
     struct class_object *obj = impl_from_IWbemClassObject( iface );
     struct enum_class_object *iter = impl_from_IEnumWbemClassObject( obj->iter );
     struct view *view = iter->query->view;
-    struct table *table = get_view_table( view, obj->index );
+    const struct table *table = get_view_table( view, obj->index );
     BSTR prop;
     HRESULT hr;
     UINT i;
@@ -637,7 +637,7 @@ static BSTR get_body_text( const struct table *table, UINT row, UINT *len )
 static BSTR get_object_text( const struct view *view, UINT index )
 {
     UINT len, len_body, row = view->result[index];
-    struct table *table = get_view_table( view, index );
+    const struct table *table = get_view_table( view, index );
     BSTR ret, body;
 
     len = ARRAY_SIZE( L"\ninstance of %s\n{%s\n};" );
@@ -686,7 +686,7 @@ static HRESULT WINAPI class_object_SpawnInstance(
 {
     struct class_object *co = impl_from_IWbemClassObject( iface );
     struct enum_class_object *ec = impl_from_IEnumWbemClassObject( co->iter );
-    struct table *table = get_view_table( ec->query->view, co->index );
+    const struct table *table = get_view_table( ec->query->view, co->index );
     IEnumWbemClassObject *iter;
     struct record *record;
     HRESULT hr;
@@ -888,7 +888,7 @@ static HRESULT WINAPI class_object_GetMethod(
 {
     struct class_object *co = impl_from_IWbemClassObject( iface );
     IWbemClassObject *in, *out;
-    struct table *table;
+    const struct table *table;
     unsigned int i;
     HRESULT hr;
 
