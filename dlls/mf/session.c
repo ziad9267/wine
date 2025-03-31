@@ -1068,7 +1068,7 @@ static void session_handle_start_error(struct media_session *session, HRESULT hr
     session_command_complete_with_event(session, MESessionStarted, hr, NULL);
 }
 
-static void session_reset_transforms(struct media_session *session)
+static void session_reset_transforms(struct media_session *session, BOOL drop)
 {
     struct topo_node *topo_node;
     UINT i;
@@ -1082,6 +1082,8 @@ static void session_reset_transforms(struct media_session *session)
         {
             struct transform_stream *stream = &topo_node->u.transform.inputs[i];
             stream->draining = FALSE;
+            if (drop)
+                transform_stream_drop_events(stream);
         }
     }
 }
@@ -1089,6 +1091,7 @@ static void session_reset_transforms(struct media_session *session)
 static void session_start(struct media_session *session, const GUID *time_format, const PROPVARIANT *start_position)
 {
     struct media_source *source;
+    BOOL unpause_seek;
     MFTIME duration;
     HRESULT hr;
 
@@ -1116,7 +1119,8 @@ static void session_start(struct media_session *session, const GUID *time_format
                 return;
             }
 
-            session_reset_transforms(session);
+            unpause_seek = start_position->vt == VT_I8;
+            session_reset_transforms(session, unpause_seek);
 
             LIST_FOR_EACH_ENTRY(source, &session->presentation.sources, struct media_source, entry)
             {
