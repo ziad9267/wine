@@ -1116,6 +1116,8 @@ static void session_start(struct media_session *session, const GUID *time_format
                 return;
             }
 
+            session_reset_transforms(session);
+
             LIST_FOR_EACH_ENTRY(source, &session->presentation.sources, struct media_source, entry)
             {
                 if (FAILED(hr = IMFMediaSource_Start(source->source, source->pd, &GUID_NULL, start_position)))
@@ -1125,8 +1127,6 @@ static void session_start(struct media_session *session, const GUID *time_format
                     return;
                 }
             }
-
-            session_reset_transforms(session);
 
             session->state = SESSION_STATE_STARTING_SOURCES;
             break;
