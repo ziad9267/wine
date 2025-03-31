@@ -1120,6 +1120,8 @@ static void session_start(struct media_session *session, const GUID *time_format
             }
 
             unpause_seek = start_position->vt == VT_I8;
+            if (unpause_seek)
+                session_flush_nodes(session);
             session_reset_transforms(session, unpause_seek);
 
             LIST_FOR_EACH_ENTRY(source, &session->presentation.sources, struct media_source, entry)
