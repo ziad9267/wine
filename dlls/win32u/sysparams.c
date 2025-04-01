@@ -2055,13 +2055,6 @@ static void monitor_get_info( struct monitor *monitor, MONITORINFO *info, UINT d
     info->rcWork = map_monitor_rect( monitor, monitor->rc_work, 0, MDT_RAW_DPI, dpi, MDT_DEFAULT );
     info->dwFlags = is_monitor_primary( monitor ) ? MONITORINFOF_PRIMARY : 0;
 
-    /* HACK: Ignore host work area when emulating modeset, it needs to be DPI mapped but it also
-     * regresses Imperiums: Greek Wars fullscreen mode. The game uses maximized windows, which should
-     * be restricted to the work area too but somehow Windows decides to make them fullscreen instead.
-     * We were not passing the host work area in older Proton versions, lets do that for now.
-     */
-    if (emulate_modeset || user_driver->pHasWindowManager( "steamcompmgr" )) info->rcWork = info->rcMonitor;
-
     if (info->cbSize >= sizeof(MONITORINFOEXW))
     {
         char buffer[CCHDEVICENAME];
