@@ -295,10 +295,11 @@ static void test_CM_Get_Device_Interface_List(void)
     SP_DEVICE_INTERFACE_DETAIL_DATA_W *iface_data;
     SP_DEVINFO_DATA device = { sizeof(device) };
     unsigned int count, count2;
+    char *buffera, *pa;
     WCHAR *buffer, *p;
+    ULONG size, size2;
     CONFIGRET ret;
     HDEVINFO set;
-    ULONG size;
     GUID guid;
     BOOL bret;
 
@@ -310,6 +311,24 @@ static void test_CM_Get_Device_Interface_List(void)
     buffer = malloc(size * sizeof(*buffer));
     ret = CM_Get_Device_Interface_ListW( &guid, NULL, buffer, size, CM_GET_DEVICE_INTERFACE_LIST_PRESENT);
     ok(!ret, "got %#lx.\n", ret);
+
+    ret = CM_Get_Device_Interface_List_SizeA(&size2, &guid, NULL, CM_GET_DEVICE_INTERFACE_LIST_PRESENT);
+    ok(!ret, "got %#lx.\n", ret);
+    ok(size2 == size, "got %lu, %lu.\n", size, size2);
+    buffera = malloc(size2 * sizeof(*buffera));
+    ret = CM_Get_Device_Interface_ListA(&guid, NULL, buffera, size2, CM_GET_DEVICE_INTERFACE_LIST_PRESENT);
+    ok(!ret, "got %#lx.\n", ret);
+    p = malloc(size2 * sizeof(*p));
+    pa = buffera;
+    *p = 0;
+    while (*pa)
+    {
+        MultiByteToWideChar(CP_ACP, 0, pa, -1, p + (pa - buffera), size2 - (pa - buffera));
+        pa += strlen(pa) + 1;
+    }
+    ok(!memcmp(p, buffer, size * sizeof(*p)), "results differ %s %s.\n", debugstr_w(p), debugstr_w(buffer));
+    free(p);
+    free(buffera);
 
     iface_data = (SP_DEVICE_INTERFACE_DETAIL_DATA_W *)iface_detail_buffer;
 
