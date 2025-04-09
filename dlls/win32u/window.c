@@ -2250,25 +2250,19 @@ static BOOL apply_window_pos( HWND hwnd, HWND insert_after, UINT swp_flags, stru
 
 static HRGN expose_window_surface_rect( struct window_surface *surface, UINT flags, RECT dirty )
 {
-    HRGN region, clipped;
+    HRGN region;
 
     intersect_rect( &dirty, &dirty, &surface->rect );
     add_bounds_rect( &surface->bounds, &dirty );
 
     if (!surface->clip_region || !flags) return 0;
 
-    clipped = NtGdiCreateRectRgn( surface->rect.left, surface->rect.top,
-                                  surface->rect.right, surface->rect.bottom );
-    NtGdiCombineRgn( clipped, clipped, surface->clip_region, RGN_DIFF );
-
     region = NtGdiCreateRectRgn( dirty.left, dirty.top, dirty.right, dirty.bottom );
-    if (NtGdiCombineRgn( region, region, clipped, RGN_DIFF ) <= NULLREGION)
+    if (NtGdiCombineRgn( region, region, surface->clip_region, RGN_DIFF ) <= NULLREGION)
     {
         NtGdiDeleteObjectApp( region );
         region = 0;
     }
-
-    NtGdiDeleteObjectApp( clipped );
     return region;
 }
 
