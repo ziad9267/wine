@@ -924,7 +924,7 @@ extern NTSTATUS x11drv_tablet_info( void *arg );
 
 static inline BOOL lp_to_dp( HDC hdc, POINT *points, INT count )
 {
-    return NtGdiTransformPoints( hdc, points, points, count, NtGdiLPtoDP );
+    return NtGdiTransformPoints( hdc, points, points, count, NtGdiLPtoDPRaw );
 }
 
 static inline UINT get_palette_entries( HPALETTE palette, UINT start, UINT count, PALETTEENTRY *entries )
