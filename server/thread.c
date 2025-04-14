@@ -254,6 +254,9 @@ void init_threading(void)
 static void apply_thread_priority( struct thread *thread, int base_priority )
 {
     int min = -nice_limit, max = nice_limit, range = max - min, niceness;
+
+    if (nice_limit >= 0) return;
+
     /* FIXME: handle realtime priorities using SCHED_RR if possible */
     if (base_priority > THREAD_BASE_PRIORITY_LOWRT) base_priority = THREAD_BASE_PRIORITY_LOWRT;
     /* map an NT application band [1,15] base priority to [-nice_limit, nice_limit] */
