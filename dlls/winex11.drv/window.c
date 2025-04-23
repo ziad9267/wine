@@ -991,12 +991,6 @@ static void set_mwm_hints( struct x11drv_win_data *data, UINT style, UINT ex_sty
         }
     }
 
-    /* MWM functions changes can interacts with NET_WM_STATE changes with Mutter and may end
-     * up with unexpected NET_WM_STATE replies. We don't decorate windows with Mutter, there's
-     * no need to control MWM functions either.
-     */
-    if (X11DRV_HasWindowManager( "Mutter" )) mwm_hints.functions = MWM_FUNC_ALL;
-
     mwm_hints.flags = MWM_HINTS_FUNCTIONS | MWM_HINTS_DECORATIONS;
     mwm_hints.input_mode = 0;
     mwm_hints.status = 0;
