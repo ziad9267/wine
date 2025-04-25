@@ -1856,16 +1856,15 @@ BOOL enable_fullscreen_hack( HWND hwnd, BOOL check_gamma )
     return check_gamma && ReadNoFence( &gamma_serial );
 }
 
-static RECT get_client_rect( HWND hwnd, BOOL raw )
+static BOOL get_client_rect( HWND hwnd, BOOL raw, RECT *rect )
 {
     UINT dpi = NtUserGetDpiForWindow( hwnd );
-    RECT rect;
 
-    NtUserGetClientRect( hwnd, &rect, dpi );
-    if (!raw) return rect;
-    rect = map_rect_virt_to_raw_for_monitor( NtUserMonitorFromWindow( hwnd, MONITOR_DEFAULTTONEAREST ), rect, dpi );
-    OffsetRect( &rect, -rect.left, -rect.top );
-    return rect;
+    if (!NtUserGetClientRect( hwnd, rect, dpi )) return FALSE;
+    if (!raw) return TRUE;
+    *rect = map_rect_virt_to_raw_for_monitor( NtUserMonitorFromWindow( hwnd, MONITOR_DEFAULTTONEAREST ), *rect, dpi );
+    OffsetRect( rect, -rect->left, -rect->top );
+    return TRUE;
 }
 
 /***********************************************************************
@@ -1882,7 +1881,11 @@ static struct gl_drawable *create_gl_drawable( HWND hwnd, const struct glx_pixel
     int width, height;
     BOOL enable_fshack = enable_fullscreen_hack( hwnd, TRUE );
 
-    rect = get_client_rect( hwnd, enable_fshack );
+    if (!get_client_rect( hwnd, enable_fshack, &rect ))
+    {
+        ERR( "get_client_rect failed.\n" );
+        return NULL;
+    }
     width  = min( max( 1, rect.right ), 65535 );
     height = min( max( 1, rect.bottom ), 65535 );
 
@@ -2069,7 +2072,12 @@ static void update_gl_drawable_size( struct gl_drawable *gl )
     XWindowChanges changes;
     RECT rect;
 
-    rect = get_client_rect( gl->hwnd, gl->fs_hack );
+    if (!get_client_rect( gl->hwnd, gl->fs_hack, &rect ))
+    {
+        WARN( "get_client_rect failed.\n" );
+        return;
+    }
+
     if (EqualRect( &rect, &gl->rect )) return;
 
     changes.width  = min( max( 1, rect.right ), 65535 );
