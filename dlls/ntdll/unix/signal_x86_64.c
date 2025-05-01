@@ -3318,6 +3318,7 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                    "movq (%rsp),%rcx\n\t"          /* frame->rip */
                    "pushq %r11\n\t"
                    /* make sure that if trap flag is set the trap happens on the first instruction after iret */
+                   "andq $~0x4000,(%rsp)\n\t" /* make sure NT flag is not set, or iretq will fault */
                    "popfq\n\t"
                    "iretq\n"
                    /* CONTEXT_INTEGER */
@@ -3344,6 +3345,7 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                    "xchgq %r10,(%rsp)\n\t"
                    "pushq %r11\n\t"
                    /* make sure that if trap flag is set the trap happens on the first instruction after iret */
+                   "andq $~0x4000,(%rsp)\n\t" /* make sure NT flag is not set, or iretq will fault */
                    "popfq\n\t"
                    "iretq\n\t"
 
