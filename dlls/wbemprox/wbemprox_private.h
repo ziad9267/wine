@@ -121,6 +121,7 @@ struct table
     UINT flags;
     struct list entry;
     LONG refs;
+    CRITICAL_SECTION cs;
     BOOL removed;
 };
 
@@ -153,7 +154,7 @@ struct record
 {
     UINT count;
     struct field *fields;
-    const struct table *table;
+    struct table *table;
 };
 
 struct keyword
@@ -178,7 +179,7 @@ struct view
     const struct property *proplist;        /* SELECT query */
     const struct expr *cond;
     UINT table_count;
-    const struct table **table;
+    struct table **table;
     UINT result_count;
     UINT *result;
 };
@@ -213,13 +214,12 @@ HRESULT create_view( enum view_type, enum wbm_namespace, const WCHAR *, const st
                      const struct property *, const struct expr *, struct view ** );
 void destroy_view( struct view * );
 HRESULT execute_view( struct view * );
-const struct table *get_view_table( const struct view *, UINT );
+struct table *get_view_table( const struct view *, UINT );
 void init_table_list( void );
 enum wbm_namespace get_namespace_from_string( const WCHAR *namespace );
-const struct table *find_table( enum wbm_namespace, const WCHAR * );
-const struct table *grab_table( const struct table * );
-struct table *get_table_writeable_copy( const struct table * );
-void release_table( const struct table * );
+struct table *find_table( enum wbm_namespace, const WCHAR * );
+struct table *grab_table( struct table * );
+void release_table( struct table * );
 struct table *create_table( const WCHAR *, UINT, const struct column *, UINT, UINT, BYTE *,
                             enum fill_status (*)(struct table *, const struct expr *) );
 BOOL add_table( enum wbm_namespace, struct table * );

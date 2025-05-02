@@ -29,9 +29,9 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(wbemprox);
 
-static HRESULT append_table( struct view *view, const struct table *table )
+static HRESULT append_table( struct view *view, struct table *table )
 {
-    const struct table **tmp;
+    struct table **tmp;
     if (!(tmp = realloc( view->table, (view->table_count + 1) * sizeof(*tmp) ))) return E_OUTOFMEMORY;
     view->table = tmp;
     view->table[view->table_count++] = table;
@@ -54,7 +54,7 @@ HRESULT create_view( enum view_type type, enum wbm_namespace ns, const WCHAR *pa
 
     case VIEW_TYPE_SELECT:
     {
-        const struct table *table = find_table( ns, class );
+        struct table *table = find_table( ns, class );
         HRESULT hr;
 
         if (table && (hr = append_table( view, table )) != S_OK)
@@ -610,7 +610,7 @@ static HRESULT do_query( enum wbm_namespace ns, const WCHAR *str, struct query *
 }
 
 static HRESULT get_antecedent_table( enum wbm_namespace ns, const WCHAR *assocclass, const WCHAR *dependent,
-                                     const struct table **table )
+                                     struct table **table )
 {
     BSTR antecedent = NULL;
     struct path *path = NULL;
@@ -657,7 +657,7 @@ static HRESULT exec_assoc_view( struct view *view )
     {
         ULONG count;
         IWbemClassObject *obj;
-        const struct table *table;
+        struct table *table;
         VARIANT var;
 
         IEnumWbemClassObject_Next( iter, WBEM_INFINITE, 1, &obj, &count );
@@ -697,20 +697,15 @@ static HRESULT exec_select_view( struct view *view )
 {
     UINT i, j = 0, len;
     enum fill_status status = FILL_STATUS_UNFILTERED;
-    const struct table *table;
+    struct table *table;
 
     if (!view->table_count) return S_OK;
 
     table = view->table[0];
     if (table->fill)
     {
-        struct table *table_copy;
-
-        if (!(table_copy = get_table_writeable_copy( table ))) return E_OUTOFMEMORY;
-        clear_table( table_copy );
-        status = table_copy->fill( table_copy, view->cond );
-        release_table( table );
-        table = view->table[0] = table_copy;
+        clear_table( table );
+        status = table->fill( table, view->cond );
     }
     if (status == FILL_STATUS_FAILED) return WBEM_E_FAILED;
     if (!table->num_rows) return S_OK;
@@ -874,7 +869,7 @@ static UINT count_key_columns( const struct table *table )
 static BSTR build_relpath( const struct view *view, UINT table_index, UINT result_index, const WCHAR *name )
 {
     BSTR class, proplist, ret = NULL;
-    const struct table *table = view->table[table_index];
+    struct table *table = view->table[table_index];
     UINT row = view->result[result_index];
     UINT num_keys, len;
 
@@ -1169,7 +1164,7 @@ static HRESULT map_view_index( const struct view *view, UINT index, UINT *table_
     return S_OK;
 }
 
-const struct table *get_view_table( const struct view *view, UINT index )
+struct table *get_view_table( const struct view *view, UINT index )
 {
     switch (view->type)
     {
@@ -1190,7 +1185,7 @@ HRESULT get_propval( const struct view *view, UINT index, const WCHAR *name, VAR
 {
     HRESULT hr;
     UINT column, row, table_index, result_index;
-    const struct table *table;
+    struct table *table;
     VARTYPE vartype;
     void *val_ptr = NULL;
     LONGLONG val;
@@ -1387,7 +1382,7 @@ HRESULT put_propval( const struct view *view, UINT index, const WCHAR *name, VAR
 {
     HRESULT hr;
     UINT row, column, table_index, result_index;
-    const struct table *table;
+    struct table *table;
     LONGLONG val;
 
     if ((hr = map_view_index( view, index, &table_index, &result_index )) != S_OK) return hr;
@@ -1417,7 +1412,7 @@ HRESULT get_properties( const struct view *view, UINT index, LONG flags, SAFEARR
     SAFEARRAY *sa;
     BSTR str;
     UINT i, table_index, result_index, count = 0;
-    const struct table *table;
+    struct table *table;
     HRESULT hr;
     LONG j = 0;
 
