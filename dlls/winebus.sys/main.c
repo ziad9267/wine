@@ -475,6 +475,13 @@ static BOOL is_hidraw_enabled(WORD vid, WORD pid, const USAGE_AND_PAGE *usages, 
         swprintf(vidpid, ARRAY_SIZE(vidpid), L"0x%04X/0x%04X", vid, pid);
         if (wcscasestr(value, vidpid)) return FALSE;
     }
+    if (!RtlQueryEnvironmentVariable(NULL, L"PROTON_ENABLE_HIDRAW", 20, value, ARRAY_SIZE(value) - 1, &len))
+    {
+        value[len] = 0;
+        if (wcscmp(value, L"1")) return TRUE;
+        swprintf(vidpid, ARRAY_SIZE(vidpid), L"0x%04X/0x%04X", vid, pid);
+        if (wcscasestr(value, vidpid)) return TRUE;
+    }
 
     if (usages->UsagePage == HID_USAGE_PAGE_DIGITIZER)
     {
@@ -483,14 +490,6 @@ static BOOL is_hidraw_enabled(WORD vid, WORD pid, const USAGE_AND_PAGE *usages, 
     }
     if (usages->UsagePage != HID_USAGE_PAGE_GENERIC) return TRUE;
     if (usages->Usage != HID_USAGE_GENERIC_GAMEPAD && usages->Usage != HID_USAGE_GENERIC_JOYSTICK) return TRUE;
-
-    if (!RtlQueryEnvironmentVariable(NULL, L"PROTON_ENABLE_HIDRAW", 20, value, ARRAY_SIZE(value) - 1, &len))
-    {
-        value[len] = 0;
-        if (wcscmp(value, L"1")) return TRUE;
-        swprintf(vidpid, ARRAY_SIZE(vidpid), L"0x%04X/0x%04X", vid, pid);
-        if (wcscasestr(value, vidpid)) return TRUE;
-    }
 
     if (!check_bus_option(L"Enable SDL", 1) && check_bus_option(L"DisableInput", 0))
         prefer_hidraw = TRUE;
