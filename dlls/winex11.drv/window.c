@@ -3782,7 +3782,7 @@ static Window get_net_supporting_wm_check( Display *display, Window window )
     Atom type;
 
     if (!XGetWindowProperty( display, window, x11drv_atom(_NET_SUPPORTING_WM_CHECK), 0, 65536 / sizeof(CARD32),
-                             False, XA_WINDOW, &type, &format, &count, &remaining, (unsigned char **)&tmp ))
+                             False, XA_WINDOW, &type, &format, &count, &remaining, (unsigned char **)&tmp ) && tmp)
     {
         support = *tmp;
         free( tmp );
@@ -3827,7 +3827,8 @@ void net_supporting_wm_check_init( struct x11drv_thread_data *data )
 {
     Window window = None, other;
 
-    window = get_net_supporting_wm_check( data->display, DefaultRootWindow( data->display ) );
+    if (!(window = get_net_supporting_wm_check( data->display, DefaultRootWindow( data->display ) ))) return;
+
     /* the window itself must have the property set too */
     X11DRV_expect_error( data->display, host_window_error, NULL );
     other = get_net_supporting_wm_check( data->display, window );
