@@ -82,6 +82,7 @@ static const unsigned int net_wm_state_atoms[NB_NET_WM_STATES] =
     XATOM__KDE_NET_WM_STATE_SKIP_SWITCHER,
     XATOM__NET_WM_STATE_FULLSCREEN,
     XATOM__NET_WM_STATE_ABOVE,
+    XATOM__NET_WM_STATE_BELOW,
     XATOM__NET_WM_STATE_MAXIMIZED_VERT,
     XATOM__NET_WM_STATE_SKIP_PAGER,
     XATOM__NET_WM_STATE_SKIP_TASKBAR
@@ -1410,7 +1411,12 @@ static void window_set_config( struct x11drv_win_data *data, const RECT *new_rec
         mask |= CWX | CWY;
     }
 
-    if (above)
+    if (data->force_below_hack)
+    {
+        changes.stack_mode = Below;
+        mask |= CWStackMode;
+    }
+    else if (above)
     {
         changes.stack_mode = Above;
         mask |= CWStackMode;
@@ -1457,7 +1463,9 @@ static void update_net_wm_states( struct x11drv_win_data *data )
         new_state |= (1 << NET_WM_STATE_MAXIMIZED);
 
     ex_style = NtUserGetWindowLongW( data->hwnd, GWL_EXSTYLE );
-    if ((ex_style & WS_EX_TOPMOST) &&
+    if (data->force_below_hack)
+        new_state |= (1 << NET_WM_STATE_BELOW);
+    else if ((ex_style & WS_EX_TOPMOST) &&
         /* This workaround was initially targetting some mutter and KDE issues, but
          * removing it causes failure to focus out from exclusive fullscreen windows.
          *
@@ -3266,6 +3274,21 @@ BOOL X11DRV_GetWindowStyleMasks( HWND hwnd, UINT style, UINT ex_style, UINT *sty
     return TRUE;
 }
 
+static int use_force_below_hack(void)
+{
+    static int cached = -1;
+
+    if (cached == -1)
+    {
+        char const *sgi = getenv( "SteamGameId" );
+
+        cached = sgi && (
+                 !strcmp(sgi, "1293830")
+                 || !strcmp(sgi, "1551360")
+                 );
+    }
+    return cached;
+}
 
 /***********************************************************************
  *		WindowPosChanged   (X11DRV.@)
@@ -3297,6 +3320,15 @@ void X11DRV_WindowPosChanged( HWND hwnd, HWND insert_after, HWND owner_hint, UIN
            debugstr_window_rects(new_rects), new_style, swp_flags, fullscreen );
 
     XFlush( gdi_display );  /* make sure painting is done before we move the window */
+
+    if (use_force_below_hack())
+    {
+        if (insert_after != HWND_BOTTOM && insert_after != HWND_NOTOPMOST && insert_after != HWND_TOP && insert_after != HWND_TOPMOST)
+        {
+            WARN( "%p/%#lx setting force_below_hack.\n", hwnd, data->whole_window );
+            data->force_below_hack = 1;
+        }
+    }
 
     sync_client_position( data, &old_rects );
 
