@@ -1848,10 +1848,19 @@ BOOL enable_fullscreen_hack( HWND hwnd, BOOL check_gamma )
     if (NtUserGetDpiForWindow( hwnd ) != NtUserGetWinMonitorDpi( hwnd, MDT_RAW_DPI )) return TRUE; /* needs DPI scaling */
     if (check_gamma && X11DRV_HasWindowManager( "xwayland" ) && gl_renderer && strstr( gl_renderer, "NVIDIA" ))
     {
-        /* Force fshack on XWayland / NVidia because drawing to front buffer doesn't get presented there and fshack works
-         * that around as a side effect. */
-        TRACE( "Forcing fshack on xwayland / NVIDIA.\n" );
-        return TRUE;
+        static int skip_cached = -1;
+        if (skip_cached == -1)
+        {
+            const char *sgi = getenv( "SteamGameId" );
+            skip_cached = sgi && !strcmp( sgi, "582660" );
+        }
+        if (!skip_cached)
+        {
+            /* Force fshack on XWayland / NVidia because drawing to front buffer doesn't get presented there and fshack works
+             * that around as a side effect. */
+            TRACE( "Forcing fshack on xwayland / NVIDIA.\n" );
+            return TRUE;
+        }
     }
     return check_gamma && ReadNoFence( &gamma_serial );
 }
