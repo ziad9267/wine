@@ -3067,6 +3067,12 @@ static void fs_hack_blit_framebuffer( struct gl_drawable *gl, GLenum draw_buffer
     LONG gamma_serial = 0;
     unsigned int i;
 
+    if (!ctx)
+    {
+        WARN( "NULL ctx.\n" );
+        return;
+    }
+
     NtUserGetClientRect( gl->hwnd, &src, NtUserGetDpiForWindow( gl->hwnd ) );
     dst = gl->rect;
 
