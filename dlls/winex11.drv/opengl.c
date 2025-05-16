@@ -3278,7 +3278,7 @@ static void present_gl_drawable( HWND hwnd, HDC hdc, struct gl_drawable *gl, BOO
             if (!drawable) sync_gl_drawable( hwnd, FALSE );
             return;
         }
-        WARN( "surface is present on non-ULW window.\n" );
+        TRACE( "Surface is present.\n" );
         hdc_dst = NtUserGetDCEx( hwnd, 0, DCX_CACHE | DCX_USESTYLE );
         region = get_dc_monitor_region( hwnd, hdc );
         if (region) NtGdiExtSelectClipRgn( hdc_dst, region, RGN_COPY );
