@@ -1997,6 +1997,7 @@ static struct window_surface *get_window_surface( HWND hwnd, UINT swp_flags, BOO
     struct window_surface *new_surface;
     struct window_rects monitor_rects;
     UINT raw_dpi_num, raw_dpi_den, style, ex_style;
+    DWORD layered_flags;
     RECT dummy;
     HRGN shape;
 
@@ -2038,7 +2039,8 @@ static struct window_surface *get_window_surface( HWND hwnd, UINT swp_flags, BOO
     if (IsRectEmpty( surface_rect )) needs_surface = FALSE;
     else if (create_layered || is_layered) needs_surface = TRUE;
 
-    if (is_opengl && !is_layered && !create_layered)
+    if (is_opengl && !is_layered && !create_layered
+        && !(!create_opaque && NtUserGetLayeredWindowAttributes( hwnd, NULL, NULL, &layered_flags ) && layered_flags & LWA_COLORKEY))
     {
         if (new_surface) window_surface_release( new_surface );
         new_surface = NULL;
