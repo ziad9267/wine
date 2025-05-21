@@ -653,6 +653,13 @@ BOOL get_vulkan_gpus( struct list *gpus )
         devinfo[i].properties2.pNext = &devinfo[i].id;
         pvkGetPhysicalDeviceProperties2KHR( devices[i], &devinfo[i].properties2 );
         pvkGetPhysicalDeviceMemoryProperties( devices[i], &devinfo[i].mem_properties );
+        /* Ignore Khronos vendor IDs */
+        if (devinfo[i].properties2.properties.vendorID >= 0x10000)
+        {
+            --count;
+            memmove( &devices[i], &devices[i + 1], (count - i) * sizeof(*devices) );
+            --i;
+        }
     }
     qsort( devinfo, count, sizeof(*devinfo), compare_vulkan_physical_devices );
 
