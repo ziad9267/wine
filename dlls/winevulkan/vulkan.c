@@ -509,6 +509,8 @@ static VkResult wine_vk_physical_device_init(struct wine_phys_dev *object, VkPhy
     if (have_external_memory_fd && have_external_semaphore_fd)
         ++num_properties; /* VK_KHR_win32_keyed_mutex */
 
+    ++num_properties; /* VK_WINE_openxr_device_extensions */
+
     if (!(object->extensions = calloc(num_properties, sizeof(*object->extensions))))
     {
         ERR("Failed to allocate memory for device extensions!\n");
@@ -530,6 +532,11 @@ static VkResult wine_vk_physical_device_init(struct wine_phys_dev *object, VkPhy
         TRACE("Enabling extension '%s' for physical device %p\n", object->extensions[j].extensionName, object);
         ++j;
     }
+
+    strcpy(object->extensions[j].extensionName, "VK_WINE_openxr_device_extensions");
+    TRACE("Enabling extension '%s' for physical device %p\n", object->extensions[j].extensionName, object);
+    ++j;
+
     object->extension_count = num_properties;
     TRACE("Host supported extensions %u, Wine supported extensions %u\n", num_host_properties, num_properties);
 
