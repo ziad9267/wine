@@ -1910,6 +1910,7 @@ typedef enum _PROCESSINFOCLASS {
     ProcessWineLdtCopy,
     ProcessWineGrantAdminToken,
 #endif
+    ProcessFexHardwareTso = 2000,
 } PROCESSINFOCLASS;
 
 #define MEM_EXECUTE_OPTION_DISABLE   0x01
