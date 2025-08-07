@@ -65,6 +65,18 @@ WINE_DEFAULT_DEBUG_CHANNEL(seh);
 #define NTDLL_DWARF_H_NO_UNWINDER
 #include "dwarf.h"
 
+struct arm64_thread_data
+{
+    BOOL suspend_pending;
+};
+
+C_ASSERT( sizeof(struct arm64_thread_data) <= sizeof(((struct ntdll_thread_data *)0)->cpu_data) );
+
+static inline struct arm64_thread_data *arm64_thread_data(void)
+{
+    return (struct arm64_thread_data *)ntdll_get_thread_data()->cpu_data;
+}
+
 /***********************************************************************
  * signal context platform-specific definitions
  */
@@ -225,6 +237,11 @@ void set_process_instrumentation_callback( void *callback )
     if (callback) FIXME( "Not supported.\n" );
 }
 
+static BOOLEAN is_arm64ec_emulator_stack( void *stack_ptr )
+{
+    return (ULONG64)stack_ptr <= NtCurrentTeb()->ChpeV2CpuAreaInfo->EmulatorStackBase &&
+           (ULONG64)stack_ptr > NtCurrentTeb()->ChpeV2CpuAreaInfo->EmulatorStackLimit;
+}
 
 /***********************************************************************
  *           syscall_frame_fixup_for_fastpath
@@ -334,7 +351,16 @@ NTSTATUS signal_set_full_context( CONTEXT *context )
     struct syscall_frame *frame = get_syscall_frame();
     NTSTATUS status = NtSetContextThread( GetCurrentThread(), context );
 
-    if (!status && (context->ContextFlags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
+    if (is_arm64ec() && arm64_thread_data()->suspend_pending) {
+        arm64_thread_data()->suspend_pending = FALSE;
+        CONTEXT suspend_context;
+        suspend_context.ContextFlags = CONTEXT_FULL | CONTEXT_EXCEPTION_REPORTING; /* TODO: check */
+        NtGetContextThread( GetCurrentThread(), &suspend_context );
+        wait_suspend( &suspend_context );
+        NtSetContextThread( GetCurrentThread(), &suspend_context );
+    }
+
+    if (!status && (context->ContextFlags & CONTEXT_INTEGER) == CONTEXT_INTEGER) /* TODO: also check with susp */
         frame->restore_flags |= CONTEXT_INTEGER;
 
     if (is_arm64ec() && !is_ec_code( frame->pc ))
@@ -425,12 +451,20 @@ NTSTATUS WINAPI NtGetContextThread( HANDLE handle, CONTEXT *context )
 {
     struct syscall_frame *frame = get_syscall_frame();
     DWORD needed_flags = context->ContextFlags & ~CONTEXT_ARM64;
-    BOOL self = (handle == GetCurrentThread());
+    THREAD_BASIC_INFORMATION info;
+    NTSTATUS ret;
+    BOOL self;
+
+    NtQueryInformationThread( handle, ThreadBasicInformation, &info, sizeof(info), NULL );
+    self = HandleToULong( info.ClientId.UniqueThread ) == GetCurrentThreadId();
 
     if (!self)
     {
-        NTSTATUS ret = get_thread_context( handle, context, &self, IMAGE_FILE_MACHINE_ARM64 );
-        if (ret || !self) return ret;
+        /* Avoid exposing JIT code pointers to other processes on ARM64EC */
+        if (is_arm64ec()) NtSuspendThread( handle, NULL );
+        ret = get_thread_context( handle, context, &self, IMAGE_FILE_MACHINE_ARM64 );
+        if (is_arm64ec()) NtResumeThread( handle, NULL );
+        return ret;
     }
 
     if (needed_flags & CONTEXT_INTEGER)
@@ -1307,6 +1341,12 @@ static void usr1_handler( int signal, siginfo_t *siginfo, void *sigcontext )
     ucontext_t *ucontext = sigcontext;
     CONTEXT context;
 
+    if (is_arm64ec() && NtCurrentTeb()->ChpeV2CpuAreaInfo->InSimulation) {
+        *NtCurrentTeb()->ChpeV2CpuAreaInfo->SuspendDoorbell = 1;
+        arm64_thread_data()->suspend_pending = TRUE;
+        return;
+    }
+
     if (is_inside_syscall( SP_sig(ucontext) ))
     {
         context.ContextFlags = CONTEXT_FULL | CONTEXT_EXCEPTION_REQUEST;
@@ -1470,10 +1510,13 @@ void syscall_dispatcher_return_slowpath(void)
  */
 void init_syscall_frame( LPTHREAD_START_ROUTINE entry, void *arg, BOOL suspend, TEB *teb )
 {
-    struct syscall_frame *frame = ((struct ntdll_thread_data *)&teb->GdiTebBatch)->syscall_frame;
+    struct ntdll_thread_data *thread_data = (struct ntdll_thread_data *)&teb->GdiTebBatch;
+    struct syscall_frame *frame = thread_data->syscall_frame;
     CONTEXT *ctx, context = { CONTEXT_ALL };
     I386_CONTEXT *i386_context;
     ARM_CONTEXT *arm_context;
+
+    ((struct arm64_thread_data *)(thread_data->cpu_data))->suspend_pending = FALSE;
 
     context.X0  = (DWORD64)entry;
     context.X1  = (DWORD64)arg;
