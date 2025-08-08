@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     
     steps:
       - name: Checkout Wine repository
@@ -19,10 +19,10 @@ jobs:
           sudo apt-get purge -y llvm-18 clang-18
       - name: Download Bylaws toolchain and extracting it
         run: |
-          wget https://github.com/mstorsjo/llvm-mingw/releases/download/20250730/llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
-          tar -xf llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
-          rm llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
-          sudo mv llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64 /opt/llvm-mingw
+          wget https://github.com/mstorsjo/llvm-mingw/releases/download/20250730/llvm-mingw-20250730-ucrt-ubuntu-22.04-aarch64.tar.xz
+          tar -xf llvm-mingw-20250730-ucrt-ubuntu-22.04-aarch64.tar.xz
+          rm llvm-mingw-20250730-ucrt-ubuntu-22.04-aarch64.tar.xz
+          sudo mv llvm-mingw-20250730-ucrt-ubuntu-22.04-aarch64 /opt/llvm-mingw
       - name: Compiling Wine
         run: |
           export PATH="/opt/llvm-mingw/bin:$PATH"
