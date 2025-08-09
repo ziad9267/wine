@@ -43,14 +43,17 @@ jobs:
       
       - name: Compiling Wine
         run: |
-          export PATH="/opt/llvm-mingw/bin:$PATH"
+          export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          export LLVM-MINGW="/opt/llvm-mingw/bin:$PATH"
+          export PATH="$LLVM-MINGW:$PATH"
           
           mkdir build
           mkdir compiled-files
-          
+
           ./configure \
           --enable-archs=arm64ec,aarch64,i386 \
           --prefix=/build \
+          --host=aarch64-linux-android \
           --with-mingw=clang \
           --enable-win64 \
           --with-pulse \
@@ -77,7 +80,10 @@ jobs:
           --without-wayland \
           --without-xinerama \
           --without-xxf86vm \
-          --enable-wineandroid_drv=no
+          --enable-wineandroid_drv=no \
+          CC="$TOOLCHAIN/clang --target=aarch64-linux-android28" \
+          AS=$CC \
+          CXX="$TOOLCHAIN/clang --target=aarch64-linux-android28"
           
           make -j$(nproc)
           make install -j$(nproc) DESTDIR=compiled-files/
