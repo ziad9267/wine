@@ -44,8 +44,7 @@ jobs:
       - name: Compiling Wine
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
-          export LLVM-MINGW="/opt/llvm-mingw/bin"
-          export PATH="$LLVM-MINGW:$PATH"
+          export PATH="/opt/llvm-mingw/bin:$PATH"
           
           mkdir build
           mkdir compiled-files
