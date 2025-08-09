@@ -1,8 +1,9 @@
 name: Custom Wine arm64ec Build
 
 on:
-  push:
   workflow_dispatch:
+  push:
+  pull_request:
 
 jobs:
   build:
