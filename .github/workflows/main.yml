@@ -2,6 +2,8 @@ name: Custom Wine arm64ec Build
 
 on:
   push:
+    paths-ignore:
+      - '.github/workflows/compile-android.yml'
   workflow_dispatch:
 
 jobs:
