@@ -1,0 +1,88 @@
+name: arm64ec Build for Android
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Wine repository
+        uses: actions/checkout@v4
+
+      - name: Install the required deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget debhelper-compat lzma flex bison quilt unzip gettext icoutils sharutils pkg-config dctrl-tools imagemagick librsvg2-bin fontforge-nox khronos-api unicode-data unicode-idna libgl-dev libxi-dev libxt-dev libxmu-dev libx11-dev libxext-dev libxfixes-dev libxrandr-dev libxcursor-dev libxrender-dev libxkbfile-dev libxxf86vm-dev libxxf86dga-dev libxinerama-dev libglu1-mesa-dev libxcomposite-dev libxkbregistry-dev libxml-libxml-perl libssl-dev libv4l-dev libsdl2-dev libkrb5-dev libudev-dev libpulse-dev libldap2-dev unixodbc-dev libcups2-dev libcapi20-dev libvulkan-dev libopenal-dev libdbus-1-dev freeglut3-dev libunwind-dev libpcap0.8-dev libasound2-dev libgphoto2-dev libosmesa6-dev libncurses-dev libwayland-dev libfreetype-dev libgnutls28-dev libpcsclite-dev libusb-1.0-0-dev libgettextpo-dev libfontconfig-dev ocl-icd-opencl-dev libgstreamer-plugins-base1.0-dev
+          sudo apt-get purge -y llvm-18 clang-18
+      - name: Download Bylaws toolchain and extracting it
+        run: |
+          wget https://github.com/mstorsjo/llvm-mingw/releases/download/20250730/llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
+          tar -xf llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
+          rm llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
+          sudo mv llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64 /opt/llvm-mingw
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup NDK
+        uses: nttld/setup-ndk@v1
+        id: ndk
+        with:
+         ndk-version: r27c
+         add-to-path: false
+         link-to-sdk: true
+
+      - name: Show SDK and NDK locations
+        run: |
+         echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+         echo "NDK path=${{ steps.ndk.outputs.ndk-path }}"
+         ls /usr/local/lib/android/sdk/ndk
+      
+      - name: Compiling Wine
+        run: |
+          export PATH="/opt/llvm-mingw/bin:$PATH"
+          
+          mkdir build
+          mkdir compiled-files
+          
+          ./configure \
+          --enable-archs=arm64ec,aarch64,i386 \
+          --prefix=/build \
+          --with-mingw=clang \
+          --enable-win64 \
+          --with-pulse \
+          --disable-win16 \
+          --without-alsa \
+          --disable-tests \
+          --without-capi \
+          --without-coreaudio \
+          --without-cups \
+          --without-dbus \
+          --without-gphoto \
+          --without-gssapi \
+          --without-krb5 \
+          --without-alsa \
+          --without-netapi \
+          --without-oss \
+          --without-pcap \
+          --without-pcsclite \
+          --without-sane \
+          --without-udev \
+          --without-unwind \
+          --without-usb \
+          --without-v4l2 \
+          --without-wayland \
+          --without-xinerama \
+          --without-xxf86vm \
+          --enable-wineandroid_drv=no
+          
+          make -j$(nproc)
+          make install -j$(nproc) DESTDIR=compiled-files/
+      - name: Uploading Wine files
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm64ec-Android
+          path: compiled-files/
