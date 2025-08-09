@@ -1,8 +1,11 @@
 name: Normal x86_64 Wine
 
 on:
+  workflow_dispatch: {}
   push:
-  workflow_dispatch:
+    branches:
+      - main
+      - upstream-arm64ec
 
 jobs:
   build:
