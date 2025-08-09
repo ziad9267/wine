@@ -1,0 +1,23 @@
+diff -uNr wine/tools/winegcc/winegcc.c wine-edited/tools/winegcc/winegcc.c
+--- wine/tools/winegcc/winegcc.c	2025-08-08 21:02:02.706630936 +0300
++++ wine-edited/tools/winegcc/winegcc.c	2025-08-08 22:10:15.407550722 +0300
+@@ -438,7 +438,18 @@
+         if (target_name)
+         {
+             strarray_add( &ret, "-target" );
+-            strarray_add( &ret, target_name );
++            //strarray_add( &ret, target_name );
++            if (strstr(target, "android")) {
++                if (strstr(target, "arm")) {
++                    str = strmake( "%s24", "armv7a-linux-androideabi" );
++                } else {
++                    str = strmake( "%s24", target );
++                }
++            } else {
++                str = strmake( "%s", target );
++            }
++            strarray_add( &ret, "-target" );
++            strarray_add( &ret, str );
+         }
+         strarray_add( &ret, "-Wno-unused-command-line-argument" );
+         strarray_add( &ret, "-fuse-ld=lld" );

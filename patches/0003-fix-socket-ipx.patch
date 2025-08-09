@@ -1,0 +1,36 @@
+diff -uNr wine/dlls/ntdll/unix/socket.c wine-edited/dlls/ntdll/unix/socket.c
+--- wine/dlls/ntdll/unix/socket.c	2025-08-08 21:02:01.262630937 +0300
++++ wine-edited/dlls/ntdll/unix/socket.c	2025-08-08 21:55:04.719551070 +0300
+@@ -54,7 +54,7 @@
+ #  include <linux/types.h>
+ # endif
+ # include <linux/ipx.h>
+-# ifdef SOL_IPX
++# if defined(SOL_IPX) && !defined(__ANDROID__)
+ #  define HAS_IPX
+ # endif
+ #endif
+diff -uNr wine/dlls/ws2_32/unixlib.c wine-edited/dlls/ws2_32/unixlib.c
+--- wine/dlls/ws2_32/unixlib.c	2025-08-08 21:02:01.886630937 +0300
++++ wine-edited/dlls/ws2_32/unixlib.c	2025-08-08 21:56:14.143551043 +0300
+@@ -75,7 +75,7 @@
+ #  include <linux/types.h>
+ # endif
+ # include <linux/ipx.h>
+-# ifdef SOL_IPX
++# if defined(SOL_IPX) && !defined(__ANDROID__)
+ #  define HAS_IPX
+ # endif
+ #endif
+diff -uNr wine/server/sock.c wine-edited/server/sock.c
+--- wine/server/sock.c	2025-08-08 21:02:02.650630936 +0300
++++ wine-edited/server/sock.c	2025-08-08 21:56:59.079551026 +0300
+@@ -74,7 +74,7 @@
+ #  include <linux/types.h>
+ # endif
+ # include <linux/ipx.h>
+-# ifdef SOL_IPX
++# if defined(SOL_IPX) && !defined(__ANDROID__)
+ #  define HAS_IPX
+ # endif
+ #endif

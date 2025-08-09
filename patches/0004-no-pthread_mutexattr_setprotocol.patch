@@ -1,0 +1,21 @@
+diff -uNr wine/dlls/winepulse.drv/pulse.c wine-edited/dlls/winepulse.drv/pulse.c
+--- wine/dlls/winepulse.drv/pulse.c	2025-08-08 21:02:01.758630937 +0300
++++ wine-edited/dlls/winepulse.drv/pulse.c	2025-08-08 22:01:00.815550934 +0300
+@@ -240,6 +240,9 @@
+ 
+ static NTSTATUS pulse_process_attach(void *args)
+ {
++#ifdef __ANDROID__
++    if (1)
++#else
+     pthread_mutexattr_t attr;
+ 
+     pthread_mutexattr_init(&attr);
+@@ -247,6 +250,7 @@
+     pthread_mutexattr_setrobust(&attr, PTHREAD_MUTEX_ROBUST);
+ 
+     if (pthread_mutex_init(&pulse_mutex, &attr) != 0)
++#endif
+         pthread_mutex_init(&pulse_mutex, NULL);
+ 
+ #ifdef _WIN64

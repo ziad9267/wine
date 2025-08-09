@@ -1,0 +1,12 @@
+diff -uNr wine/tools/winebuild/utils.c wine-edited/tools/winebuild/utils.c
+--- wine/tools/winebuild/utils.c	2025-08-08 21:02:02.698630936 +0300
++++ wine-edited/tools/winebuild/utils.c	2025-08-08 22:13:04.359550658 +0300
+@@ -275,7 +275,7 @@
+     struct strarray args = empty_strarray;
+     const char *file;
+     unsigned int i;
+-    int using_cc = 0;
++    int using_cc = 1;
+ 
+     if (cc_command.count)
+     {

@@ -1,0 +1,30 @@
+diff -uNr wine/dlls/ntdll/unix/loader.c wine-edited/dlls/ntdll/unix/loader.c
+--- wine/dlls/ntdll/unix/loader.c	2025-08-08 21:02:01.258630937 +0300
++++ wine-edited/dlls/ntdll/unix/loader.c	2025-08-08 21:52:05.847551138 +0300
+@@ -77,7 +77,7 @@
+ #else
+   extern char **environ;
+ #endif
+-#ifdef __ANDROID__
++#if defined(__ANDROID__) && ! defined(__TERMUX__)
+ # include <jni.h>
+ #endif
+ 
+@@ -1908,7 +1908,7 @@
+     server_init_process_done();
+ }
+ 
+-#ifdef __ANDROID__
++#if defined(__ANDROID__) && ! defined(__TERMUX__)
+ 
+ #ifndef WINE_JAVA_CLASS
+ #define WINE_JAVA_CLASS "org/winehq/wine/WineActivity"
+@@ -2104,7 +2104,7 @@
+ #endif  /* __APPLE__ */
+ 
+ 
+-#if defined(__linux__) && !defined(__ANDROID__) && (defined(__i386__) || defined(__arm__))
++#if defined(__linux__) && !defined(__ANDROID__) && !defined(__TERMUX__))) || (defined(__i386__) || defined(__arm__))
+ 
+ static void check_vmsplit( void *stack )
+ {
