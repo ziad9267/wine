@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout Wine repository
@@ -33,7 +33,19 @@ jobs:
           libglu1-mesa-dev \
           libosmesa6-dev \
           libpcap-dev \
-          libdbus-1-dev
+          libdbus-1-dev \
+          libfreetype6-dev:i386 \
+          libx11-dev:i386 \
+          libxcomposite-dev:i386 \
+          libxcursor-dev:i386 \
+          libxi-dev:i386 \
+          libxinerama-dev:i386 \
+          libxrandr-dev:i386 \
+          libxxf86vm-dev:i386 \
+          libglu1-mesa-dev:i386 \
+          libosmesa6-dev:i386 \
+          libpcap-dev:i386 \
+          libdbus-1-dev:i386
           sudo apt-get purge -y llvm-18 clang-18
       - name: Download Bylaws toolchain and extracting it
         run: |
@@ -43,7 +55,7 @@ jobs:
           sudo mv llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64 /opt/llvm-mingw
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-
+        
       - name: Setup NDK
         uses: nttld/setup-ndk@v1
         id: ndk
@@ -75,7 +87,6 @@ jobs:
           #chmod +x ../../../wine-tools/tools/wineapploader
 
           cd ../../..
-          ls wine-tools
       - name: Compiling Wine
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
