@@ -42,7 +42,14 @@ jobs:
          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
          echo "NDK path=${{ steps.ndk.outputs.ndk-path }}"
          ls /usr/local/lib/android/sdk/ndk
-      
+
+      - name: Building Wine tools
+        run: |
+          mkdir wine-tools
+          cd wine-tools
+          ../configure --enable-win64 --without-wayland -disable-tests
+          make -j$(nproc) tools
+          cd ..
       - name: Compiling Wine
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
