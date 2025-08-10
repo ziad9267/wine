@@ -95,7 +95,7 @@ jobs:
           mkdir build-prefix
           mkdir compiled-files
 
-          ./configure \
+          ./configure --verbose \
           --enable-archs=arm64ec,aarch64,i386 \
           --prefix=/build-prefix \
           --host=aarch64-linux-android \
