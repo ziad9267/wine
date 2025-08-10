@@ -62,9 +62,9 @@ jobs:
           cd ../winemaker && make -j$(nproc)
           cd ../wmc && make -j$(nproc)
 
-          gcc ../../../tools/make_xftmpl.c -I../../../wine-tools-build/include -I../../../include -o ../../../wine-tools/tools/make_xftmpl
-          cp ../../../tools/wineapploader.in ../../../wine-tools/tools/wineapploader
-          chmod +x ../../../wine-tools/tools/wineapploader
+          #gcc ../../../tools/make_xftmpl.c -I../../../wine-tools-build/include -I../../../include -o ../../../wine-tools/tools/make_xftmpl
+          #cp ../../../tools/wineapploader.in ../../../wine-tools/tools/wineapploader
+          #chmod +x ../../../wine-tools/tools/wineapploader
 
           cd ../../..
       - name: Compiling Wine
@@ -80,6 +80,7 @@ jobs:
           --prefix=/build-prefix \
           --host=aarch64-linux-android \
           --with-mingw=clang \
+          --with-wine-tools=/wine-tools \
           --enable-win64 \
           --with-pulse \
           --disable-win16 \
