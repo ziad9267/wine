@@ -17,7 +17,7 @@ jobs:
       - name: Install the required deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget xorg-dev libx11-dev debhelper-compat lzma flex bison quilt unzip gettext icoutils sharutils pkg-config dctrl-tools imagemagick librsvg2-bin fontforge-nox khronos-api unicode-data unicode-idna libgl-dev libxi-dev libxt-dev libxmu-dev libx11-dev libxext-dev libxfixes-dev libxrandr-dev libxcursor-dev libxrender-dev libxkbfile-dev libxxf86vm-dev libxxf86dga-dev libxinerama-dev libglu1-mesa-dev libxcomposite-dev libxkbregistry-dev libxml-libxml-perl libssl-dev libv4l-dev libsdl2-dev libkrb5-dev libudev-dev libpulse-dev libldap2-dev unixodbc-dev libcups2-dev libcapi20-dev libvulkan-dev libopenal-dev libdbus-1-dev freeglut3-dev libunwind-dev libpcap0.8-dev libasound2-dev libgphoto2-dev libosmesa6-dev libncurses-dev libwayland-dev libfreetype-dev libgnutls28-dev libpcsclite-dev libusb-1.0-0-dev libgettextpo-dev libfontconfig-dev ocl-icd-opencl-dev libgstreamer-plugins-base1.0-dev
+          sudo apt-get install -y build-essential libncurses-dev xorg-dev libx11-dev wget debhelper-compat lzma flex bison quilt unzip gettext icoutils sharutils pkg-config dctrl-tools imagemagick librsvg2-bin fontforge-nox khronos-api unicode-data unicode-idna libgl-dev libxi-dev libxt-dev libxmu-dev libx11-dev libxext-dev libxfixes-dev libxrandr-dev libxcursor-dev libxrender-dev libxkbfile-dev libxxf86vm-dev libxxf86dga-dev libxinerama-dev libglu1-mesa-dev libxcomposite-dev libxkbregistry-dev libxml-libxml-perl libssl-dev libv4l-dev libsdl2-dev libkrb5-dev libudev-dev libpulse-dev libldap2-dev unixodbc-dev libcups2-dev libcapi20-dev libvulkan-dev libopenal-dev libdbus-1-dev freeglut3-dev libunwind-dev libpcap0.8-dev libasound2-dev libgphoto2-dev libosmesa6-dev libncurses-dev libwayland-dev libfreetype-dev libgnutls28-dev libpcsclite-dev libusb-1.0-0-dev libgettextpo-dev libfontconfig-dev ocl-icd-opencl-dev libgstreamer-plugins-base1.0-dev
           sudo apt-get purge -y llvm-18 clang-18
       - name: Download Bylaws toolchain and extracting it
         run: |
@@ -25,7 +25,6 @@ jobs:
           tar -xf llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
           rm llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
           sudo mv llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64 /opt/llvm-mingw
-
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
@@ -36,13 +35,6 @@ jobs:
          ndk-version: r27c
          add-to-path: false
          link-to-sdk: true
-
-      - name: Show SDK and NDK locations
-        run: |
-         echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-         echo "NDK path=${{ steps.ndk.outputs.ndk-path }}"
-         ls /usr/local/lib/android/sdk/ndk
-
       - name: Building Wine tools
         run: |
           export PATH="/opt/llvm-mingw/bin:$PATH"
