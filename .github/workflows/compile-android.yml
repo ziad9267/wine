@@ -19,33 +19,35 @@ jobs:
           sudo dpkg --add-architecture i386
           sudo apt-get update
           sudo apt-get install -y wget debhelper-compat lzma flex bison quilt unzip gettext icoutils sharutils pkg-config dctrl-tools imagemagick librsvg2-bin fontforge-nox khronos-api unicode-data unicode-idna libgl-dev libxi-dev libxt-dev libxmu-dev libx11-dev libxext-dev libxfixes-dev libxrandr-dev libxcursor-dev libxrender-dev libxkbfile-dev libxxf86vm-dev libxxf86dga-dev libxinerama-dev libglu1-mesa-dev libxcomposite-dev libxkbregistry-dev libxml-libxml-perl libssl-dev libv4l-dev libsdl2-dev libkrb5-dev libudev-dev libpulse-dev libldap2-dev unixodbc-dev libcups2-dev libcapi20-dev libvulkan-dev libopenal-dev libdbus-1-dev freeglut3-dev libunwind-dev libpcap0.8-dev libasound2-dev libgphoto2-dev libosmesa6-dev libncurses-dev libwayland-dev libfreetype-dev libgnutls28-dev libpcsclite-dev libusb-1.0-0-dev libgettextpo-dev libfontconfig-dev ocl-icd-opencl-dev libgstreamer-plugins-base1.0-dev
-          sudo apt-get install build-essential \
-          libncurses-dev \
-          xorg-dev \
-          libfreetype6-dev \
-          libx11-dev \
-          libxcomposite-dev \
-          libxcursor-dev \
-          libxi-dev \
-          libxinerama-dev \
-          libxrandr-dev \
-          libxxf86vm-dev \
-          libglu1-mesa-dev \
-          libosmesa6-dev \
-          libpcap-dev \
-          libdbus-1-dev \
-          libfreetype6-dev:i386 \
+          sudo apt-get install -y \
+          build-essential \
+          gcc-multilib \
           libx11-dev:i386 \
-          libxcomposite-dev:i386 \
+          libfreetype6-dev:i386 \
           libxcursor-dev:i386 \
           libxi-dev:i386 \
-          libxinerama-dev:i386 \
-          libxrandr-dev:i386 \
+          libxshmfence-dev:i386 \
           libxxf86vm-dev:i386 \
+          libxrandr-dev:i386 \
+          libxinerama-dev:i386 \
+          libxcomposite-dev:i386 \
           libglu1-mesa-dev:i386 \
           libosmesa6-dev:i386 \
-          #libpcap-dev:i386 \
-          #libdbus-1-dev:i386
+          libdbus-1-dev:i386 \
+          libncurses5-dev:i386 \
+          libsane-dev:i386 \
+          libv4l-dev:i386 \
+          libgphoto2-dev:i386 \
+          liblcms2-dev:i386 \
+          libcapi20-dev:i386 \
+          libcups2-dev:i386 \
+          libfontconfig1-dev:i386 \
+          libgsm1-dev:i386 \
+          libtiff5-dev:i386 \
+          libmpg123-dev:i386 \
+          libopenal-dev:i386 \
+          libldap2-dev:i386 \
+          libjpeg-dev:i386
           sudo apt-get purge -y llvm-18 clang-18
       - name: Download Bylaws toolchain and extracting it
         run: |
