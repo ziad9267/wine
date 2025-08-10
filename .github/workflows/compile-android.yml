@@ -32,7 +32,7 @@ jobs:
           libxxf86vm-dev \
           libglu1-mesa-dev \
           libosmesa6-dev \
-          libpcap-dev \
+          #libpcap-dev \
           libdbus-1-dev \
           libfreetype6-dev:i386 \
           libx11-dev:i386 \
@@ -44,7 +44,7 @@ jobs:
           libxxf86vm-dev:i386 \
           libglu1-mesa-dev:i386 \
           libosmesa6-dev:i386 \
-          libpcap-dev:i386 \
+          #libpcap-dev:i386 \
           libdbus-1-dev:i386
           sudo apt-get purge -y llvm-18 clang-18
       - name: Download Bylaws toolchain and extracting it
