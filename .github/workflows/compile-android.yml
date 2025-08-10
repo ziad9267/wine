@@ -67,6 +67,7 @@ jobs:
           #chmod +x ../../../wine-tools/tools/wineapploader
 
           cd ../../..
+          ls wine-tools
       - name: Compiling Wine
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
@@ -80,7 +81,7 @@ jobs:
           --prefix=/build-prefix \
           --host=aarch64-linux-android \
           --with-mingw=clang \
-          --with-wine-tools=/wine-tools \
+          --with-wine-tools=wine-tools/ \
           --enable-win64 \
           --with-pulse \
           --disable-win16 \
