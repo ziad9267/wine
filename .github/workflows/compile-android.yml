@@ -45,22 +45,21 @@ jobs:
 
       - name: Building Wine tools
         run: |
-          mkdir wine-tools
-          cd wine-tools
-          ../configure --enable-win64 --without-wayland -disable-tests
-          make -j$(nproc) tools
-          cd ..
+          mkdir build
+          cd build
+          chmod +x ../build-wine-tools.sh
+          ../build-wine-tools.sh
       - name: Compiling Wine
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
           export PATH="/opt/llvm-mingw/bin:$PATH"
           
-          mkdir build
+          mkdir build-prefix
           mkdir compiled-files
 
           ./configure \
           --enable-archs=arm64ec,aarch64,i386 \
-          --prefix=/build \
+          --prefix=/build-prefix \
           --host=aarch64-linux-android \
           --with-mingw=clang \
           --enable-win64 \
