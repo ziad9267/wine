@@ -85,7 +85,7 @@ jobs:
           --enable-wineandroid_drv=no \
           CC="$TOOLCHAIN/clang --target=aarch64-linux-android28" \
           AS=$CC \
-          CXX="$TOOLCHAIN/clang --target=aarch64-linux-android28"
+          CXX="$TOOLCHAIN/clang++ --target=aarch64-linux-android28"
           
           make -j$(nproc)
           make install -j$(nproc) DESTDIR=compiled-files/
