@@ -45,10 +45,28 @@ jobs:
 
       - name: Building Wine tools
         run: |
-          mkdir build
-          cd build
-          chmod +x ../build-wine-tools.sh
-          ../build-wine-tools.sh
+          export PATH="/opt/llvm-mingw/bin:$PATH"
+          
+          mkdir wine-tools
+          mkdir wine-tools-build
+          cd wine-tools-build
+          ../configure --enable-win64 --without-wayland --disable-tests --enable-wineandroid_drv=no
+          cp -rf ./* ../wine-tools
+
+          cd ../wine-tools/tools/winebuild && make -j$(nproc)
+          cd ../wrc && make -j$(nproc)
+          cd ../widl && make -j$(nproc)
+          cd ../winegcc && make -j$(nproc)
+          cd ../sfnt2fon && make -j$(nproc)
+          cd ../winedump && make -j$(nproc)
+          cd ../winemaker && make -j$(nproc)
+          cd ../wmc && make -j$(nproc)
+
+          gcc ../../../tools/make_xftmpl.c -I../../../wine-tools-build/include -I../../../include -o ../../../wine-tools/tools/make_xftmpl
+          cp ../../../tools/wineapploader.in ../../../wine-tools/tools/wineapploader
+          chmod +x ../../../wine-tools/tools/wineapploader
+
+          cd ../../..
       - name: Compiling Wine
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
