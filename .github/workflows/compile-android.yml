@@ -150,3 +150,8 @@ jobs:
         with:
           name: arm64ec-Android
           path: compiled-files/
+
+      - if: ${{ failure() }}
+        with:
+          name: Log files
+          path: ./config.log
