@@ -54,7 +54,7 @@ jobs:
           mkdir imagefs
           cd imagefs
           pwd
-          wget hhttps://github.com/ziad9267/termux-on-gha/releases/download/test/termuxfs.tar
+          wget https://github.com/ziad9267/termux-on-gha/releases/download/test/termuxfs.tar
           tar xf termuxfs.tar
           rm -rf termuxfs.tar
           sudo mv ./data /
