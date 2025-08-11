@@ -149,9 +149,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: arm64ec-Android
-          path: compiled-files/
+          path: |
+             compiled-files/
+             ./config.log
 
-      - if: ${{ failure() }}
-        with:
-          name: Log files
-          path: ./config.log
+      
