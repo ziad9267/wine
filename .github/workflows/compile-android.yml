@@ -97,6 +97,11 @@ jobs:
           cd ../winemaker && make -j$(nproc)
           cd ../wmc && make -j$(nproc)
 
+          cd ../..
+          gcc ../tools/make_xftmpl.c -I../wine-tools-build/include -I../include -o ../tools/make_xftmpl
+          cp ../tools/wineapploader.in ../tools/wineapploader
+          chmod +x ../tools/wineapploader
+
           cd ../../..
       - name: Compiling Wine
         run: |
