@@ -58,7 +58,7 @@ jobs:
           tar xf termuxfs.tar
           rm -rf termuxfs.tar
           #sudo mv ./data /
-          sudo ls -R /data/data/com.termux
+          sudo ls -R data/data/com.termux
       - name: Download Bylaws toolchain and extracting it
         run: |
           wget https://github.com/mstorsjo/llvm-mingw/releases/download/20250730/llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
