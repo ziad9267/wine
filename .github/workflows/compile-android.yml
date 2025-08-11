@@ -1,4 +1,4 @@
-name: arm64ec Build for Android
+name: arm64ec build for Android
 
 on:
   push:
