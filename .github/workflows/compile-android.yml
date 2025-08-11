@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Wine repository
@@ -99,8 +99,6 @@ jobs:
 
           cd ../..
           gcc ../tools/make_xftmpl.c -I../wine-tools-build/include -I../include -o ../tools/make_xftmpl
-          cp ../tools/wineapploader.in ../tools/wineapploader
-          chmod +x ../tools/wineapploader
 
           cd ../../..
       - name: Compiling Wine
@@ -180,7 +178,6 @@ jobs:
           GSTREAMER_LIBS="-L$DEPS/lib -lgstgl-1.0 -lgstapp-1.0 -lgstvideo-1.0 -lgstaudio-1.0 -lglib-2.0 -lgobject-2.0 -lgio-2.0 -lgsttag-1.0 -lgstbase-1.0 -lgstreamer-1.0" \
           FFMPEG_CFLAGS="-I$DEPS/include/libavutil -I$DEPS/include/libavcodec -I$DEPS/include/libavformat" \
           FFMPEG_LIBS="-L$DEPS/lib -lavutil -lavcodec -lavformat"
-    
           
           make -j$(nproc)
           make install -j$(nproc) DESTDIR=compiled-files/
