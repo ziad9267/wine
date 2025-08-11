@@ -49,6 +49,16 @@ jobs:
           libldap2-dev:i386 \
           libjpeg-dev:i386
           sudo apt-get purge -y llvm-18 clang-18
+      - name: Replacing deps with Termux deps
+        run: |
+          mkdir imagefs
+          cd imagefs
+          pwd
+          wget hhttps://github.com/ziad9267/termux-on-gha/releases/download/test/termuxfs.tar
+          tar xf termuxfs.tar
+          rm -rf termuxfs.tar
+          sudo mv ./data /
+          sudo ls -R /data/data/com.termux/files
       - name: Download Bylaws toolchain and extracting it
         run: |
           wget https://github.com/mstorsjo/llvm-mingw/releases/download/20250730/llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
@@ -83,10 +93,6 @@ jobs:
           cd ../winedump && make -j$(nproc)
           cd ../winemaker && make -j$(nproc)
           cd ../wmc && make -j$(nproc)
-
-          #gcc ../../../tools/make_xftmpl.c -I../../../wine-tools-build/include -I../../../include -o ../../../wine-tools/tools/make_xftmpl
-          #cp ../../../tools/wineapploader.in ../../../wine-tools/tools/wineapploader
-          #chmod +x ../../../wine-tools/tools/wineapploader
 
           cd ../../..
       - name: Compiling Wine
