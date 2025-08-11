@@ -151,6 +151,5 @@ jobs:
           name: arm64ec-Android
           path: |
              compiled-files/
-             config.log
 
       
