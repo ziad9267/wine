@@ -98,29 +98,11 @@ jobs:
       - name: Compiling Wine
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
-          export DEPS="/data/data/com.termux/files/usr"
-          
-          #export PKG_CONFIG_LIBDIR=$DEPS/lib/pkgconfig:$DEPS/share/pkgconfig
-          #export ACLOCAL_PATH=$DEPS/lib/aclocal:$DEPS/share/aclocal
-          #export CPPFLAGS="-I$DEPS/include/"
-          export LDFLAGS="-L$DEPS/lib -Wl,-rpath=$DEPS/lib"
-          #export FREETYPE_CFLAGS="-I$DEPS/include/freetype2"
-          #export PULSE_CFLAGS="-I$DEPS/include/pulse"
-          #export PULSE_LIBS="-L$DEPS/lib/pulseaudio -lpulse"
-          #export SDL2_CFLAGS="-I$DEPS/include/SDL2"
-          #export SDL2_LIBS="-L$DEPS/lib -lSDL2"
-          export X_CFLAGS="-I$DEPS/include"
-          export X_LIBS="-L$DEPS/lib"
-          #export GSTREAMER_CFLAGS="-I$DEPS/include/gstreamer-1.0 -I$DEPS/include/glib-2.0 -I$DEPS/lib/glib-2.0/include -I$DEPS/lib/gstreamer-1.0/include"
-          #export GSTREAMER_LIBS="-L$DEPS/lib -lgstgl-1.0 -lgstapp-1.0 -lgstvideo-1.0 -lgstaudio-1.0 -lglib-2.0 -lgobject-2.0 -lgio-2.0 -lgsttag-1.0 -lgstbase-1.0 -lgstreamer-1.0"
-          #export FFMPEG_CFLAGS="-I$DEPS/include/libavutil -I$DEPS/include/libavcodec -I$DEPS/include/libavformat"
-          #export FFMPEG_LIBS="-L$DEPS/lib -lavutil -lavcodec -lavformat"
-
           export PATH="/opt/llvm-mingw/bin:$PATH"
           
           mkdir build-prefix
           mkdir compiled-files
-
+          
           ./configure \
           --enable-archs=arm64ec,aarch64,i386 \
           --prefix=/build-prefix \
@@ -155,7 +137,11 @@ jobs:
           --enable-wineandroid_drv=no \
           CC="$TOOLCHAIN/clang --target=aarch64-linux-android28" \
           AS=$CC \
-          CXX="$TOOLCHAIN/clang++ --target=aarch64-linux-android28"
+          CXX="$TOOLCHAIN/clang++ --target=aarch64-linux-android28" \
+          LDFLAGS="-L /data/data/com.termux/files/usr/lib" \
+          PKG_CONFIG_LIBDIR=/data/data/com.termux/files/usr/lib/pkgconfig \
+          CFLAGS="-I /data/data/com.termux/files/usr/include" \
+          LIBS="-L /data/data/com.termux/files/usr/lib"
           
           make -j$(nproc)
           make install -j$(nproc) DESTDIR=compiled-files/
