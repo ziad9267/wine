@@ -227,6 +227,7 @@ jobs:
           PKG_CONFIG_LIBDIR=$DEPS/lib/pkgconfig \
           CFLAGS="--sysroot=$SYSROOT -L $DEPS/include" \
           LIBS="-L $DEPS/lib" \
+          DLLTOOL=$PATH/llvm-dlltool \
           ACLOCAL_PATH=$DEPS/lib/aclocal:$DEPS/share/aclocal \
           FREETYPE_CFLAGS="-I$DEPS/include/freetype2" \
           PULSE_CFLAGS="-I$DEPS/include/pulse" \
