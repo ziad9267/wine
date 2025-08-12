@@ -220,20 +220,13 @@ jobs:
           --without-xinerama \
           --without-xxf86vm \
           --enable-wineandroid_drv=no \
-          CC="$TOOLCHAIN/clang --target=aarch64-linux-android28" \
+          CC="$TOOLCHAIN/aarch64-linux-android28-clang" \
           AS=$CC \
-          CXX="$TOOLCHAIN/clang++ --target=aarch64-linux-android28" \
-          #AR=$TOOLCHAIN/llvm-ar \
-          #LD=$TOOLCHAIN/ld \
-          #RANLIB=$TOOLCHAIN/llvm-ranlib \
-          #STRIP=$TOOLCHAIN/llvm-strip \
-          DLLTOOL=$PATH/llvm-dlltool \
-          CPPLAGS="--sysroot=$SYSROOT -I$DEPS/include -I$DEPS/include/X11" \
-          LDFLAGS="--sysroot=$SYSROOT -L $DEPS/lib" \
+          CXX="$TOOLCHAIN/aarch64-linux-android28-clang++" \
+          LDFLAGS="-L $DEPS/lib" \
           PKG_CONFIG_LIBDIR=$DEPS/lib/pkgconfig \
-          CFLAGS="--sysroot=$SYSROOT -L $DEPS/include" \
+          CFLAGS="-L $DEPS/include" \
           LIBS="-L $DEPS/lib" \
-          #LIBS="-Wl,--exclude-libs=libunwind.a" \
           ACLOCAL_PATH=$DEPS/lib/aclocal:$DEPS/share/aclocal \
           FREETYPE_CFLAGS="-I$DEPS/include/freetype2" \
           PULSE_CFLAGS="-I$DEPS/include/pulse" \
