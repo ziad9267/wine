@@ -58,7 +58,7 @@ jobs:
           tar xf termuxfs.tar
           rm -rf termuxfs.tar
           sudo mv ./data /
-          sudo ls -R /data/data/com.termux
+          #sudo ls -R /data/data/com.termux
           cd /data
           sudo chown -R $(whoami):$(whoami) .
       - name: Download Bylaws toolchain and extracting it
