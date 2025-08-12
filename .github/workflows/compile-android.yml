@@ -223,9 +223,9 @@ jobs:
           CC="$TOOLCHAIN/clang --target=aarch64-linux-android28" \
           AS=$CC \
           CXX="$TOOLCHAIN/clang++ --target=aarch64-linux-android28" \
-          LDFLAGS="-L $DEPS/lib" \
+          LDFLAGS="--sysroot=$SYSROOT -L $DEPS/lib" \
           PKG_CONFIG_LIBDIR=$DEPS/lib/pkgconfig \
-          CFLAGS="-L $DEPS/include" \
+          CFLAGS="--sysroot=$SYSROOT -L $DEPS/include" \
           LIBS="-L $DEPS/lib" \
           ACLOCAL_PATH=$DEPS/lib/aclocal:$DEPS/share/aclocal \
           FREETYPE_CFLAGS="-I$DEPS/include/freetype2" \
