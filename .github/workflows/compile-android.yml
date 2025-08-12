@@ -225,7 +225,8 @@ jobs:
           LDFLAGS="-L $DEPS/lib" \
           PKG_CONFIG_LIBDIR=$DEPS/lib/pkgconfig \
           CFLAGS="-I $DEPS/include" \
-          LIBS="-L $DEPS/lib" \
+          #LIBS="-L $DEPS/lib" \
+          LIBS="-Wl,--exclude-libs=libunwind.a" \
           ACLOCAL_PATH=$DEPS/lib/aclocal:$DEPS/share/aclocal \
           PKG_CONFIG_LIBDIR="$DEPS/lib/pkgconfig" \
           FREETYPE_CFLAGS="-I$DEPS/include/freetype2" \
