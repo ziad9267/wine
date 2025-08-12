@@ -222,13 +222,17 @@ jobs:
           CC="$TOOLCHAIN/clang --target=aarch64-linux-android28" \
           AS=$CC \
           CXX="$TOOLCHAIN/clang++ --target=aarch64-linux-android28" \
+          export AR=$TOOLCHAIN/llvm-ar \
+          LD=$TOOLCHAIN/ld \
+          RANLIB=$TOOLCHAIN/llvm-ranlib \
+          STRIP=$TOOLCHAIN/llvm-strip \
+          DLLTOOL=$PATH/llvm-dlltool \
           LDFLAGS="-L $DEPS/lib" \
           PKG_CONFIG_LIBDIR=$DEPS/lib/pkgconfig \
           CFLAGS="-I $DEPS/include" \
           #LIBS="-L $DEPS/lib" \
           LIBS="-Wl,--exclude-libs=libunwind.a" \
           ACLOCAL_PATH=$DEPS/lib/aclocal:$DEPS/share/aclocal \
-          PKG_CONFIG_LIBDIR="$DEPS/lib/pkgconfig" \
           FREETYPE_CFLAGS="-I$DEPS/include/freetype2" \
           PULSE_CFLAGS="-I$DEPS/include/pulse" \
           PULSE_LIBS="-L$DEPS/lib/pulseaudio -lpulse" \
