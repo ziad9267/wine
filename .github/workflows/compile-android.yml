@@ -222,7 +222,7 @@ jobs:
           CC="$TOOLCHAIN/clang --target=aarch64-linux-android28" \
           AS=$CC \
           CXX="$TOOLCHAIN/clang++ --target=aarch64-linux-android28" \
-          export AR=$TOOLCHAIN/llvm-ar \
+          AR=$TOOLCHAIN/llvm-ar \
           LD=$TOOLCHAIN/ld \
           RANLIB=$TOOLCHAIN/llvm-ranlib \
           STRIP=$TOOLCHAIN/llvm-strip \
