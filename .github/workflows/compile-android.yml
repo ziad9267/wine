@@ -78,6 +78,10 @@ jobs:
          ndk-version: r27c
          add-to-path: false
          link-to-sdk: true
+
+      - name: Run autogen.sh
+        run: ./autogen.sh
+
       - name: Building Wine tools
         run: |
           export PATH="/opt/llvm-mingw/bin:$PATH"
@@ -101,6 +105,7 @@ jobs:
           gcc ../tools/make_xftmpl.c -I../wine-tools-build/include -I../include -o ../tools/make_xftmpl
 
           cd ../../..
+
       - name: Compiling Wine
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
