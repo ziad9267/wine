@@ -67,7 +67,7 @@ jobs:
           tar -xf llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
           rm llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
           sudo mv llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64 /opt/llvm-mingw
-          sudo chown -R $(whoami):$(whoami) .
+          #sudo chown -R $(whoami):$(whoami) .
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         
