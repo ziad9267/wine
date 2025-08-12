@@ -80,7 +80,9 @@ jobs:
          link-to-sdk: true
 
       - name: Run autogen.sh
-        run: ./autogen.sh
+        run: |
+          chmod +x autogen.sh
+          ./autogen.sh
 
       - name: Building Wine tools
         run: |
