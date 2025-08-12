@@ -105,7 +105,7 @@ jobs:
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
           export PATH="/opt/llvm-mingw/bin:$PATH"
-          export DEPS="data/data/com.termux/usr"
+          export DEPS="data/data/com.termux/files/usr"
 
           #export PKG_CONFIG_LIBDIR=$DEPS/lib/pkgconfig:$DEPS/share/pkgconfig
           #export ACLOCAL_PATH=$DEPS/lib/aclocal:$DEPS/share/aclocal
