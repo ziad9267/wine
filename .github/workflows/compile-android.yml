@@ -228,6 +228,7 @@ jobs:
           #RANLIB=$TOOLCHAIN/llvm-ranlib \
           #STRIP=$TOOLCHAIN/llvm-strip \
           DLLTOOL=$PATH/llvm-dlltool \
+          CPPLAGS="--sysroot=$SYSROOT -I$DEPS/include -I$DEPS/include/X11" \
           LDFLAGS="--sysroot=$SYSROOT -L $DEPS/lib" \
           PKG_CONFIG_LIBDIR=$DEPS/lib/pkgconfig \
           CFLAGS="--sysroot=$SYSROOT -L $DEPS/include" \
