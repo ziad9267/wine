@@ -60,14 +60,14 @@ jobs:
           sudo mv ./data /
           sudo ls -R /data/data/com.termux
           cd /data
-          sudo chown $(whoami):$(whoami) -R /data
+          sudo chown -R $(whoami):$(whoami) .
       - name: Download Bylaws toolchain and extracting it
         run: |
           wget https://github.com/mstorsjo/llvm-mingw/releases/download/20250730/llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
           tar -xf llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
           rm llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
           sudo mv llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64 /opt/llvm-mingw
-          #sudo chown -R $(whoami):$(whoami) .
+          sudo chown -R $(whoami):$(whoami) .
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         
@@ -105,7 +105,7 @@ jobs:
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
           export PATH="/opt/llvm-mingw/bin:$PATH"
-          export DEPS="data/data/com.termux"
+          export DEPS="data/data/com.termux/usr"
 
           #export PKG_CONFIG_LIBDIR=$DEPS/lib/pkgconfig:$DEPS/share/pkgconfig
           #export ACLOCAL_PATH=$DEPS/lib/aclocal:$DEPS/share/aclocal
