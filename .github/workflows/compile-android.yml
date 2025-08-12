@@ -183,6 +183,7 @@ jobs:
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
           export PATH="/opt/llvm-mingw/bin:$PATH"
           export DEPS="/data/data/com.termux/files/usr"
+          export SYSROOT="$TOOLCHAIN/sysroot"
           
           mkdir build-prefix
           mkdir compiled-files
@@ -227,18 +228,18 @@ jobs:
           #RANLIB=$TOOLCHAIN/llvm-ranlib \
           #STRIP=$TOOLCHAIN/llvm-strip \
           DLLTOOL=$PATH/llvm-dlltool \
-          LDFLAGS="-L $DEPS/lib" \
+          LDFLAGS="--sysroot=$SYSROOT -L $DEPS/lib" \
           PKG_CONFIG_LIBDIR=$DEPS/lib/pkgconfig \
-          CFLAGS="-L $DEPS/include" \
-          #LIBS="-L $DEPS/lib" \
-          LIBS="-Wl,--exclude-libs=libunwind.a" \
+          CFLAGS="--sysroot=$SYSROOT -L $DEPS/include" \
+          LIBS="-L $DEPS/lib" \
+          #LIBS="-Wl,--exclude-libs=libunwind.a" \
           ACLOCAL_PATH=$DEPS/lib/aclocal:$DEPS/share/aclocal \
           FREETYPE_CFLAGS="-I$DEPS/include/freetype2" \
           PULSE_CFLAGS="-I$DEPS/include/pulse" \
           PULSE_LIBS="-L$DEPS/lib/pulseaudio -lpulse" \
           SDL2_CFLAGS="-I$DEPS/include/SDL2" \
           SDL2_LIBS="-L$DEPS/lib -lSDL2" \
-          X_CFLAGS="-L$DEPS/include -L$DEPS/include/X11" \
+          X_CFLAGS="-L$DEPS/include" \
           X_LIBS="-L$DEPS/lib" \
           GSTREAMER_CFLAGS="-I$DEPS/include/gstreamer-1.0 -I$DEPS/include/glib-2.0 -I$DEPS/lib/glib-2.0/include -I$DEPS/lib/gstreamer-1.0/include" \
           GSTREAMER_LIBS="-L$DEPS/lib -lgstgl-1.0 -lgstapp-1.0 -lgstvideo-1.0 -lgstaudio-1.0 -lglib-2.0 -lgobject-2.0 -lgio-2.0 -lgsttag-1.0 -lgstbase-1.0 -lgstreamer-1.0" \
