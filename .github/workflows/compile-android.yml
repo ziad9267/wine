@@ -156,12 +156,10 @@ jobs:
 
       - name: Building Wine tools
         run: |
-          export PATH="/opt/llvm-mingw/bin:$PATH"
-          
           mkdir wine-tools
           mkdir wine-tools-build
           cd wine-tools-build
-          ../configure --enable-win64 --without-wayland --disable-tests --enable-wineandroid_drv=no
+          ../configure --without-x --without-gstreamer --without-vulkan --without-wayland --enable-wineandroid_drv=no
           cp -rf ./* ../wine-tools
 
           cd ../wine-tools/tools/winebuild && make -j$(nproc)
@@ -177,6 +175,7 @@ jobs:
           gcc ../tools/make_xftmpl.c -I../wine-tools-build/include -I../include -o ../tools/make_xftmpl
 
           cd ../../..
+          ls wine-tools
 
       - name: Compiling Wine
         run: |
