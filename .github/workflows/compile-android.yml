@@ -226,6 +226,7 @@ jobs:
           LDFLAGS="--sysroot=$SYSROOT -L $DEPS/lib" \
           PKG_CONFIG_LIBDIR=$DEPS/lib/pkgconfig \
           CFLAGS="--sysroot=$SYSROOT -L $DEPS/include" \
+          CPPLAGS="--sysroot=$SYSROOT -L$DEPS/include -L$DEPS/include/X11" \
           LIBS="-L $DEPS/lib" \
           DLLTOOL=$PATH/llvm-dlltool \
           ACLOCAL_PATH=$DEPS/lib/aclocal:$DEPS/share/aclocal \
