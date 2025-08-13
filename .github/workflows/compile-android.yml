@@ -183,7 +183,7 @@ jobs:
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
           export PATH="/opt/llvm-mingw/bin:$PATH"
           export DEPS="/data/data/com.termux/files/usr"
-          export SYSROOT="$TOOLCHAIN/sysroot"
+          export SYSROOT="$TOOLCHAIN/../sysroot"
           
           mkdir build-prefix
           mkdir compiled-files
