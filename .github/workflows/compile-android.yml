@@ -181,9 +181,34 @@ jobs:
       - name: Compiling Wine
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
-          export PATH="/opt/llvm-mingw/bin:$PATH"
-          export DEPS="/data/data/com.termux/files/usr"
-          export SYSROOT="$TOOLCHAIN/../sysroot"
+          export LLVM_MINGW_TOOLCHAIN="/opt/llvm-mingw/bin"
+          export PATH="$LLVM_MINGW_TOOLCHAIN:$PATH"
+          export deps="/data/data/com.termux/files/usr"
+
+          export CC="$TOOLCHAIN/clang --target=aarch64-linux-android28"
+          export AS=$CC
+          export CXX="$TOOLCHAIN/clang++ --target=aarch64-linux-android28"
+          export AR=$TOOLCHAIN/llvm-ar
+          export LD=$TOOLCHAIN/ld
+          export RANLIB=$TOOLCHAIN/llvm-ranlib
+          export STRIP=$TOOLCHAIN/llvm-strip
+          export DLLTOOL=$LLVM_MINGW_TOOLCHAIN/llvm-dlltool
+
+          export PKG_CONFIG_LIBDIR=$deps/lib/pkgconfig:$deps/share/pkgconfig
+          export ACLOCAL_PATH=$deps/lib/aclocal:$deps/share/aclocal
+          export CPPFLAGS="-I$deps/include/"
+          export LDFLAGS="-L$deps/lib -Wl,-rpath=$deps/lib"
+          export FREETYPE_CFLAGS="-I$deps/include/freetype2"
+          export PULSE_CFLAGS="-I$deps/include/pulse"
+          export PULSE_LIBS="-L$deps/lib/pulseaudio -lpulse"
+          export SDL2_CFLAGS="-I$deps/include/SDL2"
+          export SDL2_LIBS="-L$deps/lib -lSDL2"
+          export X_CFLAGS="-I$deps/include"
+          export X_LIBS="-L$deps/lib -landroid-sysvshm"
+          export GSTREAMER_CFLAGS="-I$deps/include/gstreamer-1.0 -I$deps/include/glib-2.0 -I$deps/lib/glib-2.0/include -I$deps/glib-2.0/include -I$deps/lib/gstreamer-1.0/include"
+          export GSTREAMER_LIBS="-L$deps/lib -lgstgl-1.0 -lgstapp-1.0 -lgstvideo-1.0 -lgstaudio-1.0 -lglib-2.0 -lgobject-2.0 -lgio-2.0 -lgsttag-1.0 -lgstbase-1.0 -lgstreamer-1.0"
+          export FFMPEG_CFLAGS="-I$deps/include/libavutil -I$deps/include/libavcodec -I$deps/include/libavformat"
+          export FFMPEG_LIBS="-L$deps/lib -lavutil -lavcodec -lavformat"
           
           mkdir build-prefix
           mkdir compiled-files
@@ -219,28 +244,7 @@ jobs:
           --without-wayland \
           --without-xinerama \
           --without-xxf86vm \
-          --enable-wineandroid_drv=no \
-          CC="$TOOLCHAIN/clang --target=aarch64-linux-android28" \
-          AS=$CC \
-          CXX="$TOOLCHAIN/clang++ --target=aarch64-linux-android28" \
-          DLLTOOL=$PATH/llvm-dlltool \
-          CPPLAGS="--sysroot=$SYSROOT -I$DEPS/include -I$DEPS/include/X11" \
-          LDFLAGS="--sysroot=$SYSROOT -L $DEPS/lib" \
-          PKG_CONFIG_LIBDIR=$DEPS/lib/pkgconfig \
-          CFLAGS="--sysroot=$SYSROOT -L $DEPS/include" \
-          LIBS="-L $DEPS/lib" \
-          ACLOCAL_PATH=$DEPS/lib/aclocal:$DEPS/share/aclocal \
-          FREETYPE_CFLAGS="-I$DEPS/include/freetype2" \
-          PULSE_CFLAGS="-I$DEPS/include/pulse" \
-          PULSE_LIBS="-L$DEPS/lib/pulseaudio -lpulse" \
-          SDL2_CFLAGS="-I$DEPS/include/SDL2" \
-          SDL2_LIBS="-L$DEPS/lib -lSDL2" \
-          X_CFLAGS="-L$DEPS/include" \
-          X_LIBS="-L$DEPS/lib" \
-          GSTREAMER_CFLAGS="-I$DEPS/include/gstreamer-1.0 -I$DEPS/include/glib-2.0 -I$DEPS/lib/glib-2.0/include -I$DEPS/lib/gstreamer-1.0/include" \
-          GSTREAMER_LIBS="-L$DEPS/lib -lgstgl-1.0 -lgstapp-1.0 -lgstvideo-1.0 -lgstaudio-1.0 -lglib-2.0 -lgobject-2.0 -lgio-2.0 -lgsttag-1.0 -lgstbase-1.0 -lgstreamer-1.0" \
-          FFMPEG_CFLAGS="-I$DEPS/include/libavutil -I$DEPS/include/libavcodec -I$DEPS/include/libavformat" \
-          FFMPEG_LIBS="-L$DEPS/lib -lavutil -lavcodec -lavformat"
+          --enable-wineandroid_drv=no
           
           make -j$(nproc)
           make install -j$(nproc) DESTDIR=compiled-files/
