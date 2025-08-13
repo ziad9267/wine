@@ -189,8 +189,10 @@ jobs:
           cd ../winemaker && make -j$(nproc)
           cd ../wmc && make -j$(nproc)
 
+          cd ../..
+
           #gcc ../tools/make_xftmpl.c -I../wine-tools-build/include -I../include -o ../tools/make_xftmpl
-          ls
+          ls 
       - name: Compiling Wine
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
