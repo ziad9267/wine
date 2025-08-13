@@ -181,7 +181,7 @@ jobs:
       - name: Compiling Wine
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
-          export PATH="$TOOLCHAIN:/opt/llvm-mingw/bin:$PATH"
+          export PATH="/opt/llvm-mingw/bin:$PATH"
           export DEPS="/data/data/com.termux/files/usr"
           export SYSROOT="$TOOLCHAIN/../sysroot"
           
@@ -220,9 +220,9 @@ jobs:
           --without-xinerama \
           --without-xxf86vm \
           --enable-wineandroid_drv=no \
-          CC="$PATH/clang --target=aarch64-linux-android28" \
+          CC="$TOOLCHAIN/clang --target=aarch64-linux-android28" \
           AS=$CC \
-          CXX="$PATH/clang++ --target=aarch64-linux-android28" \
+          CXX="$TOOLCHAIN/clang++ --target=aarch64-linux-android28" \
           DLLTOOL=$PATH/llvm-dlltool \
           CPPLAGS="--sysroot=$SYSROOT -I$DEPS/include -I$DEPS/include/X11" \
           LDFLAGS="--sysroot=$SYSROOT -L $DEPS/lib" \
