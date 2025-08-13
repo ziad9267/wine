@@ -215,7 +215,7 @@ jobs:
           
           ./configure \
           --enable-archs=arm64ec,aarch64,i386 \
-          --prefix=build \
+          --prefix=/build \
           --host=aarch64-linux-android \
           --with-mingw=clang \
           --with-wine-tools=wine-tools/ \
