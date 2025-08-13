@@ -188,6 +188,7 @@ jobs:
           cd ../winedump && make -j$(nproc)
           cd ../winemaker && make -j$(nproc)
           cd ../wmc && make -j$(nproc)
+          cd ../wine && make -j$(nproc)
 
           cd ../..
 
