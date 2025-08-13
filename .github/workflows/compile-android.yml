@@ -194,7 +194,6 @@ jobs:
 
           #gcc ../tools/make_xftmpl.c -I../wine-tools-build/include -I../include -o ../tools/make_xftmpl
           find . -maxdepth 1 -mindepth 1 ! -name "tools" -exec rm -rf {} +
-          ls tools/wine
       - name: Compiling Wine
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
