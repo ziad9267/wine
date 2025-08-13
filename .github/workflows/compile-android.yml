@@ -192,6 +192,7 @@ jobs:
           cd ../..
 
           #gcc ../tools/make_xftmpl.c -I../wine-tools-build/include -I../include -o ../tools/make_xftmpl
+          find . -maxdepth 1 -mindepth 1 ! -name "tools" -exec rm -rf {} +
           ls tools
       - name: Compiling Wine
         run: |
