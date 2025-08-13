@@ -210,12 +210,12 @@ jobs:
           export FFMPEG_CFLAGS="-I$deps/include/libavutil -I$deps/include/libavcodec -I$deps/include/libavformat"
           export FFMPEG_LIBS="-L$deps/lib -lavutil -lavcodec -lavformat"
           
-          mkdir build-prefix
+          mkdir build
           mkdir compiled-files
           
           ./configure \
           --enable-archs=arm64ec,aarch64,i386 \
-          --prefix=/build-prefix \
+          --prefix=build \
           --host=aarch64-linux-android \
           --with-mingw=clang \
           --with-wine-tools=wine-tools/ \
