@@ -153,29 +153,6 @@ jobs:
          ndk-version: r27c
          add-to-path: false
          link-to-sdk: true
-
-      #- name: Building Wine tools
-      #  run: |
-      #    mkdir wine-tools
-      #    mkdir wine-tools-build
-      #    cd wine-tools-build
-      #    ../configure --without-x --without-gstreamer --without-vulkan --without-wayland --enable-wineandroid_drv=no
-      #    cp -rf ./* ../wine-tools
-
-      #    cd ../wine-tools/tools/winebuild && make -j$(nproc)
-      #    cd ../wrc && make -j$(nproc)
-      #    cd ../widl && make -j$(nproc)
-      #    cd ../winegcc && make -j$(nproc)
-      #    cd ../sfnt2fon && make -j$(nproc)
-      #    cd ../winedump && make -j$(nproc)
-      #    cd ../winemaker && make -j$(nproc)
-      #    cd ../wmc && make -j$(nproc)
-
-      #    cd ../..
-      #    gcc ../tools/make_xftmpl.c -I../wine-tools-build/include -I../include -o ../tools/make_xftmpl
-
-      #    cd ../../..
-      #    ls wine-tools
       - name: Building Wine Tools
         run: |
           mkdir wine-tools && cd wine-tools
@@ -200,16 +177,10 @@ jobs:
           export deps="/data/data/com.termux/files/usr"
 
           export CC="$TOOLCHAIN/clang --target=aarch64-linux-android28"
-          #export AS=$CC
+          export AS=$CC
           export CXX="$TOOLCHAIN/clang++ --target=aarch64-linux-android28"
-          #export AR=$TOOLCHAIN/llvm-ar
-          #export LD=$TOOLCHAIN/ld
-          #export RANLIB=$TOOLCHAIN/llvm-ranlib
-          #export STRIP=$TOOLCHAIN/llvm-strip
-          #export DLLTOOL=$LLVM_MINGW_TOOLCHAIN/llvm-dlltool
 
           export PKG_CONFIG_LIBDIR=$deps/lib/pkgconfig:$deps/share/pkgconfig
-          #export ACLOCAL_PATH=$deps/lib/aclocal:$deps/share/aclocal
           export CPPFLAGS="-I$deps/include/"
           export LDFLAGS="-L$deps/lib -Wl,-rpath=$deps/lib"
           export FREETYPE_CFLAGS="-I$deps/include/freetype2"
@@ -217,12 +188,10 @@ jobs:
           export PULSE_LIBS="-L$deps/lib/pulseaudio -lpulse"
           export SDL2_CFLAGS="-I$deps/include/SDL2"
           export SDL2_LIBS="-L$deps/lib -lSDL2"
-          #export X_CFLAGS="-I$deps/include"
-          #export X_LIBS="-L$deps/lib -landroid-sysvshm"
           export GSTREAMER_CFLAGS="-I$deps/include/gstreamer-1.0 -I$deps/include/glib-2.0 -I$deps/lib/glib-2.0/include -I$deps/glib-2.0/include -I$deps/lib/gstreamer-1.0/include"
           export GSTREAMER_LIBS="-L$deps/lib -lgstgl-1.0 -lgstapp-1.0 -lgstvideo-1.0 -lgstaudio-1.0 -lglib-2.0 -lgobject-2.0 -lgio-2.0 -lgsttag-1.0 -lgstbase-1.0 -lgstreamer-1.0"
-          #export FFMPEG_CFLAGS="-I$deps/include/libavutil -I$deps/include/libavcodec -I$deps/include/libavformat"
-          #export FFMPEG_LIBS="-L$deps/lib -lavutil -lavcodec -lavformat"
+          export FFMPEG_CFLAGS="-I$deps/include/libavutil -I$deps/include/libavcodec -I$deps/include/libavformat"
+          export FFMPEG_LIBS="-L$deps/lib -lavutil -lavcodec -lavformat"
           
           mkdir compiled-files
           
