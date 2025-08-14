@@ -142,7 +142,7 @@ jobs:
           tar -xf llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
           rm llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64.tar.xz
           sudo mv llvm-mingw-20250730-ucrt-ubuntu-22.04-x86_64 /opt/llvm-mingw
-          sudo chown -R $(whoami):$(whoami) .
+          #sudo chown -R $(whoami):$(whoami) .
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         
@@ -191,8 +191,6 @@ jobs:
           cd ../wine && make -j$(nproc)
 
           cd ../..
-
-          #gcc ../tools/make_xftmpl.c -I../wine-tools-build/include -I../include -o ../tools/make_xftmpl
           find . -maxdepth 1 -mindepth 1 ! -name "tools" -exec rm -rf {} +
       - name: Compiling Wine
         run: |
@@ -202,42 +200,40 @@ jobs:
           export deps="/data/data/com.termux/files/usr"
 
           export CC="$TOOLCHAIN/clang --target=aarch64-linux-android28"
-          export AS=$CC
+          #export AS=$CC
           export CXX="$TOOLCHAIN/clang++ --target=aarch64-linux-android28"
-          export AR=$TOOLCHAIN/llvm-ar
-          export LD=$TOOLCHAIN/ld
-          export RANLIB=$TOOLCHAIN/llvm-ranlib
-          export STRIP=$TOOLCHAIN/llvm-strip
-          export DLLTOOL=$LLVM_MINGW_TOOLCHAIN/llvm-dlltool
+          #export AR=$TOOLCHAIN/llvm-ar
+          #export LD=$TOOLCHAIN/ld
+          #export RANLIB=$TOOLCHAIN/llvm-ranlib
+          #export STRIP=$TOOLCHAIN/llvm-strip
+          #export DLLTOOL=$LLVM_MINGW_TOOLCHAIN/llvm-dlltool
 
           export PKG_CONFIG_LIBDIR=$deps/lib/pkgconfig:$deps/share/pkgconfig
-          export ACLOCAL_PATH=$deps/lib/aclocal:$deps/share/aclocal
+          #export ACLOCAL_PATH=$deps/lib/aclocal:$deps/share/aclocal
           export CPPFLAGS="-I$deps/include/"
           export LDFLAGS="-L$deps/lib -Wl,-rpath=$deps/lib"
-          export FREETYPE_CFLAGS="-I$deps/include/freetype2"
-          export PULSE_CFLAGS="-I$deps/include/pulse"
-          export PULSE_LIBS="-L$deps/lib/pulseaudio -lpulse"
-          export SDL2_CFLAGS="-I$deps/include/SDL2"
-          export SDL2_LIBS="-L$deps/lib -lSDL2"
-          export X_CFLAGS="-I$deps/include"
-          export X_LIBS="-L$deps/lib -landroid-sysvshm"
-          export GSTREAMER_CFLAGS="-I$deps/include/gstreamer-1.0 -I$deps/include/glib-2.0 -I$deps/lib/glib-2.0/include -I$deps/glib-2.0/include -I$deps/lib/gstreamer-1.0/include"
-          export GSTREAMER_LIBS="-L$deps/lib -lgstgl-1.0 -lgstapp-1.0 -lgstvideo-1.0 -lgstaudio-1.0 -lglib-2.0 -lgobject-2.0 -lgio-2.0 -lgsttag-1.0 -lgstbase-1.0 -lgstreamer-1.0"
-          export FFMPEG_CFLAGS="-I$deps/include/libavutil -I$deps/include/libavcodec -I$deps/include/libavformat"
-          export FFMPEG_LIBS="-L$deps/lib -lavutil -lavcodec -lavformat"
+          #export FREETYPE_CFLAGS="-I$deps/include/freetype2"
+          #export PULSE_CFLAGS="-I$deps/include/pulse"
+          #export PULSE_LIBS="-L$deps/lib/pulseaudio -lpulse"
+          #export SDL2_CFLAGS="-I$deps/include/SDL2"
+          #export SDL2_LIBS="-L$deps/lib -lSDL2"
+          #export X_CFLAGS="-I$deps/include"
+          #export X_LIBS="-L$deps/lib -landroid-sysvshm"
+          #export GSTREAMER_CFLAGS="-I$deps/include/gstreamer-1.0 -I$deps/include/glib-2.0 -I$deps/lib/glib-2.0/include -I$deps/glib-2.0/include -I$deps/lib/gstreamer-1.0/include"
+          #export GSTREAMER_LIBS="-L$deps/lib -lgstgl-1.0 -lgstapp-1.0 -lgstvideo-1.0 -lgstaudio-1.0 -lglib-2.0 -lgobject-2.0 -lgio-2.0 -lgsttag-1.0 -lgstbase-1.0 -lgstreamer-1.0"
+          #export FFMPEG_CFLAGS="-I$deps/include/libavutil -I$deps/include/libavcodec -I$deps/include/libavformat"
+          #export FFMPEG_LIBS="-L$deps/lib -lavutil -lavcodec -lavformat"
           
-          mkdir build
           mkdir compiled-files
           
           ./configure \
           --enable-archs=arm64ec,aarch64,i386 \
-          --prefix=/build \
+          --prefix=/usr \
           --host=aarch64-linux-android \
           --with-mingw=clang \
           --with-wine-tools=wine-tools/ \
           --enable-win64 \
           --with-pulse \
-          --enable-nls \
           --disable-win16 \
           --without-alsa \
           --disable-tests \
@@ -263,7 +259,7 @@ jobs:
           --without-xxf86vm \
           --enable-wineandroid_drv=no
 
-          make -j$(nproc) V=1
+          make -j$(nproc)
           make install -j$(nproc) DESTDIR=compiled-files/
       - name: Uploading Wine files
         uses: actions/upload-artifact@v4
