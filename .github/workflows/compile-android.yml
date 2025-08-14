@@ -212,7 +212,7 @@ jobs:
           #export ACLOCAL_PATH=$deps/lib/aclocal:$deps/share/aclocal
           export CPPFLAGS="-I$deps/include/"
           export LDFLAGS="-L$deps/lib -Wl,-rpath=$deps/lib"
-          #export FREETYPE_CFLAGS="-I$deps/include/freetype2"
+          export FREETYPE_CFLAGS="-I$deps/include/freetype2"
           #export PULSE_CFLAGS="-I$deps/include/pulse"
           #export PULSE_LIBS="-L$deps/lib/pulseaudio -lpulse"
           #export SDL2_CFLAGS="-I$deps/include/SDL2"
