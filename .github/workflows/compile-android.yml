@@ -263,9 +263,7 @@ jobs:
           --without-xxf86vm \
           --enable-wineandroid_drv=no
 
-          make -C loader
-
-          make -j$(nproc)
+          make -j$(nproc) --verbose
           make install -j$(nproc) DESTDIR=compiled-files/
       - name: Uploading Wine files
         uses: actions/upload-artifact@v4
