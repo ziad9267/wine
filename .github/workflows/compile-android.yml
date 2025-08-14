@@ -261,7 +261,8 @@ jobs:
           --without-xinerama \
           --without-xxf86vm \
           --enable-wineandroid_drv=no
-          
+
+          make -C ./nls -j$(nproc)
           make -j$(nproc)
           make install -j$(nproc) DESTDIR=compiled-files/
       - name: Uploading Wine files
