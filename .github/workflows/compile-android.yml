@@ -14,11 +14,6 @@ jobs:
       - name: Checkout Wine repository
         uses: actions/checkout@v4
 
-      - name: Clear caches
-        uses: easimon/wipe-cache@main
-        with:
-          dry-run: 'true'
-
       - name: Install the required deps
         run: |
           sudo dpkg --add-architecture i386
@@ -158,22 +153,30 @@ jobs:
          ndk-version: r27c
          add-to-path: false
          link-to-sdk: true
-      - name: Building Wine Tools
-        run: |
-          mkdir wine-tools && cd wine-tools
-          ../configure --without-x --without-gstreamer --without-vulkan --without-wayland
-          cd ./tools/winebuild && make -j$(nproc)
-          cd ../wrc && make -j$(nproc)
-          cd ../widl && make -j$(nproc)
-          cd ../winegcc && make -j$(nproc)
-          cd ../sfnt2fon && make -j$(nproc)
-          cd ../winedump && make -j$(nproc)
-          cd ../winemaker && make -j$(nproc)
-          cd ../wmc && make -j$(nproc)
-          cd ../wine && make -j$(nproc)
+      #- name: Building Wine Tools
+      #  run: |
+      #    mkdir wine-tools && cd wine-tools
+      #    ../configure --without-x --without-gstreamer --without-vulkan --without-wayland
+      #    cd ./tools/winebuild && make -j$(nproc)
+      #    cd ../wrc && make -j$(nproc)
+      #    cd ../widl && make -j$(nproc)
+      #    cd ../winegcc && make -j$(nproc)
+      #    cd ../sfnt2fon && make -j$(nproc)
+      #    cd ../winedump && make -j$(nproc)
+      #    cd ../winemaker && make -j$(nproc)
+      #    cd ../wmc && make -j$(nproc)
+      #    cd ../wine && make -j$(nproc)
 
-          cd ../..
-          find . -maxdepth 1 -mindepth 1 ! -name "tools" -exec rm -rf {} +
+      #    cd ../..
+      #    find . -maxdepth 1 -mindepth 1 ! -name "tools" -exec rm -rf {} +
+      - name: Building Wine tools
+        run: |
+          mkdir wine-tools-build
+          cd wine-tools-build
+          ./configure --without-x --without-gstreamer --without-vulkan --without-wayland
+          make -j$(nproc) __tooldeps__ nls/all
+          ls
+          mv wine-tools ..
       - name: Compiling Wine
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
