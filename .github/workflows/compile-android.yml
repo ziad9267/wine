@@ -184,7 +184,7 @@ jobs:
 
           export PKG_CONFIG_LIBDIR=$deps/lib/pkgconfig:$deps/share/pkgconfig
           export CPPFLAGS="-I$deps/include/"
-          #export LDFLAGS="-L$deps/lib -Wl,-rpath=$deps/lib"
+          export CFLAGS="-Wno-implicit-function-declaration -Wno-int-conversion"
           export LDFLAGS="-L$deps/lib -landroid-shmem -landroid-spawn"
           export FREETYPE_CFLAGS="-I$deps/include/freetype2"
           export PULSE_CFLAGS="-I$deps/include/pulse"
