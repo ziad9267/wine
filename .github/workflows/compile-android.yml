@@ -153,22 +153,6 @@ jobs:
          ndk-version: r27c
          add-to-path: false
          link-to-sdk: true
-      #- name: Building Wine Tools
-      #  run: |
-      #    mkdir wine-tools && cd wine-tools
-      #    ../configure --without-x --without-gstreamer --without-vulkan --without-wayland
-      #    cd ./tools/winebuild && make -j$(nproc)
-      #    cd ../wrc && make -j$(nproc)
-      #    cd ../widl && make -j$(nproc)
-      #    cd ../winegcc && make -j$(nproc)
-      #    cd ../sfnt2fon && make -j$(nproc)
-      #    cd ../winedump && make -j$(nproc)
-      #    cd ../winemaker && make -j$(nproc)
-      #    cd ../wmc && make -j$(nproc)
-      #    cd ../wine && make -j$(nproc)
-
-      #    cd ../..
-      #    find . -maxdepth 1 -mindepth 1 ! -name "tools" -exec rm -rf {} +
       - name: Building Wine tools
         run: |
           mkdir wine-tools
@@ -178,6 +162,15 @@ jobs:
           make -j$(nproc) __tooldeps__ nls/all
           ls
           mv ./* ../wine-tools
+      - name: Applying Termux related patches
+        run: |
+          patch -p1 < patches/0001-fix-paths.patch
+          patch -p1 < patches/0002-fix-defines.patch
+          patch -p1 < patches/0003-fix-socket-ipx.patch
+          patch -p1 < patches/0003-impl-shm_open.patch
+          patch -p1 < patches/0004-no-pthread_mutexattr_setprotocol.patch
+          patch -p1 < patches/9998-fix-winegcc-build-target.patch.beforehostbuild
+          patch -p1 < patches/9999-fix-winebuild-as-type.patch.beforehostbuild
       - name: Compiling Wine
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
