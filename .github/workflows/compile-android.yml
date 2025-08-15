@@ -14,6 +14,11 @@ jobs:
       - name: Checkout Wine repository
         uses: actions/checkout@v4
 
+      - name: Clear caches
+        uses: easimon/wipe-cache@main
+        with:
+          dry-run: 'true'
+
       - name: Install the required deps
         run: |
           sudo dpkg --add-architecture i386
