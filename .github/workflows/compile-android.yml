@@ -186,7 +186,7 @@ jobs:
           export CPPFLAGS="-I$deps/include/"
           export CFLAGS="-Wno-declaration-after-statement -Wno-implicit-function-declaration -Wno-int-conversion"
           #export LDFLAGS="-L$deps/lib"
-          export LDFLAGS="-L$deps/lib $deps/lib/libandroid-shmem.a $deps/lib/libandroid-spawn.a"
+          export LDFLAGS="-L$deps/lib -L$deps/lib/libandroid-shmem.a -L$deps/lib/libandroid-spawn.a"
           export FREETYPE_CFLAGS="-I$deps/include/freetype2"
           export PULSE_CFLAGS="-I$deps/include/pulse"
           export PULSE_LIBS="-L$deps/lib/pulseaudio -lpulse"
