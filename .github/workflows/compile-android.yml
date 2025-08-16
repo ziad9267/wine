@@ -177,6 +177,7 @@ jobs:
           export LLVM_MINGW_TOOLCHAIN="/opt/llvm-mingw/bin"
           export PATH="$LLVM_MINGW_TOOLCHAIN:$PATH"
           export deps="/data/data/com.termux/files/usr"
+          export install_dir="$deps/opt/wine"
 
           export CC="$TOOLCHAIN/clang --target=aarch64-linux-android28"
           export AS=$CC
@@ -198,10 +199,14 @@ jobs:
           export FFMPEG_LIBS="-L$deps/lib -lavutil -lavcodec -lavformat"
           
           mkdir compiled-files
+          mkdir -p $deps/opt/wine
           
           ./configure \
           --enable-archs=arm64ec,aarch64,i386 \
-          --prefix=/usr \
+          --prefix=$install_dir \
+          --exec-prefix=$install_dir \
+          --bindir=$install_dir/bin \
+          --libdir=$install_dir/lib \
           --host=aarch64-linux-android \
           --with-mingw=clang \
           --with-wine-tools=./wine-tools \
@@ -209,7 +214,7 @@ jobs:
           --enable-nls \
           --with-pulse \
           --disable-win16 \
-          --disable-opencl \
+          --without-opencl \
           --without-alsa \
           --disable-tests \
           --without-capi \
@@ -235,7 +240,9 @@ jobs:
           --enable-wineandroid_drv=no
 
           make -j$(nproc) -v
-          make install -j$(nproc) DESTDIR=compiled-files/
+          make install -j$(nproc)
+
+          cp -rf $install_dir compiled-files
       - name: Uploading Wine files
         uses: actions/upload-artifact@v4
         with:
