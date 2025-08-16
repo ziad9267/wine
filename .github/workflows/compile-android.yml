@@ -185,9 +185,7 @@ jobs:
           export PKG_CONFIG_LIBDIR=$deps/lib/pkgconfig:$deps/share/pkgconfig
           export CPPFLAGS="-I$deps/include/"
           export CFLAGS="-Wno-declaration-after-statement -Wno-implicit-function-declaration -Wno-int-conversion"
-          export LDFLAGS="-L$deps/lib -landroid-shmem -landroid-spawn"
-          #export LDFLAGS="-L$deps/lib -L$deps/lib/libandroid-shmem.a -L$deps/lib/libandroid-spawn.a"
-          export LIBS="-L$deps/lib/libandroid-shmem.a -L$deps/lib/libandroid-spawn.a"
+          export LDFLAGS="-L$deps/lib"
           export FREETYPE_CFLAGS="-I$deps/include/freetype2"
           export PULSE_CFLAGS="-I$deps/include/pulse"
           export PULSE_LIBS="-L$deps/lib/pulseaudio -lpulse"
@@ -233,7 +231,8 @@ jobs:
           --without-wayland \
           --without-xinerama \
           --without-xxf86vm \
-          --enable-wineandroid_drv=no
+          --enable-wineandroid_drv=no \
+          LDFLAGS+=" -landroid-shmem -landroid-spawn"
 
           make -j$(nproc)
           make install -j$(nproc) DESTDIR=compiled-files/
