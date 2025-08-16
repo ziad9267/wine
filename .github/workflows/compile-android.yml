@@ -232,8 +232,7 @@ jobs:
           --without-wayland \
           --without-xinerama \
           --without-xxf86vm \
-          --enable-wineandroid_drv=no \
-          LDFLAGS+=" -landroid-shmem -landroid-spawn"
+          --enable-wineandroid_drv=no
 
           make -j$(nproc)
           make install -j$(nproc) DESTDIR=compiled-files/
