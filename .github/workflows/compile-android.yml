@@ -199,7 +199,7 @@ jobs:
           export FFMPEG_LIBS="-L$deps/lib -lavutil -lavcodec -lavformat"
           
           mkdir compiled-files
-          sudo mkdir -p $deps/opt/wine
+          #sudo mkdir -p $deps/opt/wine
           
           ./configure \
           --enable-archs=arm64ec,aarch64,i386 \
