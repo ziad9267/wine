@@ -183,9 +183,9 @@ jobs:
           export CXX="$TOOLCHAIN/clang++ --target=aarch64-linux-android28"
 
           export PKG_CONFIG_LIBDIR=$deps/lib/pkgconfig:$deps/share/pkgconfig
-          export CPPFLAGS="-I$deps/include/"
+          export CPPFLAGS="-I$deps/include"
           export CFLAGS="-Wno-declaration-after-statement -Wno-implicit-function-declaration -Wno-int-conversion"
-          export LDFLAGS="-L$deps/lib"
+          export LDFLAGS="-L$deps/lib -landroid-shmem -landroid-spawn"
           export LIBRARY_PATH="$deps/lib${LIBRARY_PATH:+:$LIBRARY_PATH}"
           export FREETYPE_CFLAGS="-I$deps/include/freetype2"
           export PULSE_CFLAGS="-I$deps/include/pulse"
