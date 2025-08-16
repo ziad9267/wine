@@ -186,7 +186,7 @@ jobs:
           export CPPFLAGS="-I$deps/include"
           export CFLAGS="-Wno-declaration-after-statement -Wno-implicit-function-declaration -Wno-int-conversion"
           export LDFLAGS="-L$deps/lib -landroid-shmem -landroid-spawn"
-          export LIBRARY_PATH="$deps/lib${LIBRARY_PATH:+:$LIBRARY_PATH}"
+          #export LIBRARY_PATH="$deps/lib${LIBRARY_PATH:+:$LIBRARY_PATH}"
           export FREETYPE_CFLAGS="-I$deps/include/freetype2"
           export PULSE_CFLAGS="-I$deps/include/pulse"
           export PULSE_LIBS="-L$deps/lib/pulseaudio -lpulse"
@@ -234,7 +234,7 @@ jobs:
           --without-xxf86vm \
           --enable-wineandroid_drv=no
 
-          make -j$(nproc)
+          make -j$(nproc) -v
           make install -j$(nproc) DESTDIR=compiled-files/
       - name: Uploading Wine files
         uses: actions/upload-artifact@v4
