@@ -244,10 +244,8 @@ jobs:
           #make install -j$(nproc)
 
           #cp -rf $install_dir compiled-files
-      - name: Compiling again with shmem and spawn
-        run: |
           export LDFLAGS+=" -landroid-shmem -landroid-spawn"
-          make -j$(nproc)
+          make -j$(nproc) -v
           make install -j$(nproc)
           cp -rf $install_dir compiled-files
       - name: Uploading Wine files
