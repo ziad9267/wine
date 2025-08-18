@@ -244,7 +244,34 @@ jobs:
           #make install -j$(nproc)
 
           #cp -rf $install_dir compiled-files
-          export LDFLAGS+=" -landroid-shmem -landroid-spawn"
+      - name: Compiling again with shmem and spawn
+        run: |
+          export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          export LLVM_MINGW_TOOLCHAIN="/opt/llvm-mingw/bin"
+          export PATH="$LLVM_MINGW_TOOLCHAIN:$PATH"
+          export deps="/data/data/com.termux/files/usr"
+          export install_dir="$deps/opt/wine"
+
+          export CC="$TOOLCHAIN/clang --target=aarch64-linux-android28"
+          export AS=$CC
+          export CXX="$TOOLCHAIN/clang++ --target=aarch64-linux-android28"
+
+          export PKG_CONFIG_LIBDIR=$deps/lib/pkgconfig:$deps/share/pkgconfig
+          export CPPFLAGS="-I$deps/include"
+          export CFLAGS="-Wno-declaration-after-statement -Wno-implicit-function-declaration -Wno-int-conversion"
+          export LDFLAGS="-L$deps/lib -Wl,-rpath=$deps/lib -landroid-shmem -landroid-spawn"
+          #export LIBRARY_PATH="$deps/lib${LIBRARY_PATH:+:$LIBRARY_PATH}"
+          export FREETYPE_CFLAGS="-I$deps/include/freetype2"
+          export PULSE_CFLAGS="-I$deps/include/pulse"
+          export PULSE_LIBS="-L$deps/lib/pulseaudio -lpulse"
+          export SDL2_CFLAGS="-I$deps/include/SDL2"
+          export SDL2_LIBS="-L$deps/lib -lSDL2"
+          export GSTREAMER_CFLAGS="-I$deps/include/gstreamer-1.0 -I$deps/include/glib-2.0 -I$deps/lib/glib-2.0/include -I$deps/glib-2.0/include -I$deps/lib/gstreamer-1.0/include"
+          export GSTREAMER_LIBS="-L$deps/lib -lgstgl-1.0 -lgstapp-1.0 -lgstvideo-1.0 -lgstaudio-1.0 -lglib-2.0 -lgobject-2.0 -lgio-2.0 -lgsttag-1.0 -lgstbase-1.0 -lgstreamer-1.0"
+          export FFMPEG_CFLAGS="-I$deps/include/libavutil -I$deps/include/libavcodec -I$deps/include/libavformat"
+          export FFMPEG_LIBS="-L$deps/lib -lavutil -lavcodec -lavformat"
+          #export LDFLAGS+=" -landroid-shmem -landroid-spawn"
+          
           make -j$(nproc) -v
           make install -j$(nproc)
           cp -rf $install_dir compiled-files
