@@ -172,6 +172,7 @@ jobs:
           patch -p1 < patches/9998-fix-winegcc-build-target.patch.beforehostbuild
           patch -p1 < patches/9999-fix-winebuild-as-type.patch.beforehostbuild
       - name: Compiling Wine
+        continue-on-error: true
         run: |
           export TOOLCHAIN="/usr/local/lib/android/sdk/ndk/27.3.13750724/toolchains/llvm/prebuilt/linux-x86_64/bin"
           export LLVM_MINGW_TOOLCHAIN="/opt/llvm-mingw/bin"
@@ -186,7 +187,7 @@ jobs:
           export PKG_CONFIG_LIBDIR=$deps/lib/pkgconfig:$deps/share/pkgconfig
           export CPPFLAGS="-I$deps/include"
           export CFLAGS="-Wno-declaration-after-statement -Wno-implicit-function-declaration -Wno-int-conversion"
-          export LDFLAGS="-L$deps/lib -Wl,-rpath=$deps/lib -landroid-shmem -landroid-spawn"
+          export LDFLAGS="-L$deps/lib -Wl,-rpath=$deps/lib"
           #export LIBRARY_PATH="$deps/lib${LIBRARY_PATH:+:$LIBRARY_PATH}"
           export FREETYPE_CFLAGS="-I$deps/include/freetype2"
           export PULSE_CFLAGS="-I$deps/include/pulse"
@@ -240,8 +241,14 @@ jobs:
           --enable-wineandroid_drv=no
 
           make -j$(nproc) -v
-          make install -j$(nproc)
+          #make install -j$(nproc)
 
+          #cp -rf $install_dir compiled-files
+      - name: Compiling again with shmem and spawn
+        run: |
+          export LDFLAGS+=" -landroid-shmem -landroid-spawn"
+          make -j$(nproc)
+          make install -j$(nproc)
           cp -rf $install_dir compiled-files
       - name: Uploading Wine files
         uses: actions/upload-artifact@v4
